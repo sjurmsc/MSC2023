@@ -8,14 +8,11 @@ from datetime import datetime
 
 def log_it():
     p = Path('./Models')
-    print(p.is_dir())
     return p
-
 
 
 if __name__ == '__main__':
     m = log_it()
     n = datetime.now()
-    new = m.joinpath(str(n.strftime(r'%d-%m-%Y %H:%M:%S')))
-    print(new)
+    new = m.joinpath(str(n.strftime('%d-%m-%Y_%H:%M:%S')))
     new.mkdir()
