@@ -4,7 +4,8 @@
 
 URL: https://www.overleaf.com/read/tzwckfrpfbvw
 --
-
+### Wednesday 31.08.2022
+I have been reading the Integrated ground model report from the TNWWFZ project, and gotten more familliar. Meanwhile I have been preparing for the first meeting of the semester.
 
 ### Thursday 25.08.2022
 This past week I have started to set up the necessary infrastructure that should be in place to work on the MSc assignment. Among these are the github repository, python miniconda environment (for which a yml file will be added to the repo soon), Overleaf document using NTNU's recommended typesetting and structure. I started writing the log script, which will allow me to store the ML weights from any given training situation so that they may be loaded at any time I should want to access them. Each training instance should create a subfolder within the Models folder, and include some descriptive text document.
