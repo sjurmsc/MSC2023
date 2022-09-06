@@ -15,7 +15,14 @@ def 2DTemporalBlock(o, shape, params):
     Activation function: ReLU
     dropout layers at the ends, to prevent overfitting
     """
-    o = Input(shape=shape)(o)
+    i = Input(shape=shape)(o)
+    Conv2D()
+
+
+
+
+    # 1 x 1 Conv
+    # conv1D(i)
 
 
 
@@ -29,5 +36,14 @@ def 1DTemporalBlock():
     pass
 
 
+def TCN1D(trainX, param):
+    """
+    JR used trainx to decide dimensions of the architecture
+    """
+    pass
+    
 
+    # return model
+
+def TCN2D(, param)
 def weight_share_cost():
