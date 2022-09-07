@@ -36,9 +36,11 @@ def TemporalBlock2D(o, shape, filters, kernel_size, dilation_rate, dropout):
     return o
 
 
-def TemporalBlock1D():
+def TemporalBlock1D(o, shape, filters, kernel_size, dilation_rate, dropout):
     """
     """
+    i = Input(shape=shape)(o)
+    
     # First Convolution
     p = Conv1D(filters=filters, kernel_size=kernel_size, padding='same', dilation_rate=dilation_rate, activation='relu')(i) # make sure weight norm is in there
     # Weight norm??
