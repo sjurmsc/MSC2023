@@ -45,5 +45,8 @@ def TCN1D(trainX, param):
 
     # return model
 
-def TCN2D(, param)
+def TCN2D(trainX, param):
+    pass
+
+
 def weight_share_cost():

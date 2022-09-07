@@ -8,14 +8,33 @@ Data used for training should be designated, and feature augmented data should b
 from pathlib import Path
 import sys
 from datetime import datetime
+import json
 
-def log_it():
-    p = Path('./Models')
-    return p
 
+def log_it(k_obj):
+
+    # Creates parent directory
+    m = Path('./Models')
+    n = datetime.now()
+    new = m.joinpath(str(n.strftime('%d-%m-%Y_%H.%M.%S\\')))
+    Path.mkdir(new, parents=True, exist_ok=True)
+
+    # Logging the JSON control file
+    c_fname = new.joinpath('control.json').resolve()
+    c_file = open(c_fname, 'w')
+    ctrl = json.dumps(k_obj._control)
+    c_file.write(ctrl)
+
+    # Logging the ML weights
+    wdir = new / 'ML weights'
+    wdir.mkdir()
+
+# Only used for testing the code
+class object:
+    def __init__(self):
+        pass
 
 if __name__ == '__main__':
-    m = log_it()
-    n = datetime.now()
-    new = m.joinpath(str(n.strftime('%d-%m-%Y_%H:%M:%S')))
-    new.mkdir()
+    k_obj = object()
+    k_obj._control = {'test' : [1, 2, 3]}
+    log_it(k_obj)
