@@ -7,7 +7,7 @@ from keras.layers import Input, Dense, Dropout, Conv1D, Conv2D
 
 
 
-def 2DTemporalBlock(o, shape, params):
+def TemporalBlock2D(o, shape, filters, kernel_size, dilation_rate, dropout):
     """
     Input, split into 1x1 convolution to maintain shape. The rest goes into
     dilated convolution layer
@@ -15,22 +15,28 @@ def 2DTemporalBlock(o, shape, params):
     Activation function: ReLU
     dropout layers at the ends, to prevent overfitting
     """
+
     i = Input(shape=shape)(o)
-    Conv2D()
 
+    # First Convolution
+    p = Conv2D(filters=filters, kernel_size=kernel_size, padding='same', dilation_rate=dilation_rate, activation='relu')(i) # make sure weight norm is in there
+    # Weight norm??
+    p = Dropout(rate=dropout)(p)
 
+    # Second Convolution
+    p = Conv2D(filters=filters, kernel_size=kernel_size, padding='same', dilation_rate=dilation_rate, activation='relu')(p)
+    # Weight norm??
+    p = Dropout(rate=dropout)(p)
 
 
     # 1 x 1 Conv
     # conv1D(i)
 
 
-
-    # Output her nede
     return o
 
 
-def 1DTemporalBlock():
+def TemporalBlock1D():
     """
     """
     pass
@@ -46,7 +52,13 @@ def TCN1D(trainX, param):
     # return model
 
 def TCN2D(trainX, param):
+    """
+    Three temporal blocks as feature extractions
+
+    Split into three for regression, and three for reconstruction
+    """
     pass
 
 
 def weight_share_cost():
+    pass
