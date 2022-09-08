@@ -29,7 +29,7 @@ def log_it(k_obj):
     wdir = new / 'ML weights'
     wdir.mkdir()
 
-# Only used for testing the code
+#%% Only used for testing the code
 class object:
     def __init__(self):
         pass

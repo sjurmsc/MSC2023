@@ -1,9 +1,15 @@
 # Master of Science Project 2022/2023
 
-## This document will contain log entries of what has been done and what still needs doing.
+URL to assignment: https://www.overleaf.com/read/tzwckfrpfbvw
 
-URL: https://www.overleaf.com/read/tzwckfrpfbvw
---
+Current best performing reconstruction module:
+![](Models/07-09-2022_14.12.12/coming_soon.jpg)
+
+# Blog:
+
+### Thursday 08.09.2022
+This week I have started implementing the 2D and 1D TCN architectures. They are not finished, but I'm getting there. I have experimented with linux and running shell scripts on Odin. Ideally I write all instructions on my laptop, and then run a script which makes sure to dump all conda changes to the yaml and push my python code to the repo. After that it will have odin execute a script that pulls the changes, updates the conda environment and creates a new git branch. In the new branch Odin will start running all the models. After the models are ran, Odin will push to the new branch and send out an Email with some short summary information. I will then manually review and merge the branch into main. For performance review, I will use the reconstruction module to see where the model finds it hardest to reconstruct the seismic image.
+
 ### Wednesday 31.08.2022
 I have been reading the Integrated ground model report from the TNWWFZ project, and gotten more familliar. Meanwhile I have been preparing for the first meeting of the semester.
 

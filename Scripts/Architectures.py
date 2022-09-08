@@ -39,7 +39,7 @@ def TemporalBlock2D(o, shape, filters, kernel_size, dilation_rate, dropout):
 def TemporalBlock1D(o, shape, filters, kernel_size, dilation_rate, dropout):
     """
     """
-    i = Input(shape=shape)(o)
+    i = Input(shape=shape)(o) # This is wrong I think %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     # First Convolution
     p = Conv1D(filters=filters, kernel_size=kernel_size, padding='same', dilation_rate=dilation_rate, activation='relu')(i) # make sure weight norm is in there
@@ -63,14 +63,32 @@ def TCN1D(trainX, param):
 
     # return model
 
-def TCN2D(trainX, param):
+def TCN2D(trainX, settings):
     """
     Three temporal blocks as feature extractions
 
     Split into three for regression, and three for reconstruction
     """
+    filters = settings['filters']
+    kernel_size = settings['kernel_size']
+    dilation_rate = settings['dilation_rate']
+    dropout = settings['dropout']
+
+    shape = (trainX.shape[1], 1)
+
+    # Feature Extraction module
+    o = Input(shape)
+    for filter, dilation in zip(filters, dilation_rate):
+        o = TemporalBlock2D(o, shape, filter, kernel_size, dilation, dropout)
+
+    # Regression module
+
+    # Reconstruciton module
+
+
+
+# Loss Function
+def weight_share_loss():
     pass
 
 
-def weight_share_cost():
-    pass
