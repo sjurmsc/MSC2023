@@ -3,8 +3,47 @@ Contains the model architectures so that they may easily be called upon.
 """
 
 from tensorflow import keras
-from keras.layers import Input, Dense, Dropout, Conv1D, Conv2D
+from keras.layers import Input, Dense, Dropout, Conv1D, Conv2D, Layer
+from tensorflow
 
+
+class ResidualBlock(Layer):
+    """
+    If one would wish to write this as a class. Inspired by keras-tcn
+    """
+    def __init__(self,
+                 dilation_rate: int,
+                 nb_filters: int,
+                 kernel_size: int,
+                 padding: str,
+                 activation: str = 'relu',
+                 dropout_rate: float = 0,
+                 kernel_initializer: str = 'he_normal', # ?????????????????????????
+                 use_batch_norm: bool = False,
+                 use_layer_norm: bool = False,
+                 use_weight_norm: bool = False,
+                 **kwargs): # Any initializers for the Layer class
+        """
+        docstring here %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        """
+        self.dilation_rate = dilation_rate
+        self.nb_filters = nb_filters
+        self.kernel_size = kernel_size
+        self.padding = padding
+        self.activation = activation
+        self.dropout_rate = dropout_rate
+        self.use_batch_norm = use_batch_norm
+        self.use_layer_norm = use_layer_norm
+        self.use_weight_norm = use_weight_norm
+        self.kernel_initializer = kernel_initializer
+        self.layers = []
+        self.shape_match_conv = None
+        self.res_output_shape = None
+        self.final_activation = None
+
+        super(ResidualBlock, self).__init__(**kwargs)
+
+    def _build_layer(self, layer):
 
 
 def TemporalBlock2D(o, shape, filters, kernel_size, dilation_rate, dropout_rate):
