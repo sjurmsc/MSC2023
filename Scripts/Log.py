@@ -12,7 +12,10 @@ import json
 
 
 def log_it(k_obj):
-
+    """
+    Creates a log of the model being run and puts it in the \Models 
+    directory. Uses the RunModel object to extract the needed values
+    """
     # Creates parent directory
     m = Path('./Models')
     n = datetime.now()
@@ -29,12 +32,27 @@ def log_it(k_obj):
     wdir = new / 'ML weights'
     wdir.mkdir()
 
+
+def replace_md_image(filepath):
+    """
+    Replaces the image in the github markdown document with the image at
+    the given filepath
+    """
+    with open('README.md', 'r') as readfile:
+        lines = readfile.readlines()
+        j = [i for i, str in enumerate(lines) if str.startswith('!')][0]
+        lines[j] = f'![]({filepath})\n'
+        with open('README.md', 'w') as writefile:
+            writefile.writelines(lines)
+
+
 #%% Only used for testing the code
 class object:
     def __init__(self):
         pass
 
 if __name__ == '__main__':
-    k_obj = object()
-    k_obj._control = {'test' : [1, 2, 3]}
-    log_it(k_obj)
+    # k_obj = object()
+    # k_obj._control = {'test' : [1, 2, 3]}
+    # log_it(k_obj)
+    replace_md_image(r'Models\07-09-2022_14.12.12\coming_soon.jpg')
