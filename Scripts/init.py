@@ -10,6 +10,7 @@ All git operations will happen in this script
 import json
 import time
 from pathlib import Path
+
 # My scripts
 from Log import *
 from Architectures import *

@@ -1,10 +1,11 @@
 """
 Contains the model architectures so that they may easily be called upon.
 """
-
+from sklearn.ensemble import RandomForestRegressor
 from tensorflow import keras
+from keras import backend as K
 from keras.layers import Input, Dense, Dropout, Conv1D, Conv2D, Layer
-from tensorflow
+from tensorflow_addons.layers import WeightNormalization
 
 
 class ResidualBlock(Layer):
@@ -44,6 +45,11 @@ class ResidualBlock(Layer):
         super(ResidualBlock, self).__init__(**kwargs)
 
     def _build_layer(self, layer):
+        """
+        Assists in building layers
+        """
+        self.layers.append(layer)
+
 
 
 def TemporalBlock2D(o, shape, filters, kernel_size, dilation_rate, dropout_rate):
