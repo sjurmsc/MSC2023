@@ -55,4 +55,9 @@ control['summary_stats'] = {} # to be filled in later
 
 if __name__ == '__main__':
     # Her skal koden gå
-    pass
+    ai = r'P:\2019\07\20190798\Deliverables\Digital_Deliverables\00_AI\TNW_B04_3360_MIG.Abs_Zp.sgy'
+    data = {}
+    data['TNW_AI'] = ai
+    f = json.dumps(data)
+    with open('Data\\data.json', 'w') as wfile:
+        wfile.write(f)
