@@ -314,6 +314,7 @@ class TCN(Layer):
         return config
 
 
+
 def TCN1D(trainX, param):
     """
     JR used trainx to decide dimensions of the architecture
@@ -323,28 +324,67 @@ def TCN1D(trainX, param):
 
     # return model
 
-def TCN2D(trainX, settings):
+def TCN2D(training_data, config):
     """
     Three temporal blocks as feature extractions
 
     Split into three for regression, and three for reconstruction
     """
-    filters = settings['filters']
-    kernel_size = settings['kernel_size']
-    dilation_rate = settings['dilation_rate']
-    dropout_rate = settings['dropout_rate']
+    nb_filters = config['nb_filters']
+    kernel_size = config['kernel_size']
+    dilations = config['dilations']
+    padding = config['padding']
+    use_skip_connections = config['use_skip_connections']
+    dropout_rate = config['dropout_rate']
+    return_sequences = config['return_sequences']
+    activation = config['activation']
+    convolution_type = config['convolution_type']
+    kernel_initializer = config['kernel_initializer']
+    use_batch_norm = config['use_batch_norm']
+    use_layer_norm = config['use_layer_norm']
+    use_weight_norm = config['use_weight_norm']
 
-    shape = (trainX.shape[1], 1)
 
     # Feature Extraction module
-    o = Input(shape)
-    for filter, dilation in zip(filters, dilation_rate):
-        o = TemporalBlock2D(o, shape, filter, kernel_size, dilation, dropout_rate)
+    model = TCN(nb_filters=nb_filters,
+                kernel_size=kernel_size,
+                dilations=dilations,
+                padding=padding,
+                use_skip_connections=use_skip_connections,
+                dropout_rate=dropout_rate,
+                return_sequences=return_sequences,
+                activation=activation,
+                convolution_type=convolution_type,
+                kernel_initializer=kernel_initializer,
+                use_batch_norm=use_batch_norm,
+                use_layer_norm=use_layer_norm,
+                use_weight_norm=use_weight_norm
+    )
 
     # Regression module
 
     # Reconstruciton module
 
+    model.fit(training_data)
+
+"""
+(self,
+                 nb_filters=64,
+                 kernel_size=3,
+                 nb_stacks=1,
+                 dilations=(1, 2, 4, 8, 16, 32),
+                 padding='causal',
+                 use_skip_connections=True,
+                 dropout_rate=0.0,
+                 return_sequences=False,
+                 activation='relu',
+                 convolution_type = 'Conv2D',
+                 kernel_initializer='he_normal',
+                 use_batch_norm=False,
+                 use_layer_norm=False,
+                 use_weight_norm=False,
+                 **kwargs):
+"""
 
 
 # Loss Function
