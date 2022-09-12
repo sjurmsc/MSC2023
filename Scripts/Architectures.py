@@ -1,11 +1,12 @@
 """
 Contains the model architectures so that they may easily be called upon.
 """
+from distutils.command.sdist import sdist
 import inspect
 from sklearn.ensemble import RandomForestRegressor
 from tensorflow import keras
-from keras import backend as K
-from keras.layers import Input, Dense, Dropout, Conv1D, Conv2D, Layer, BatchNormalization, LayerNormalization
+from keras import backend as K, Model, Input, optimizers
+from keras.layers import Dense, Dropout, Conv1D, Conv2D, Layer, BatchNormalization, LayerNormalization
 from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda
 from tensorflow_addons.layers import WeightNormalization
 
@@ -339,14 +340,18 @@ def TCN2D(training_data, config):
     return_sequences = config['return_sequences']
     activation = config['activation']
     convolution_type = config['convolution_type']
+    lr = config['learn_rate']
     kernel_initializer = config['kernel_initializer']
     use_batch_norm = config['use_batch_norm']
     use_layer_norm = config['use_layer_norm']
     use_weight_norm = config['use_weight_norm']
 
+    X, Y = training_data[0], training_data[1]
+
+    input_layer = Input(shape=(X.shape))
 
     # Feature Extraction module
-    model = TCN(nb_filters=nb_filters,
+    x = TCN(nb_filters=nb_filters,
                 kernel_size=kernel_size,
                 dilations=dilations,
                 padding=padding,
@@ -362,29 +367,28 @@ def TCN2D(training_data, config):
     )
 
     # Regression module
+    # TBA
 
     # Reconstruciton module
+    for k in range(3):
+        x = Conv2D(filters=nb_filters, 
+                   kernel_size=kernel_size,
+                   padding = 'causal',
+                   dilation_rate=dilations[:3],
+                   activation='relu',
+                   name = 'Recon_{}'.format(k)       
+        )(x)
 
-    model.fit(training_data)
+    x = Dense(X.shape)(x)
+    x = Activation('linear')(x)
+    output_layer = x
+    model = Model(input_layer, output_layer)
+    model.compile(optimizers.Adam(lr=lr, clipnorm=1.), loss='mean_squared_error')
+    model.fit(x=X, y=X, batch_size=20, epochs=200)
+    
+    return model
 
-"""
-(self,
-                 nb_filters=64,
-                 kernel_size=3,
-                 nb_stacks=1,
-                 dilations=(1, 2, 4, 8, 16, 32),
-                 padding='causal',
-                 use_skip_connections=True,
-                 dropout_rate=0.0,
-                 return_sequences=False,
-                 activation='relu',
-                 convolution_type = 'Conv2D',
-                 kernel_initializer='he_normal',
-                 use_batch_norm=False,
-                 use_layer_norm=False,
-                 use_weight_norm=False,
-                 **kwargs):
-"""
+
 
 
 # Loss Function
