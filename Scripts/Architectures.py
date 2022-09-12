@@ -1,6 +1,7 @@
 """
 Contains the model architectures so that they may easily be called upon.
 """
+import inspect
 from sklearn.ensemble import RandomForestRegressor
 from tensorflow import keras
 from keras import backend as K
@@ -131,59 +132,186 @@ class ResidualBlock(Layer):
 
             # Forcing keras to add layers in the list to self._layers
             for layer in self.layers:
-                
+                self.__setattr__(layer.name, layer)
+            self.__setattr__(self.shape_match_conv.name, self.shape_match_conv)
+            self.__setattr__(self.final_activation.name, self.final_activation)
 
-    def call():
-        pass
+            super(ResidualBlock, self).build(input_shape) # This to make sure self.built is set to True
+
+    def call(self, inputs, training=None, **kwargs):
+        x1 = inputs
+        for layer in self.layers:
+            training_flag = 'traning' in dict(inspect.signature(layer.call).parameters)
+            x1 = layer(x1, training=training) if training_flag else layer(x1)
+        x2 = self.shape_match_conv(inputs)
+        x1_x2 = self.final_activation(layers.add([x2, x1], name='Add_Res'))
+        return [x1_x2, x1]
 
 
-
-def TemporalBlock2D(o, shape, filters, kernel_size, dilation_rate, dropout_rate):
+class TCN(Layer):
     """
-    Input, split into 1x1 convolution to maintain shape. The rest goes into
-    dilated convolution layer
-
-    Activation function: ReLU
-    dropout layers at the ends, to prevent overfitting
+    Creates a TCN layer.
     """
 
-    i = Input(shape=shape)(o)
+    def __init__(self,
+                 nb_filters=64,
+                 kernel_size=3,
+                 nb_stacks=1,
+                 dilations=(1, 2, 4, 8, 16, 32),
+                 padding='causal',
+                 use_skip_connections=True,
+                 dropout_rate=0.0,
+                 return_sequences=False,
+                 activation='relu',
+                 convolution_type = 'Conv2D',
+                 kernel_initializer='he_normal',
+                 use_batch_norm=False,
+                 use_layer_norm=False,
+                 use_weight_norm=False,
+                 **kwargs):
+        
+        self.return_sequences = return_sequences
+        self.dropout_rate = dropout_rate
+        self.use_skip_connections = use_skip_connections
+        self.dilations = dilations
+        self.nb_stacks = nb_stacks
+        self.kernel_size = kernel_size
+        self.nb_filters = nb_filters
+        self.activation_name = activation
+        self.convolution_type = convolution_type
+        self.padding = padding
+        self.kernel_initializer = kernel_initializer
+        self.use_batch_norm = use_batch_norm
+        self.use_layer_norm = use_layer_norm
+        self.use_weight_norm = use_weight_norm
+        self.skip_connections = []
+        self.residual_blocks = []
+        self.layers_outputs = []
+        self.build_output_shape = None
+        self.slicer_layer = None  # in case return_sequence=False
+        self.output_slice_index = None  # in case return_sequence=False
+        self.padding_same_and_time_dim_unknown = False  # edge case if padding='same' and time_dim = None
 
-    # First Convolution
-    p = Conv2D(filters=filters, kernel_size=kernel_size, padding='same', dilation_rate=dilation_rate, activation='relu')(i) # make sure weight norm is in there
-    # Weight norm??
-    p = Dropout(rate=dropout_rate)(p)
-
-    # Second Convolution
-    p = Conv2D(filters=filters, kernel_size=kernel_size, padding='same', dilation_rate=dilation_rate, activation='relu')(p)
-    # Weight norm??
-    p = Dropout(rate=dropout_rate)(p)
-
-
-    # 1 x 1 Conv
-    # conv1D(i)
-
-
-    return o
-
-
-def TemporalBlock1D(o, shape, filters, kernel_size, dilation_rate, dropout_rate):
-    """
-    """
-    i = Input(shape=shape)(o) # This is wrong I think %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if self.use_batch_norm + self.use_layer_norm + self.use_weight_norm > 1:
+            raise ValueError('Only one normalization can be specified at once.')
+        
+        if isinstance(self.nb_filters, list):
+            assert len(self.nb_filters) == len(self.dilations)
+            if len(set(self.nb_filters)) > 1 and self.use_skip_connections:
+                raise ValueError('Skip connections are not compatible'
+                                 'with a list of filters, unless they are all equal.')
+        if padding != 'causal' and padding != 'same':
+            raise ValueError('Only \'causal\' or \'same\' padding are compatible for this layer.')
+        
+        # Initialize parent class
+        super(TCN, self).__init__(**kwargs)
     
-    # First Convolution
-    p = Conv1D(filters=filters, kernel_size=kernel_size, padding='same', dilation_rate=dilation_rate, activation='relu')(i) # make sure weight norm is in there
-    # Weight norm??
-    p = Dropout(rate=dropout_rate)(p)
+    @property
+    def receptive_field(self):
+        return 1 + 2*(self.kernel_size-1)*self.nb_stacks*sum(self.dilations) # May need to pick the kernel dimension
 
-    # Second Convolution
-    p = Conv1D(filters=filters, kernel_size=kernel_size, padding='same', dilation_rate=dilation_rate, activation='relu')(p)
-    # Weight norm??
-    p = Dropout(rate=dropout_rate)(p)
+    def build(self, input_shape):
 
+        self.build_output_shape = input_shape
 
-    return o
+        self.residual_blocks = []
+        total_num_blocks = self.nb_stacks * len(self.dilations)
+        if not self.use_skip_connections:
+            total_num_blocks += 1 # A cheap way to do a false case for below
+    
+        for s in range(self.nb_stacks):
+            for i, d in enumerate(self.dilations):
+                res_block_filters = self.nb_filters[i] if isinstance(self.nb_filters, list) else self.nb_filters
+                self.residual_blocks.append(ResidualBlock(dilation_rate=d,
+                                                          nb_filters=res_block_filters,
+                                                          kernel_size=self.kernel_size,
+                                                          padding=self.padding,
+                                                          activation=self.activation_name,
+                                                          convolution_type=self.convolution_type,
+                                                          dropout_rate=self.dropout_rate,
+                                                          use_batch_norm=self.use_batch_norm,
+                                                          use_layer_norm=self.use_layer_norm,
+                                                          use_weight_norm=self.use_weight_norm,
+                                                          kernel_initializer=self.kernel_initializer,
+                                                          name='residual_block_{}'.format(len(self.residual_blocks))))
+
+        # this is done to force keras to add the layers in the list to self._layers
+        for layer in self.residual_blocks:
+        self.__setattr__(layer.name, layer)
+
+        self.output_slice_index = None
+        if self.padding == 'same':
+            time = self.build_output_shape.as_list()[1]
+            if time is not None:
+                self.output_slice_index = int(self.build_output_shape.as_list()[1] / 2)
+            else:
+                # It will be known at call time
+                self.padding_same_and_time_dim_unknown = True
+        else:
+            self.output_slice_index = -1 # causal case.
+        self.slicer_layer = Lambda(lambda tt: tt[:, self.output_slice_index, :], name='Slice_Output')
+        self.slicer_layer.build(self.build_output_shape.as_list())
+
+    # Not needed function that Philippe Remy wrote
+    def compute_output_shape(self, input_shape):
+        """
+        Overridden in case keras uses it somewhere... no idea. Just trying to avoid future errors.
+        """
+        if not self.built:
+            self.build(input_shape)
+        if not self.return_sequences:
+            batch_size = self.build_output_shape[0]
+            batch_size = batch_size.value if hasattr(batch_size, 'value') else batch_size
+            nb_filters = self.build_output_shape[-1]
+            return [batch_size, nb_filters]
+        else:
+            # Compatibility tensorflow 1.x
+            return [v.value if hasattr(v, 'value') else v for v in self.build_output_shape]
+
+    def call(self, inputs, training=None, **kwargs):
+        x = inputs
+        self.layers_outputs = [x]
+        self.skip_connections = []
+        for res_block in self.residual_blocks:
+            try:
+                x, skip_out = res_block(x, training=training)
+            except TypeError: # backwards compatibility
+                x, skip_out = res_block(K.cast(x, 'float32'), training=training)
+            self.skip_connections.append(skip_out)
+            self.layers_outputs.append(x)
+        
+        if self.use_skip_connections:
+            x = layers.add(self.skip_connections, name='Add_Skip_Connections')
+            self.layers_outputs.append(x)
+        
+        if not self.return_sequences:
+            # Case: time dimension is unknown. e.g. (bs, None, input_dim).
+            if self.padding_same_and_time_dim_unknown:
+                self.output_slice_index = K.shape(self.layers_outputs[-1])[1] // 2
+            x = self.slicer_layer(x)
+            self.layers_outputs.append(x)
+        return x
+    def get_config(self):
+        """
+        Returns the config of a the layer. This is used for saving and loading from a model
+        :return: python dictionary with specs to rebuild layer
+        """
+        config = super(TCN, self).get_config()
+        config['nb_filters'] = self.nb_filters
+        config['kernel_size'] = self.kernel_size
+        config['nb_stacks'] = self.nb_stacks
+        config['dilations'] = self.dilations
+        config['padding'] = self.padding
+        config['use_skip_connections'] = self.use_skip_connections
+        config['dropout_rate'] = self.dropout_rate
+        config['return_sequences'] = self.return_sequences
+        config['activation'] = self.activation_name
+        config['convolution_type'] = self.convolution_type
+        config['use_batch_norm'] = self.use_batch_norm
+        config['use_layer_norm'] = self.use_layer_norm
+        config['use_weight_norm'] = self.use_weight_norm
+        config['kernel_initializer'] = self.kernel_initializer
+        return config
 
 
 def TCN1D(trainX, param):
