@@ -4,6 +4,7 @@ URL to assignment: https://www.overleaf.com/read/tzwckfrpfbvw
 
 Current best performing reconstruction module:
 ![](Models\07-09-2022_14.12.12\coming_soon.jpg)
+*Models\07-09-2022_14.12.12\coming_soon.jpg*
 
 # Blog:
 

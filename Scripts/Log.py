@@ -40,8 +40,15 @@ def replace_md_image(filepath):
     """
     with open('README.md', 'r') as readfile:
         lines = readfile.readlines()
+
+        # Gets first instance of markdown image
         j = [i for i, str in enumerate(lines) if str.startswith('!')][0]
         lines[j] = f'![]({filepath})\n'
+
+        # Adds descriptive text underneath the image
+        if 'Models\\' in lines[j+1]: lines[j+1] = f'{filepath}\n'
+        else: lines[j] += f'{filepath}\n'
+
         with open('README.md', 'w') as writefile:
             writefile.writelines(lines)
 
