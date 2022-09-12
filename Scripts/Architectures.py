@@ -4,7 +4,8 @@ Contains the model architectures so that they may easily be called upon.
 from sklearn.ensemble import RandomForestRegressor
 from tensorflow import keras
 from keras import backend as K
-from keras.layers import Input, Dense, Dropout, Conv1D, Conv2D, Layer
+from keras.layers import Input, Dense, Dropout, Conv1D, Conv2D, Layer, BatchNormalization, LayerNormalization
+from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda
 from tensorflow_addons.layers import WeightNormalization
 
 
@@ -18,7 +19,8 @@ class ResidualBlock(Layer):
                  kernel_size: int,
                  padding: str,
                  activation: str = 'relu',
-                 dropout_rate: float = 0,
+                 convolution_type: str = 'Conv2D',
+                 dropout_rate: float = 0., # Should be float?
                  kernel_initializer: str = 'he_normal', # ?????????????????????????
                  use_batch_norm: bool = False,
                  use_layer_norm: bool = False,
@@ -32,6 +34,7 @@ class ResidualBlock(Layer):
         self.kernel_size = kernel_size
         self.padding = padding
         self.activation = activation
+        self.convolution_type = convolution_type # My addition
         self.dropout_rate = dropout_rate
         self.use_batch_norm = use_batch_norm
         self.use_layer_norm = use_layer_norm
@@ -43,12 +46,95 @@ class ResidualBlock(Layer):
         self.final_activation = None
 
         super(ResidualBlock, self).__init__(**kwargs)
+    
+    def compute_output_shape(self, input_shape):
+        """
+        Inspired by a function of the same name in another TCN implementation
+        Not sure why input_shape is not used, but required as an input.
+        """
+        return [self.res_output_shape, self.res_output_shape]
 
     def _build_layer(self, layer):
-        """
-        Assists in building layers
+        """Helper function for building layer
+        Args:
+            layer: Appends layer to internal layer list and builds it based on the current output
+                   shape of ResidualBlocK. Updates current output shape.
         """
         self.layers.append(layer)
+        self.layers[-1].build(self.res_output_shape)
+        self.res_output_shape = self.layers[-1].compute_output_shape(self.res_output_shape) # Not sure if compute output shape does anything here
+
+    def build(self, input_shape):
+        if self.convolution_type.lower() == 'conv1d': c_func = Conv1D
+        else: c_func = Conv2D
+
+        with K.name_scope(self.name):
+            self.layers = []
+            self.res_output_shape = input_shape
+
+            for k in range(2):
+                name = f'{self.convolution_type.lower()}_{k}'
+                with K.name_scope(name):
+                    conv = c_func(
+                        filters=self.nb_filters,
+                        kernel_size=self.kernel_size,
+                        dilation_rate=self.dilation_rate,
+                        padding=self.padding,
+                        name=name,
+                        kernel_initializer=self.kernel_initializer
+                    )
+                    if self.use_weight_norm:
+                        from tensorflow_addons.layers import WeightNormalization
+                        # WeightNormalization API is different than other Normalizations; requires wrapping
+                        with K.name_scope('norm_{}'.format(k)):
+                            conv = WeightNormalization(conv)
+                    self._build_layer(conv)
+                
+                # Other Normalization types
+                with K.name_scope('norm_{}'.format(k)):
+                    if self.use_batch_norm:
+                        self._build_layer(BatchNormalization())
+                    elif self.use_layer_norm:
+                        self._build_layer(LayerNormalization())
+                    elif self.use_weight_norm:
+                        pass # Already done above
+                
+                with K.name_scope('act_and_dropout_{}'.format(k)):
+                    if self.convolution_type.lower() == 'conv1d': d_func = SpatialDropout1D
+                    else: d_func = SpatialDropout2D
+                    self._build_layer(Activation(self.activation, name='Act_{}_{}'.format(self.convolution_type, k)))
+                    self._build_layer(d_func(rate=self.dropout_rate, name='SDropout_{}'.format(k)))
+    
+            if self.nb_filters != input_shape[-1]:
+                # 1x1 convolution mathes the shapes (channel dimension).
+                name = 'matching_conv1D'
+                with K.name_scope(name):
+
+                    self.shape_match_conv = Conv1D(
+                        filters=self.nb_filters,
+                        kernel_size=1,
+                        padding='same',
+                        name=name,
+                        kernel_initializer=self.kernel_initializer
+                    )
+            else:
+                name = 'matching_identity'
+                self.shape_match_conv = Lambda(lambda x: x, name=name)
+            
+            with K.name_scope(name):
+                self.shape_match_conv.build(input_shape)
+                self.res_output_shape = self.shape_match_conv.compute_output_shape(input_shape)
+            
+            self._build_layer(Activation(self.activation, name='Act_Conv_Blocks'))
+            self.final_activation = Activation(self.activation, name='Act_Res_Block')
+            self.final_activation.build(self.res_output_shape) # According to philipperemy this probably is not be necessary
+
+            # Forcing keras to add layers in the list to self._layers
+            for layer in self.layers:
+                
+
+    def call():
+        pass
 
 
 
