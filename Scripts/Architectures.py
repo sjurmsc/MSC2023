@@ -7,7 +7,7 @@ from sklearn.ensemble import RandomForestRegressor
 from tensorflow import keras
 from keras import backend as K, Model, Input, optimizers
 from keras.layers import Dense, Dropout, Conv1D, Conv2D, Layer, BatchNormalization, LayerNormalization
-from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda
+from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda, Flatten
 from tensorflow_addons.layers import WeightNormalization
 
 
@@ -238,7 +238,7 @@ class TCN(Layer):
 
         # this is done to force keras to add the layers in the list to self._layers
         for layer in self.residual_blocks:
-        self.__setattr__(layer.name, layer)
+            self.__setattr__(layer.name, layer)
 
         self.output_slice_index = None
         if self.padding == 'same':
@@ -325,8 +325,9 @@ def TCN1D(trainX, param):
 
     # return model
 
-def TCN2D(training_data, config):
+def compiled_TCN(training_data, config):
     """
+    @ Author: Sjur [in progress]
     Three temporal blocks as feature extractions
 
     Split into three for regression, and three for reconstruction
@@ -364,7 +365,7 @@ def TCN2D(training_data, config):
                 use_batch_norm=use_batch_norm,
                 use_layer_norm=use_layer_norm,
                 use_weight_norm=use_weight_norm
-    )
+    )(input_layer)
 
     # Regression module
     # TBA
@@ -379,7 +380,7 @@ def TCN2D(training_data, config):
                    name = 'Recon_{}'.format(k)       
         )(x)
 
-    x = Dense(X.shape)(x)
+    x = Dense(X.shape[0]*X.shape[1])(x)
     x = Activation('linear')(x)
     output_layer = x
     model = Model(input_layer, output_layer)
