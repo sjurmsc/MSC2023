@@ -204,7 +204,7 @@ class TCN(Layer):
         if padding != 'causal' and padding != 'same':
             raise ValueError('Only \'causal\' or \'same\' padding are compatible for this layer.')
         
-        # Initialize parent class
+        # Initialize parent class (..which is Layer?)
         super(TCN, self).__init__(**kwargs)
     
     @property
@@ -347,7 +347,9 @@ def compiled_TCN(training_data, config):
     use_layer_norm = config['use_layer_norm']
     use_weight_norm = config['use_weight_norm']
 
+    # Data
     X, Y = training_data[0], training_data[1]
+    Y_reconstruct = 
 
     input_layer = Input(shape=(X.shape))
 
@@ -377,7 +379,7 @@ def compiled_TCN(training_data, config):
                    padding = 'causal',
                    dilation_rate=dilations[:3],
                    activation='relu',
-                   name = 'Recon_{}'.format(k)       
+                   name = 'Reconstruction_{}'.format(k)       
         )(x)
 
     x = Dense(X.shape[0]*X.shape[1])(x)
