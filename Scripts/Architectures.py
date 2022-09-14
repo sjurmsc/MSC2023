@@ -297,7 +297,7 @@ class TCN(Layer):
         Returns the config of a the layer. This is used for saving and loading from a model
         :return: python dictionary with specs to rebuild layer
         """
-        config = super(TCN, self).get_config() # Non recursive?
+        config = super(TCN, self).get_config() # Non-recursive, uses Layer.get_config(); key names must be standardized
         config['nb_filters'] = self.nb_filters
         config['kernel_size'] = self.kernel_size
         config['nb_stacks'] = self.nb_stacks
@@ -307,7 +307,7 @@ class TCN(Layer):
         config['dropout_rate'] = self.dropout_rate
         config['return_sequences'] = self.return_sequences
         config['activation'] = self.activation_name
-        config['convolution_type'] = self.convolution_type
+        config['convolution_type'] = self.convolution_type # May need another name
         config['use_batch_norm'] = self.use_batch_norm
         config['use_layer_norm'] = self.use_layer_norm
         config['use_weight_norm'] = self.use_weight_norm
