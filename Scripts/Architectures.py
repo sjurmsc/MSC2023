@@ -297,7 +297,7 @@ class TCN(Layer):
         Returns the config of a the layer. This is used for saving and loading from a model
         :return: python dictionary with specs to rebuild layer
         """
-        config = super(TCN, self).get_config()
+        config = super(TCN, self).get_config() # Non recursive?
         config['nb_filters'] = self.nb_filters
         config['kernel_size'] = self.kernel_size
         config['nb_stacks'] = self.nb_stacks
@@ -349,7 +349,7 @@ def compiled_TCN(training_data, config):
 
     # Data
     X, Y = training_data[0], training_data[1]
-    Y_reconstruct = 
+    Y_reconstruct = [dat.flatten() for dat in X]
 
     input_layer = Input(shape=(X.shape))
 
@@ -387,7 +387,7 @@ def compiled_TCN(training_data, config):
     output_layer = x
     model = Model(input_layer, output_layer)
     model.compile(optimizers.Adam(lr=lr, clipnorm=1.), loss='mean_squared_error')
-    model.fit(x=X, y=X, batch_size=20, epochs=200)
+    model.fit(x=X, y=Y_reconstruct, batch_size=20, epochs=100)
     
     return model
 

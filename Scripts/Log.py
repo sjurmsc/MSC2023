@@ -54,9 +54,6 @@ def replace_md_image(filepath):
 
 
 #%% Only used for testing the code
-class object:
-    def __init__(self):
-        pass
 
 if __name__ == '__main__':
     # k_obj = object()
