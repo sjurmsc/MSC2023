@@ -7,6 +7,8 @@ Current best performing reconstruction module:
 *Models\07-09-2022_14.12.12\coming_soon.jpg*
 
 # Blog:
+### Monday 19.09.2022
+The plan this week is to start running models and debugging the tcn code. Although these preliminary models will probably not give any good results, I will create them in order to get some hands-on experience with using and parameterizing the tcn network. I worked on loading the segy data into python, and writing code that segments the data into different images of the same size. All images in the training data must be of the same shape, so I need to find out a good depth cut-off for the data. I will start off with using one single inline seismic set of traces (TNW_B02_5110), training on images from the left half and testing on images of the same size on the right.
 
 ### Thursday 08.09.2022
 This week I have started implementing the 2D and 1D TCN architectures. They are not finished, but I'm getting there. I have experimented with linux and running shell scripts on Odin. Ideally I write all instructions on my laptop, and then run a script which makes sure to dump all conda changes to the yaml and push my python code to the repo. After that it will have odin execute a script that pulls the changes, updates the conda environment and creates a new git branch. In the new branch Odin will start running all the models. After the models are ran, Odin will push to the new branch and send out an Email with some short summary information. I will then manually review and merge the branch into main. For performance review, I will use the reconstruction module to see where the model finds it hardest to reconstruct the seismic image.
