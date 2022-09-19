@@ -10,6 +10,7 @@ All git operations will happen in this script
 import json
 import time
 from pathlib import Path
+import segyio
 
 # My scripts
 from Log import *
@@ -52,12 +53,39 @@ for training where certain fields are not needed, these may be filled with None,
 control = {}
 control['settings'] = settings.copy() # settings
 control['summary_stats'] = {} # to be filled in later
+from matplotlib.pyplot import imshow, show
 
 if __name__ == '__main__':
-    # Her skal koden gå
-    ai = r'P:\2019\07\20190798\Deliverables\Digital_Deliverables\00_AI\TNW_B04_3360_MIG.Abs_Zp.sgy'
-    data = {}
-    data['TNW_AI'] = ai
-    f = json.dumps(data)
-    with open('Data\\data.json', 'w') as wfile:
-        wfile.write(f)
+    # Load data
+    seis_data_fp = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
+    with segyio.open(seis_data_fp) as seis_data:
+        traces = segyio.collect(seis_data.trace)
+    split_loc = len(traces)//2
+    TRAINDDATA = traces[:split_loc]
+    TESTDATA = traces[split_loc:]
+    
+
+    # Må dele inn datasettet i trening og testing
+
+    # CONFIG
+    config = dict()
+    config['nb_filters']            = 64
+    config['kernel_size']           = 8 # JR used 5
+    config['dilations']             = [1, 2, 4, 8, 16]
+    config['padding']               = 'causal'
+    config['use_skip_connections']  = True
+    config['dropout_rate']          = 0.1
+    config['return_sequences']      = True
+    config['activation']            = 'relu'
+    config['convolution_type']      = 'Conv2D'
+    config['learn_rate']            = 0.02
+    config['kernel_initializer']    = 'he_normal'
+    config['use_batch_norm']        = False
+    config['use_layer_norm']        = False
+    config['use_weight_norm']       = True
+
+    # ML
+    model = compiled_TCN(train_data, config)
+    scores = model.evaluate(test_data_X, test_data_Y)
+    print('score: {}'.format(scores))
+    

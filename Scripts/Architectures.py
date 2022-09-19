@@ -91,7 +91,7 @@ class ResidualBlock(Layer):
                         with K.name_scope('norm_{}'.format(k)):
                             conv = WeightNormalization(conv)
                     self._build_layer(conv)
-                
+
                 # Other Normalization types
                 with K.name_scope('norm_{}'.format(k)):
                     if self.use_batch_norm:
