@@ -4,8 +4,10 @@ Contains the model architectures so that they may easily be called upon.
 from distutils.command.sdist import sdist
 import inspect
 from sklearn.ensemble import RandomForestRegressor
+
+# Some mess here that could be sorted out
 from tensorflow import keras
-from keras import backend as K, Model, Input, optimizers
+from keras import backend as K, Model, Input, optimizers, layers
 from keras.layers import Dense, Dropout, Conv1D, Conv2D, Layer, BatchNormalization, LayerNormalization
 from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda, Flatten
 from tensorflow_addons.layers import WeightNormalization

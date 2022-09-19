@@ -60,10 +60,11 @@ if __name__ == '__main__':
     seis_data_fp = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
     with segyio.open(seis_data_fp) as seis_data:
         traces = segyio.collect(seis_data.trace)
+
     split_loc = len(traces)//2
     TRAINDDATA = traces[:split_loc]
     TESTDATA = traces[split_loc:]
-    
+
 
     # Må dele inn datasettet i trening og testing
 
