@@ -53,6 +53,14 @@ def replace_md_image(filepath):
             writefile.writelines(lines)
 
 
+def compare_pred_to_gt_image():
+    """
+    Function creates a side by side image of the prediction versus the
+    ground truth image
+    """
+    pass
+
+
 #%% Only used for testing the code
 
 if __name__ == '__main__':

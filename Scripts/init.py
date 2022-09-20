@@ -15,6 +15,7 @@ import segyio
 # My scripts
 from Log import *
 from Architectures import *
+from Feat_aug import *
 
 class RunModel:
     """
@@ -23,8 +24,6 @@ class RunModel:
     def __init__(settings):
         pass
 
-
-settings = {}
 """
 In settings must be:
 network: f.ex 2DTCN, 1DTCN, 2DTCN_WS [weight sharing], Randomforest ... etc
@@ -58,15 +57,15 @@ from matplotlib.pyplot import imshow, show
 if __name__ == '__main__':
     # Load data
     seis_data_fp = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
-    with segyio.open(seis_data_fp) as seis_data:
-        traces = segyio.collect(seis_data.trace)
+    traces = get_traces(seis_data_fp)
 
+    # Splitting into test and training data for naive comparison
     split_loc = len(traces)//2
     TRAINDDATA = traces[:split_loc]
     TESTDATA = traces[split_loc:]
 
 
-    # Må dele inn datasettet i trening og testing
+    # Must structure the data into an array format
 
     # CONFIG
     config = dict()
