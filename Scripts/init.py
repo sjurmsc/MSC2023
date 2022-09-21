@@ -11,6 +11,7 @@ import json
 import time
 from pathlib import Path
 import segyio
+from PIL import Image
 
 # My scripts
 from Log import *
@@ -50,29 +51,44 @@ for training where certain fields are not needed, these may be filled with None,
 
 
 control = {}
-control['settings'] = settings.copy() # settings
+control['settings'] = {} # settings
 control['summary_stats'] = {} # to be filled in later
-from matplotlib.pyplot import imshow, show
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
     # Load data
     seis_data_fp = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
-    traces = get_traces(seis_data_fp)
+    traces, _ = get_traces(seis_data_fp)
 
     # Splitting into test and training data for naive comparison
-    split_loc = len(traces)//2
-    TRAINDDATA = traces[:split_loc]
+    split_loc = traces.shape[0]//2
+    TRAINDATA = traces[:split_loc]
     TESTDATA = traces[split_loc:]
-
+    
 
     # Must structure the data into an array format
+    ol = 0
+    width_shape = 100
+    train_data = split_image_into_data_packets(TRAINDATA, (width_shape, 200), overlap=ol)
+    test_data = split_image_into_data_packets(TESTDATA, (width_shape, 200), overlap=ol)
 
+    cmap = plt.cm.seismic
+    image_folder = r'C:\Users\SjB\MSC2023\TEMP\seismic_images'
+    fig = plt.figure()
+    for i, image in enumerate(train_data):
+        fig.clf()
+        norm = plt.Normalize(vmin = image.min(), vmax = image.max())
+        im = cmap(norm(image.T))
+        plt.imsave(image_folder+'\\{}.jpg'.format(i), im, cmap='seismic')
+
+    test_data_X = test_data.copy()
+    test_data_Y = [val.flatten() for val in test_data_X]
     # CONFIG
     config = dict()
     config['nb_filters']            = 64
     config['kernel_size']           = 8 # JR used 5
     config['dilations']             = [1, 2, 4, 8, 16]
-    config['padding']               = 'causal'
+    config['padding']               = 'same'
     config['use_skip_connections']  = True
     config['dropout_rate']          = 0.1
     config['return_sequences']      = True

@@ -317,7 +317,6 @@ class TCN(Layer):
         return config
 
 
-
 def TCN1D(trainX, param):
     """
     JR used trainx to decide dimensions of the architecture
@@ -327,12 +326,15 @@ def TCN1D(trainX, param):
 
     # return model
 
-def compiled_TCN(training_data, config):
+
+def compiled_TCN(training_data, config, batch_size=20, epochs=100):
     """
     @ Author: Sjur [in progress]
     Three temporal blocks as feature extractions
 
     Split into three for regression, and three for reconstruction
+
+   This function only works for reconstruction at present moment 
     """
     nb_filters = config['nb_filters']
     kernel_size = config['kernel_size']
@@ -357,18 +359,18 @@ def compiled_TCN(training_data, config):
 
     # Feature Extraction module
     x = TCN(nb_filters=nb_filters,
-                kernel_size=kernel_size,
-                dilations=dilations,
-                padding=padding,
-                use_skip_connections=use_skip_connections,
-                dropout_rate=dropout_rate,
-                return_sequences=return_sequences,
-                activation=activation,
-                convolution_type=convolution_type,
-                kernel_initializer=kernel_initializer,
-                use_batch_norm=use_batch_norm,
-                use_layer_norm=use_layer_norm,
-                use_weight_norm=use_weight_norm
+            kernel_size=kernel_size,
+            dilations=dilations,
+            padding=padding,
+            use_skip_connections=use_skip_connections,
+            dropout_rate=dropout_rate,
+            return_sequences=return_sequences,
+            activation=activation,
+            convolution_type=convolution_type,
+            kernel_initializer=kernel_initializer,
+            use_batch_norm=use_batch_norm,
+            use_layer_norm=use_layer_norm,
+            use_weight_norm=use_weight_norm
     )(input_layer)
 
     # Regression module
@@ -389,7 +391,7 @@ def compiled_TCN(training_data, config):
     output_layer = x
     model = Model(input_layer, output_layer)
     model.compile(optimizers.Adam(lr=lr, clipnorm=1.), loss='mean_squared_error')
-    model.fit(x=X, y=Y_reconstruct, batch_size=20, epochs=100)
+    model.fit(x=X, y=Y_reconstruct, batch_size=batch_size, epochs=epochs)
     
     return model
 
