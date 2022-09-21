@@ -9,7 +9,7 @@ from pathlib import Path
 import sys
 from datetime import datetime
 import json
-
+from PIL import Image
 
 def log_it(k_obj):
     """
@@ -52,13 +52,26 @@ def replace_md_image(filepath):
         with open('README.md', 'w') as writefile:
             writefile.writelines(lines)
 
+from PIL import PSDraw
 
-def compare_pred_to_gt_image():
+def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font = 'carlito', fontsize=20):
     """
     Function creates a side by side image of the prediction versus the
     ground truth image
     """
-    pass
+    d = PSDraw(fp) # fp?
+    d.begin_document()
+    d.setfont(font, fontsize)
+
+    # Predicted image
+    d.image()
+    d.text()
+
+    # True image
+    d.image()
+    d.text
+    
+    d.end_document()
 
 
 #%% Only used for testing the code
