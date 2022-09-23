@@ -12,6 +12,7 @@ import time
 from pathlib import Path
 import segyio
 from PIL import Image
+import numpy as np
 
 # My scripts
 from Log import *
@@ -61,21 +62,25 @@ import numpy as np
 if __name__ == '__main__':
     # Load data
     seis_data_fp = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
-    traces, _ = get_traces(seis_data_fp)
+    traces, z = get_traces(seis_data_fp)
+    traces = traces[:, 600:1100]
 
     # Splitting into test and training data for naive comparison
     split_loc = traces.shape[0]//2
     TRAINDATA = traces[:split_loc]
     TESTDATA = traces[split_loc:]
     
+    print(TRAINDATA.shape)
+    train_data = TRAINDATA.reshape((len(TRAINDATA), len(TRAINDATA[0]), 1))
+    test_data = TESTDATA.reshape((len(TESTDATA), len(TESTDATA[0]), 1))
 
     # Must structure the data into an array format
-    ol = 50
+    ol = 100
     width_shape = 250
     height_shape = 500
     upper_bound = 600
-    train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
-    test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
+    # train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
+    # test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
 
     # Exporting images to the TEMP folder %%%%%%%%%%%%%%% TEMPORARY
     do = False
@@ -94,9 +99,10 @@ if __name__ == '__main__':
             #norm = plt.Normalize(vmin = image.min(), vmax = image.max())
             #im = cmap(norm(image.T))
             #plt.imsave(image_folder+'\\{}.jpg'.format(i), im, cmap='seismic')
-
-    test_data_X = test_data.copy()
-    test_data_Y = [val.flatten() for val in test_data_X]
+    # T%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    # test_data_X = test_data.copy()
+    # test_data_Y = [val.flatten() for val in test_data_X]
 
     # CONFIG
     config = dict()
@@ -108,7 +114,7 @@ if __name__ == '__main__':
     config['dropout_rate']          = 0.1
     config['return_sequences']      = True
     config['activation']            = 'relu'
-    config['convolution_type']      = 'Conv2D'
+    config['convolution_type']      = 'Conv1D'
     config['learn_rate']            = 0.02
     config['kernel_initializer']    = 'he_normal'
     config['use_batch_norm']        = False
@@ -116,7 +122,7 @@ if __name__ == '__main__':
     config['use_weight_norm']       = True
 
     # ML
-    model = compiled_TCN(train_data, config)
-    scores = model.evaluate(test_data_X, test_data_Y)
+    model = compiled_TCN(train_data, config, epochs=10)
+    scores = model.evaluate(test_data, test_data)
     print('score: {}'.format(scores))
     

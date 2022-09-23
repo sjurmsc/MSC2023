@@ -352,10 +352,10 @@ def compiled_TCN(training_data, config, batch_size=20, epochs=100):
     use_weight_norm = config['use_weight_norm']
 
     # Data
-    X, Y = training_data[0], training_data[1]
-    Y_reconstruct = [dat.flatten() for dat in X]
+    X, Y = training_data, training_data[:, :, 0]
+    #Y_reconstruct = [dat.flatten() for dat in X]
 
-    input_layer = Input(shape=(X.shape))
+    input_layer = Input(shape=(X.shape[1:]))
 
     # Feature Extraction module
     x = TCN(nb_filters=nb_filters,
@@ -377,21 +377,22 @@ def compiled_TCN(training_data, config, batch_size=20, epochs=100):
     # TBA
 
     # Reconstruciton module
-    for k in range(3):
-        x = Conv2D(filters=nb_filters, 
+    for k in range(1):
+        x = Conv1D(filters=nb_filters, 
                    kernel_size=kernel_size,
                    padding = 'causal',
-                   dilation_rate=dilations[:3],
+                   # dilation_rate=dilations[k],
                    activation='relu',
                    name = 'Reconstruction_{}'.format(k)       
         )(x)
-
-    x = Dense(X.shape[0]*X.shape[1])(x)
+    x = Flatten()(x)
+    x = Dense(X.shape[1])(x)
     x = Activation('linear')(x)
     output_layer = x
     model = Model(input_layer, output_layer)
-    model.compile(optimizers.Adam(lr=lr, clipnorm=1.), loss='mean_squared_error')
-    model.fit(x=X, y=Y_reconstruct, batch_size=batch_size, epochs=epochs)
+    model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss='mean_squared_error')
+    print(model.summary())
+    model.fit(x=training_data, y=training_data[:, :, 0], batch_size=batch_size, epochs=epochs)
     
     return model
 

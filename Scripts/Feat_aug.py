@@ -3,6 +3,7 @@ import segyio
 import json
 from numpy import array
 
+
 # Functions for loading data
 
 def get_data_loc():
@@ -23,13 +24,14 @@ def get_traces(fp, mmap=True):
     return traces, z
 
 
-def split_image_into_data_packets(traces, image_shape, mode='cut_lower', upper_bound=0, overlap=0):
+def split_image_into_data_packets(traces, image_shape, dim=2, mode='cut_lower', upper_bound=0, overlap=0):
     """
     Only Func i need before starting to train models
 
     overlap: The amount of traces that can overlap between the images
     """
     assert overlap < image_shape[0]  # Allowing overlap of all but one trace
+
     if len(image_shape) == 1:
         lower_bound = traces.shape[1]
     else:
