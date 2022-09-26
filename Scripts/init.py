@@ -19,12 +19,16 @@ from Log import *
 from Architectures import *
 from Feat_aug import *
 
-class RunModel:
+class RunModels:
     """
     Takes settings and runs a model based on it
     """
-    def __init__(settings):
+    def __init__(self, settings):
         pass
+
+    def modelname(self):
+        pass
+
 
 """
 In settings must be:

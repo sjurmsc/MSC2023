@@ -11,7 +11,7 @@ from datetime import datetime
 import json
 from PIL import Image
 
-def log_it(k_obj):
+def log_filename():
     """
     Creates a log of the model being run and puts it in the \Models 
     directory. Uses the RunModel object to extract the needed values
@@ -21,12 +21,6 @@ def log_it(k_obj):
     n = datetime.now()
     new = m.joinpath(str(n.strftime('%d-%m-%Y_%H.%M.%S\\')))
     Path.mkdir(new, parents=True, exist_ok=True)
-
-    # Logging the JSON control file
-    c_fname = new.joinpath('control.json').resolve()
-    c_file = open(c_fname, 'w')
-    ctrl = json.dumps(k_obj._control)
-    c_file.write(ctrl)
 
     # Logging the ML weights
     wdir = new / 'ML weights'
