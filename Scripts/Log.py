@@ -40,7 +40,7 @@ def replace_md_image(filepath):
         lines[j] = f'![]({filepath})\n'
 
         # Adds descriptive text underneath the image
-        if 'Models\\' in lines[j+1]: lines[j+1] = f'{filepath}\n'
+        if 'Models/' in lines[j+1]: lines[j+1] = f'{filepath}\n'
         else: lines[j] += f'{filepath}\n'
 
         with open('README.md', 'w') as writefile:
@@ -74,4 +74,4 @@ if __name__ == '__main__':
     # k_obj = object()
     # k_obj._control = {'test' : [1, 2, 3]}
     # log_it(k_obj)
-    replace_md_image(r'Models\07-09-2022_14.12.12\coming_soon.jpg')
+    replace_md_image(r'Models/07-09-2022_14.12.12/coming_soon.jpg')
