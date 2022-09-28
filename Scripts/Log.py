@@ -11,20 +11,39 @@ from datetime import datetime
 import json
 from PIL import Image
 
-def log_filename():
+def gname(old_name):
+    """ Takes in the state of group names and outputs the next one
+    """
+    if not len(old_name): raise TypeError('Max group name encountered')
+    new_name = old_name
+    if old_name[-1] != 'Z':
+        new_name = old_name[:-1] + chr(ord(old_name[-1])+1)
+    else:
+        new_name = gname(old_name[:-1]) + 'A'
+    return new_name
+
+def new_group():
     """
     Creates a log of the model being run and puts it in the \Models 
     directory. Uses the RunModel object to extract the needed values
     """
+    from string import ascii_uppercase
+
+    
+    with open('./Models/_groupstate.json', 'r+') as state:
+        group = json.loads(state.read())
+        group['Group'] = gname(group['Group'])
+        group_name = group['Group']
+
+        state.write(json.dumps(group))
+
+    print(group_name)
     # Creates parent directory
     m = Path('./Models')
     n = datetime.now()
-    new = m.joinpath(str(n.strftime('%d-%m-%Y_%H.%M.%S\\')))
+    new = m.joinpath(group_name)
     Path.mkdir(new, parents=True, exist_ok=True)
-
-    # Logging the ML weights
-    wdir = new / 'ML weights'
-    wdir.mkdir()
+    return group_name
 
 
 def replace_md_image(filepath):
@@ -55,19 +74,19 @@ def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font 
     """
     from PIL import PSDraw
     
-    d = PSDraw('TEMP/test') # fp?
+    d = PSDraw.PSDraw('TEMP/test') # fp?
     d.begin_document()
     d.setfont(font, fontsize)
     raise_text = 20
 
     # Predicted image
-    l_box = pass
+    l_box = _ #pass
     d.image(l_box, im_pred, dpi=dpi)
     tl_loc = (l_box[0], l_box[1]-raise_text) # Text raised by 20 px
     d.text(tl_loc, 'Predicted image')
 
     # True image
-    r_box = pass
+    r_box = _ #pass
     d.image(r_box, im_true, dpi=dpi)
     tr_loc = (r_box[0], r_box[1]-raise_text)
     d.text(tr_loc, 'Ground Truth')
@@ -80,7 +99,7 @@ from numpy.linalg import norm
 def create_pred_image_from_1d(model, X, gt_data, ratio=1.33333):
     # Decide based on stats which section is the best predicting
     # Moving window statistics
-    samples = pass # Amount of rows
+    samples = _ #pass # Amount of rows
     traces = int(ratio*samples)  #the breadth of the image is the aspect_ratio*height
 
     pred = model.predict(X=X) # 

@@ -24,6 +24,8 @@ class RunModels:
     Takes settings and runs a model based on it
     """
     def __init__(self, settings):
+        self.group = new_group()
+        self.init_time = datetime.now()
         pass
 
     def modelname(self):
@@ -111,7 +113,7 @@ if __name__ == '__main__':
     # CONFIG
     config = dict()
     config['nb_filters']            = 64
-    config['kernel_size']           = 8 # JR used 5
+    config['kernel_size']           = 3 # JR used 5
     config['dilations']             = [1, 2, 4, 8, 16]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
@@ -125,8 +127,16 @@ if __name__ == '__main__':
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
 
+    groupname = new_group()
     # ML
-    model = compiled_TCN(train_data, config, epochs=10)
-    scores = model.evaluate(test_data, test_data)
+    makemodel = True
+    loadmodel = not makemodel
+    if makemodel:
+        model = compiled_TCN(train_data, config, epochs=10)
+        scores = model.evaluate(test_data, test_data)
+        model.save('./Models/{}/model'.format(groupname))
+    if loadmodel:
+        pass
+
     print('score: {}'.format(scores))
     
