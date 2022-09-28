@@ -46,13 +46,15 @@ def replace_md_image(filepath):
         with open('README.md', 'w') as writefile:
             writefile.writelines(lines)
 
-from PIL import PSDraw
+
 
 def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font = 'carlito', fontsize=20, dpi=300):
     """
     Function creates a side by side image of the prediction versus the
     ground truth image
     """
+    from PIL import PSDraw
+    
     d = PSDraw('TEMP/test') # fp?
     d.begin_document()
     d.setfont(font, fontsize)
@@ -85,7 +87,7 @@ def create_pred_image_from_1d(model, X, gt_data, ratio=1.33333):
 
     scr = []
 
-    # Decide what slice is best, by loss
+    # Decide what slice is best, by loss (l2 error norm)
     for s_idx in range(len(gt_data)-traces):
         s = slice(s_idx, s_idx+traces)
         score = norm(pred[s]-gt_data[s], 2)

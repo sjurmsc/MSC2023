@@ -377,7 +377,7 @@ def compiled_TCN(training_data, config, batch_size=20, epochs=100):
     # TBA
 
     # Reconstruciton module
-    for k in range(1):
+    for k in range(2):
         x = Conv1D(filters=nb_filters, 
                    kernel_size=kernel_size,
                    padding = 'causal',
@@ -392,7 +392,7 @@ def compiled_TCN(training_data, config, batch_size=20, epochs=100):
     model = Model(input_layer, output_layer)
     model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss='mean_squared_error')
     print(model.summary())
-    model.fit(x=training_data, y=training_data[:, :, 0], batch_size=batch_size, epochs=epochs)
+    model.fit(x=training_data, y=Y, batch_size=batch_size, epochs=epochs)
     
     return model
 
