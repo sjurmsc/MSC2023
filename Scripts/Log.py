@@ -26,10 +26,7 @@ def new_group():
     """
     Creates a log of the model being run and puts it in the \Models 
     directory. Uses the RunModel object to extract the needed values
-    """
-    from string import ascii_uppercase
-
-    
+    """    
     with open('./Models/_groupstate.json', 'r+') as state:
         group = json.loads(state.read())
         state.seek(0)
@@ -50,7 +47,6 @@ def nats(k):
     yield from nats(k+1)
 
 def give_modelname():
-    """Takes a generator object g"""
     n = nats(0)
     groupname = new_group()
     while True: # Always
