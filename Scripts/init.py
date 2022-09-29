@@ -13,6 +13,7 @@ from pathlib import Path
 import segyio
 from PIL import Image
 import numpy as np
+from keras.models import load_model
 
 # My scripts
 from Log import *
@@ -92,13 +93,13 @@ if __name__ == '__main__':
     do = False
     if do:
         cmap = plt.cm.get_cmap('seismic')
-        image_folder = r'C:\Users\SjB\MSC2023\TEMP\seismic_images'
-        files = glob(image_folder + '\\*')
+        image_folder = 'C:/Users/SjB/MSC2023/TEMP/seismic_images'
+        files = glob(image_folder + '/*')
         for f in files:
             os.remove(f)
 
         for i, image in enumerate(train_data):
-            f_name = image_folder + '\\{}.jpg'.format(i)
+            f_name = image_folder + '/{}.jpg'.format(i)
             im = cmap(image.T)
             img = Image.fromarray((im[:, :, :3]*255).astype(np.uint8)).save(f_name)
         
@@ -127,16 +128,30 @@ if __name__ == '__main__':
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
 
-    groupname = new_group()
+    
     # ML
-    makemodel = True
+    makemodel = False
     loadmodel = not makemodel
     if makemodel:
+        model_name_gen = give_modelname()
+        groupname, modelname = next(model_name_gen)
         model = compiled_TCN(train_data, config, epochs=10)
-        scores = model.evaluate(test_data, test_data)
-        model.save('./Models/{}/model'.format(groupname))
+        
+        model.save('./Models/{}/{}'.format(groupname, modelname))
     if loadmodel:
-        pass
+        model = load_model('./Models/AAB/0')
+        p, t = create_pred_image_from_1d(model, test_data, test_data)
+        cmap = plt.cm.get_cmap('seismic')
+        image_folder = 'C:/Users/SjB/MSC2023/TEMP/seismic_images'
+        p_name = image_folder + '/pred.jpg'
+        t_name = image_folder + '/true.jpg'
+        im_p = cmap(p)
+        im_t = cmap(t)
+        img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
+        img_t = Image.fromarray((im_t[:, :, :3]*255).astype(np.uint8)).save(t_name)
+        replace_md_image(p_name)
 
+
+    scores = model.evaluate(test_data, test_data)
     print('score: {}'.format(scores))
     

@@ -381,7 +381,6 @@ def compiled_TCN(training_data, config, batch_size=20, epochs=100):
         x = Conv1D(filters=nb_filters, 
                    kernel_size=kernel_size,
                    padding = 'causal',
-                   # dilation_rate=dilations[k],
                    activation='relu',
                    name = 'Reconstruction_{}'.format(k)       
         )(x)

@@ -32,6 +32,7 @@ def new_group():
     
     with open('./Models/_groupstate.json', 'r+') as state:
         group = json.loads(state.read())
+        state.seek(0)
         group['Group'] = gname(group['Group'])
         group_name = group['Group']
 
@@ -40,10 +41,20 @@ def new_group():
     print(group_name)
     # Creates parent directory
     m = Path('./Models')
-    n = datetime.now()
     new = m.joinpath(group_name)
     Path.mkdir(new, parents=True, exist_ok=True)
     return group_name
+
+def nats(k):
+    yield k
+    yield from nats(k+1)
+
+def give_modelname():
+    """Takes a generator object g"""
+    n = nats(0)
+    groupname = new_group()
+    while True: # Always
+        yield groupname, next(n)
 
 
 def replace_md_image(filepath):
@@ -96,13 +107,18 @@ def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font 
 import numpy as np
 from numpy.linalg import norm
 
-def create_pred_image_from_1d(model, X, gt_data, ratio=1.33333):
+def create_pred_image_from_1d(model, X, gt_data, aspect_r=1.33333):
     # Decide based on stats which section is the best predicting
     # Moving window statistics
-    samples = _ #pass # Amount of rows
-    traces = int(ratio*samples)  #the breadth of the image is the aspect_ratio*height
+    samples = gt_data.shape[1] #pass # Amount of columns (to be rows)
+    traces = int(aspect_r*samples)  #the breadth of the image is the aspect_ratio*height
 
-    pred = model.predict(X=X) # 
+    gt_data = gt_data.reshape(gt_data.shape[:-1])
+    # pred = np.array([])
+    # for i in range(X.shape[0]):
+    #     pred = np.row_stack(pred, model.predict(gt_data[i, :]))
+    pred = model.predict(X) # 
+    
 
     scr = []
 
@@ -112,12 +128,12 @@ def create_pred_image_from_1d(model, X, gt_data, ratio=1.33333):
         score = norm(pred[s]-gt_data[s], 2)
         scr.append(score)
 
-    slce = np.index(np.min(scr))
+    slce = scr.index(np.min(scr))
     s = slice(slce, slce+traces)
 
     pred_matrix = pred[s] ; gt_matrix = gt_data[s]
 
-    return pred_matrix, gt_matrix
+    return pred_matrix.T, gt_matrix.T
 
 
 
@@ -128,4 +144,4 @@ if __name__ == '__main__':
     # k_obj = object()
     # k_obj._control = {'test' : [1, 2, 3]}
     # log_it(k_obj)
-    replace_md_image(r'Models/07-09-2022_14.12.12/coming_soon.jpg')
+    replace_md_image('Models/07-09-2022_14.12.12/coming_soon.jpg')
