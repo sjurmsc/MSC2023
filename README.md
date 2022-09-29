@@ -3,7 +3,7 @@
 URL to assignment: https://www.overleaf.com/read/tzwckfrpfbvw
 
 Current best performing reconstruction module:
-![](C:/Users/SjB/MSC2023/TEMP/seismic_images/pred.jpg)
+![](/TEMP/seismic_images/pred.jpg)
 
 *C:/Users/SjB/MSC2023/TEMP/seismic_images/pred.jpg*
 
