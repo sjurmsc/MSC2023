@@ -35,7 +35,6 @@ def new_group():
 
         state.write(json.dumps(group))
 
-    print(group_name)
     # Creates parent directory
     m = Path('./Models')
     new = m.joinpath(group_name)
@@ -66,8 +65,8 @@ def replace_md_image(filepath):
         lines[j] = f'![]({filepath})\n'
 
         # Adds descriptive text underneath the image
-        if 'Models/' in lines[j+1]: lines[j+1] = f'{filepath}\n'
-        else: lines[j] += f'{filepath}\n'
+        if '.jpg' in lines[j+1]: lines[j+1] = f'{filepath}\n'
+        else: lines[j] += f'*{filepath}*\n'
 
         with open('README.md', 'w') as writefile:
             writefile.writelines(lines)

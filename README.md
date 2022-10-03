@@ -3,11 +3,13 @@
 URL to assignment: https://www.overleaf.com/read/tzwckfrpfbvw
 
 Current best performing reconstruction module:
-![](/TEMP/pred.jpg)
-
-*/TEMP/seismic_images/pred.jpg*
+![](./TEMP/AAC/pred.jpg)
+./TEMP/AAC/pred.jpg
 
 # Blog:
+### Monday 03.10.2022
+I have ran a couple of models now, and have been somewhat able to overfit to a training image. I'm planning to run optuna this week to see how well I can have the TCN perform. After trying to upload the ML-weights to the repository I encountered some issues with pushing it. I think the file size is too big for the models, and that they will need to be downloaded seperately. If you are reading this it means that I sorted out the issue, and was able to push to the repo. 
+
 ### Monday 19.09.2022
 The plan this week is to start running models and debugging the tcn code. Although these preliminary models will probably not give any good results, I will create them in order to get some hands-on experience with using and parameterizing the tcn network. I worked on loading the segy data into python, and writing code that segments the data into different images of the same size. All images in the training data must be of the same shape, so I need to find out a good depth cut-off for the data. I will start off with using one single inline seismic set of traces (TNW_B02_5110), training on images from the left half and testing on images of the same size on the right.
 

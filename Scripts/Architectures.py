@@ -377,7 +377,7 @@ def compiled_TCN(training_data, config, batch_size=20, epochs=100):
     # TBA
 
     # Reconstruciton module
-    for k in range(2):
+    for k in range(3):
         x = Conv1D(filters=nb_filters, 
                    kernel_size=kernel_size,
                    padding = 'causal',
