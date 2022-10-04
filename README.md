@@ -3,8 +3,8 @@
 URL to assignment: https://www.overleaf.com/read/tzwckfrpfbvw
 
 Current best performing reconstruction module:
-![](./TEMP/AAC/combined_pred.jpg)
-./TEMP/AAC/combined_pred.jpg
+![](./TEMP/AAE/combined_pred.jpg)
+./TEMP/AAE/combined_pred.jpg
 
 # Blog:
 ### Monday 03.10.2022

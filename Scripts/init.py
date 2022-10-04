@@ -113,16 +113,16 @@ if __name__ == '__main__':
 
     # CONFIG
     config = dict()
-    config['nb_filters']            = 64
+    config['nb_filters']            = 1
     config['kernel_size']           = 8 # JR used 5
     config['dilations']             = [1, 2, 4, 8, 16, 32]
     config['padding']               = 'causal'
     config['use_skip_connections']  = True
-    config['dropout_rate']          = 0.15
+    config['dropout_rate']          = 0.1
     config['return_sequences']      = True
     config['activation']            = 'relu'
     config['convolution_type']      = 'Conv1D'
-    config['learn_rate']            = 0.02
+    config['learn_rate']            = 0.002
     config['kernel_initializer']    = 'he_normal'
     config['use_batch_norm']        = False
     config['use_layer_norm']        = False
@@ -140,20 +140,22 @@ if __name__ == '__main__':
         
         model.save('./Models/{}/{}'.format(groupname, modelname))
     if loadmodel:
-        grp = 'AAD'
-        model = load_model('./Models/{}/0'.format(grp))
-        p = create_pred_image_from_1d(model, train_data, train_data)
-        cmap = plt.cm.get_cmap('seismic')
-        image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(grp)
-        if not os.path.isdir(image_folder):
-            os.mkdir(image_folder)
-        p_name = image_folder + '/combined_pred.jpg'
-        # t_name = image_folder + '/true.jpg'
-        im_p = cmap(p)
-        # im_t = cmap(t)
-        img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
-        # img_t = Image.fromarray((im_t[:, :, :3]*255).astype(np.uint8)).save(t_name)
-        # replace_md_image('./{}'.format(p_name[21:]))
+        groupname = 'AAE'
+        model = load_model('./Models/{}/0'.format(groupname))
+    cmap = plt.cm.get_cmap('seismic')
+        
+        
+    p = create_pred_image_from_1d(model, train_data, train_data)
+    image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(groupname)
+    if not os.path.isdir(image_folder):
+        os.mkdir(image_folder)
+    p_name = image_folder + '/combined_pred.jpg'
+    # t_name = image_folder + '/true.jpg'
+    im_p = cmap(p)
+    # im_t = cmap(t)
+    img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
+    # img_t = Image.fromarray((im_t[:, :, :3]*255).astype(np.uint8)).save(t_name)
+    replace_md_image('./{}'.format(p_name[21:]))
 
 
     scores = model.evaluate(train_data, train_data)
