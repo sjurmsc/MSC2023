@@ -132,6 +132,7 @@ if __name__ == '__main__':
     # ML
     makemodel = False
     loadmodel = not makemodel
+
     if makemodel:
         model_name_gen = give_modelname()
         groupname, modelname = next(model_name_gen)
@@ -141,17 +142,17 @@ if __name__ == '__main__':
     if loadmodel:
         grp = 'AAC'
         model = load_model('./Models/{}/0'.format(grp))
-        p, t = create_pred_image_from_1d(model, train_data, train_data)
+        p = create_pred_image_from_1d(model, train_data, train_data)
         cmap = plt.cm.get_cmap('seismic')
         image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(grp)
         os.mkdir(image_folder)
         p_name = image_folder + '/pred.jpg'
-        t_name = image_folder + '/true.jpg'
+        # t_name = image_folder + '/true.jpg'
         im_p = cmap(p)
-        im_t = cmap(t)
+        # im_t = cmap(t)
         img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
-        img_t = Image.fromarray((im_t[:, :, :3]*255).astype(np.uint8)).save(t_name)
-        replace_md_image('./{}'.format(p_name[21:]))
+        # img_t = Image.fromarray((im_t[:, :, :3]*255).astype(np.uint8)).save(t_name)
+        # replace_md_image('./{}'.format(p_name[21:]))
 
 
     scores = model.evaluate(train_data, train_data)

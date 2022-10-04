@@ -11,6 +11,7 @@ from datetime import datetime
 import json
 from PIL import Image
 
+
 def gname(old_name):
     """ Takes in the state of group names and outputs the next one
     """
@@ -102,11 +103,14 @@ def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font 
 import numpy as np
 from numpy.linalg import norm
 
-def create_pred_image_from_1d(model, X, gt_data, aspect_r=1.33333):
+def create_pred_image_from_1d(model, X, gt_data, aspect_r=1.33333, mode='sbs'):
     # Decide based on stats which section is the best predicting
     # Moving window statistics
     samples = gt_data.shape[1] #pass # Amount of columns (to be rows)
     traces = int(aspect_r*samples)  #the breadth of the image is the aspect_ratio*height
+    
+    if mode == 'sbs':
+        traces //= 2
 
     gt_data = gt_data.reshape(gt_data.shape[:-1])
     # pred = np.array([])
@@ -128,7 +132,8 @@ def create_pred_image_from_1d(model, X, gt_data, aspect_r=1.33333):
 
     pred_matrix = pred[s] ; gt_matrix = gt_data[s]
 
-    return pred_matrix.T, gt_matrix.T
+    p = np.row_stack((pred_matrix, gt_matrix))
+    return p.T  # pred_matrix.T, gt_matrix.T
 
 
 
