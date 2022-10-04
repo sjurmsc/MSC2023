@@ -63,7 +63,7 @@ control['settings'] = {} # settings
 control['summary_stats'] = {} # to be filled in later
 import matplotlib.pyplot as plt
 from glob import glob
-import os
+import os.path
 import numpy as np
 
 if __name__ == '__main__':
@@ -140,13 +140,14 @@ if __name__ == '__main__':
         
         model.save('./Models/{}/{}'.format(groupname, modelname))
     if loadmodel:
-        grp = 'AAC'
+        grp = 'AAD'
         model = load_model('./Models/{}/0'.format(grp))
         p = create_pred_image_from_1d(model, train_data, train_data)
         cmap = plt.cm.get_cmap('seismic')
         image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(grp)
-        os.mkdir(image_folder)
-        p_name = image_folder + '/pred.jpg'
+        if not os.path.isdir(image_folder):
+            os.mkdir(image_folder)
+        p_name = image_folder + '/combined_pred.jpg'
         # t_name = image_folder + '/true.jpg'
         im_p = cmap(p)
         # im_t = cmap(t)
