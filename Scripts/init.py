@@ -58,13 +58,12 @@ for training where certain fields are not needed, these may be filled with None,
 """
 
 
-control = {}
-control['settings'] = {} # settings
-control['summary_stats'] = {} # to be filled in later
+
 import matplotlib.pyplot as plt
 from glob import glob
 import os.path
 import numpy as np
+from scipy.stats import describe
 
 if __name__ == '__main__':
     # Load data
@@ -122,7 +121,7 @@ if __name__ == '__main__':
     config['return_sequences']      = True
     config['activation']            = 'relu'
     config['convolution_type']      = 'Conv1D'
-    config['learn_rate']            = 0.002
+    config['learn_rate']            = 0.01
     config['kernel_initializer']    = 'he_normal'
     config['use_batch_norm']        = False
     config['use_layer_norm']        = False
@@ -130,7 +129,7 @@ if __name__ == '__main__':
 
     
     # ML
-    makemodel = True
+    makemodel = False
     loadmodel = not makemodel
 
     if makemodel:
@@ -138,26 +137,39 @@ if __name__ == '__main__':
         groupname, modelname = next(model_name_gen)
         model = compiled_TCN(train_data, config, epochs=12)
         
-        model.save('./Models/{}/{}'.format(groupname, modelname))
+        model_loc = './Models/{}/{}'.format(groupname, modelname)
+        model.save(model_loc)
+        with open(model_loc + '/' + 'config.json', 'w') as w_file:
+            w_file.write(json.dumps(config))
+        
     if loadmodel:
         groupname = 'AAE'
         model = load_model('./Models/{}/0'.format(groupname))
-    cmap = plt.cm.get_cmap('seismic')
-        
-        
-    p = create_pred_image_from_1d(model, train_data, train_data)
+    
+    
+    cmap = plt.cm.get_cmap('seismic')  
+    
+    p, pt = create_pred_image_from_1d(model, train_data, train_data)
+
+    
+    
     image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(groupname)
     if not os.path.isdir(image_folder):
         os.mkdir(image_folder)
+    
+    # Image with comparisons
     p_name = image_folder + '/combined_pred.jpg'
-    # t_name = image_folder + '/true.jpg'
     im_p = cmap(p)
-    # im_t = cmap(t)
     img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
-    # img_t = Image.fromarray((im_t[:, :, :3]*255).astype(np.uint8)).save(t_name)
     replace_md_image('./{}'.format(p_name[21:]))
+    
+    histogram_data = (pt[0].flatten(), pt[1].flatten())
+    
+    colors = ['y', 'b']
 
+    plt.hist(histogram_data, 20, density=True, color=colors)
+    plt.show()
 
-    scores = model.evaluate(train_data, train_data)
+    scores = model.evaluate(test_data, test_data)
     print('score: {}'.format(scores))
     

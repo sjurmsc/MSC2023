@@ -133,7 +133,7 @@ def create_pred_image_from_1d(model, X, gt_data, aspect_r=1.33333, mode='sbs'):
     pred_matrix = pred[s] ; gt_matrix = gt_data[s]
 
     p = np.row_stack((pred_matrix, gt_matrix))
-    return p.T  # pred_matrix.T, gt_matrix.T
+    return p.T, (pred_matrix.T, gt_matrix.T) # quickfix
 
 
 
