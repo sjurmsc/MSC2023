@@ -113,7 +113,7 @@ if __name__ == '__main__':
 
     # CONFIG
     config = dict()
-    config['nb_filters']            = 1
+    config['nb_filters']            = 2
     config['kernel_size']           = 8 # JR used 5
     config['dilations']             = [1, 2, 4, 8, 16, 32]
     config['padding']               = 'causal'
@@ -130,7 +130,7 @@ if __name__ == '__main__':
 
     
     # ML
-    makemodel = False
+    makemodel = True
     loadmodel = not makemodel
 
     if makemodel:

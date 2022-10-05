@@ -87,13 +87,13 @@ def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font 
     raise_text = 20
 
     # Predicted image
-    l_box = _ #pass
+    l_box = None #pass
     d.image(l_box, im_pred, dpi=dpi)
     tl_loc = (l_box[0], l_box[1]-raise_text) # Text raised by 20 px
     d.text(tl_loc, 'Predicted image')
 
     # True image
-    r_box = _ #pass
+    r_box = None #pass
     d.image(r_box, im_true, dpi=dpi)
     tr_loc = (r_box[0], r_box[1]-raise_text)
     d.text(tr_loc, 'Ground Truth')
