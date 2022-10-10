@@ -59,11 +59,32 @@ for training where certain fields are not needed, these may be filled with None,
 
 
 
+
 import matplotlib.pyplot as plt
 from glob import glob
 import os.path
 import numpy as np
 from scipy.stats import describe
+from itertools import product, permutations
+
+# Functions
+class config_iterator:
+    def __init__(self, config, variable_config):
+        self.config = config
+        self.variable_config = variable_config
+        self.keys = variable_config.keys()
+
+        self.it = product(*variable_config.values())
+
+    def __next__(self):
+        try:
+            vals = next(self.it)
+        except:
+            return None
+        for key, val in zip(self.keys, vals):
+            config[key] = val
+        return config
+
 
 if __name__ == '__main__':
     # Load data
@@ -127,49 +148,60 @@ if __name__ == '__main__':
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
 
+    # Iteratives
+
+    variable_config = dict()
+    variable_config['nb_filters'] = [1, 2, 3, 4]
+    variable_config['kernel_size'] = [6, 7, 8]
+    config_iter = config_iterator(config, variable_config)
     
     # ML
-    makemodel = False
+    makemodel = True
     loadmodel = not makemodel
 
     if makemodel:
         model_name_gen = give_modelname()
-        groupname, modelname = next(model_name_gen)
-        model = compiled_TCN(train_data, config, epochs=12)
-        
-        model_loc = './Models/{}/{}'.format(groupname, modelname)
-        model.save(model_loc)
-        with open(model_loc + '/' + 'config.json', 'w') as w_file:
-            w_file.write(json.dumps(config))
-        
+        config = next(config_iter)
+        while config != None:
+            groupname, modelname = next(model_name_gen)
+            # model = compiled_TCN(train_data, config, epochs=12)
+            
+            model_loc = './Models/{}/{}'.format(groupname, modelname)
+            if not os.path.isdir(model_loc):
+                os.mkdir(model_loc)
+            # model.save(model_loc)
+            with open(model_loc + '/' + 'config.json', 'w') as w_file:
+                w_file.write(json.dumps(config))
+            config = next(config_iter)
+            
     if loadmodel:
         groupname = 'AAE'
         model = load_model('./Models/{}/0'.format(groupname))
+        
+        
+    # cmap = plt.cm.get_cmap('seismic')  
     
-    
-    cmap = plt.cm.get_cmap('seismic')  
-    
-    p, pt = create_pred_image_from_1d(model, train_data, train_data)
+    # p, pt = create_pred_image_from_1d(model, train_data, train_data)
 
     
     
-    image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(groupname)
-    if not os.path.isdir(image_folder):
-        os.mkdir(image_folder)
+    # image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(groupname)
+    # if not os.path.isdir(image_folder):
+    #     os.mkdir(image_folder)
     
-    # Image with comparisons
-    p_name = image_folder + '/combined_pred.jpg'
-    im_p = cmap(p)
-    img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
-    replace_md_image('./{}'.format(p_name[21:]))
+    # # Image with comparisons
+    # p_name = image_folder + '/combined_pred.jpg'
+    # im_p = cmap(p)
+    # img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
+    # replace_md_image('./{}'.format(p_name[21:]))
     
-    histogram_data = (pt[0].flatten(), pt[1].flatten())
+    # histogram_data = (pt[0].flatten(), pt[1].flatten())
     
-    colors = ['y', 'b']
+    # colors = ['y', 'b']
 
-    plt.hist(histogram_data, 20, density=True, color=colors)
-    plt.show()
+    # plt.hist(histogram_data, 20, density=True, color=colors)
+    # plt.show()
 
-    scores = model.evaluate(test_data, test_data)
-    print('score: {}'.format(scores))
-    
+    # scores = model.evaluate(test_data, test_data)
+    # print('score: {}'.format(scores))
+
