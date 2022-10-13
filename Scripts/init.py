@@ -102,8 +102,8 @@ if __name__ == '__main__':
     # test_data = TESTDATA.reshape((len(TESTDATA), len(TESTDATA[0]), 1))
 
     # Must structure the data into an array format
-    ol = 120
-    width_shape = 150
+    ol = 2
+    width_shape = 10
     height_shape = 500
     upper_bound = 600
     train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)

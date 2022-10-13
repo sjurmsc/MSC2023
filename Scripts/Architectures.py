@@ -356,8 +356,8 @@ def compiled_TCN(training_data, config, batch_size=20, epochs=100):
     X, Y = training_data, training_data[:, :, :]
     Y_reconstruct = array([dat.flatten() for dat in X])
 
-    input_shape = tuple([*X.shape[1:], nb_filters])
-    input_layer = Input(shape=tuple(input_shape))
+    # input_shape = tuple([*X.shape[1:], nb_filters])
+    input_layer = Input(shape=tuple(X.shape[1:]))
 
     # Feature Extraction module
     x = TCN(nb_filters=nb_filters,
@@ -387,7 +387,7 @@ def compiled_TCN(training_data, config, batch_size=20, epochs=100):
                    name = 'Reconstruction_{}'.format(k)       
         )(x)
     x = Flatten()(x)
-    x = Dense(Y_reconstruct.shape[1])(x)
+    x = Dense(X.shape[1]*X.shape[2])(x)
     x = Activation('linear')(x)
     output_layer = x
     model = Model(input_layer, output_layer)
