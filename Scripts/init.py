@@ -90,24 +90,25 @@ if __name__ == '__main__':
     # Load data
     seis_data_fp = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
     traces, z = get_traces(seis_data_fp)
-    traces = traces[:, 600:1100]
+    traces = traces[100:1100, 650:1000]
 
     # Splitting into test and training data for naive comparison
     split_loc = traces.shape[0]//2
     TRAINDATA = traces[:split_loc]
     TESTDATA = traces[split_loc:]
     
-    print(TRAINDATA.shape)
-    train_data = TRAINDATA.reshape((len(TRAINDATA), len(TRAINDATA[0]), 1))
-    test_data = TESTDATA.reshape((len(TESTDATA), len(TESTDATA[0]), 1))
+    
+    # train_data = TRAINDATA.reshape((len(TRAINDATA), len(TRAINDATA[0]), 1))
+    # test_data = TESTDATA.reshape((len(TESTDATA), len(TESTDATA[0]), 1))
 
     # Must structure the data into an array format
-    ol = 100
-    width_shape = 250
+    ol = 120
+    width_shape = 150
     height_shape = 500
     upper_bound = 600
-    # train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
-    # test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
+    train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
+    test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
+    print(train_data.shape)
 
     # Exporting images to the TEMP folder %%%%%%%%%%%%%%% TEMPORARY
     do = False
@@ -136,12 +137,12 @@ if __name__ == '__main__':
     config['nb_filters']            = 2
     config['kernel_size']           = 8 # JR used 5
     config['dilations']             = [1, 2, 4, 8, 16, 32]
-    config['padding']               = 'causal'
+    config['padding']               = 'same'
     config['use_skip_connections']  = True
     config['dropout_rate']          = 0.1
     config['return_sequences']      = True
     config['activation']            = 'relu'
-    config['convolution_type']      = 'Conv1D'
+    config['convolution_type']      = 'Conv2D'
     config['learn_rate']            = 0.01
     config['kernel_initializer']    = 'he_normal'
     config['use_batch_norm']        = False
@@ -151,8 +152,8 @@ if __name__ == '__main__':
     # Iteratives
 
     variable_config = dict()
-    variable_config['nb_filters'] = [1, 2, 3, 4]
-    variable_config['kernel_size'] = [6, 7, 8]
+    variable_config['nb_filters'] = [1, 2]
+    variable_config['kernel_size'] = [8]
     config_iter = config_iterator(config, variable_config)
     
     # ML
@@ -160,11 +161,11 @@ if __name__ == '__main__':
     loadmodel = not makemodel
 
     if makemodel:
-        model_name_gen = give_modelname()
-        config = next(config_iter)
+        # model_name_gen = give_modelname()
+        # config = next(config_iter)
         while config != None:
-            groupname, modelname = next(model_name_gen)
-            # model = compiled_TCN(train_data, config, epochs=12)
+            # groupname, modelname = next(model_name_gen)
+            model = compiled_TCN(train_data, config, epochs=12)
             
             model_loc = './Models/{}/{}'.format(groupname, modelname)
             if not os.path.isdir(model_loc):

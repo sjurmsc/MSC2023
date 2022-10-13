@@ -11,6 +11,7 @@ from keras import backend as K, Model, Input, optimizers, layers
 from keras.layers import Dense, Dropout, Conv1D, Conv2D, Layer, BatchNormalization, LayerNormalization
 from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda, Flatten
 from tensorflow_addons.layers import WeightNormalization
+from numpy import array
 
 
 class ResidualBlock(Layer):
@@ -352,10 +353,11 @@ def compiled_TCN(training_data, config, batch_size=20, epochs=100):
     use_weight_norm = config['use_weight_norm']
 
     # Data
-    X, Y = training_data, training_data[:, :, 0]
-    #Y_reconstruct = [dat.flatten() for dat in X]
+    X, Y = training_data, training_data[:, :, :]
+    Y_reconstruct = array([dat.flatten() for dat in X])
 
-    input_layer = Input(shape=(X.shape[1:]))
+    input_shape = tuple([*X.shape[1:], nb_filters])
+    input_layer = Input(shape=tuple(input_shape))
 
     # Feature Extraction module
     x = TCN(nb_filters=nb_filters,
@@ -377,21 +379,21 @@ def compiled_TCN(training_data, config, batch_size=20, epochs=100):
     # TBA
 
     # Reconstruciton module
-    for k in range(3):
-        x = Conv1D(filters=nb_filters, 
+    for k in range(1):
+        x = Conv2D(filters=nb_filters, 
                    kernel_size=kernel_size,
-                   padding = 'causal',
+                   padding = padding,
                    activation='relu',
                    name = 'Reconstruction_{}'.format(k)       
         )(x)
     x = Flatten()(x)
-    x = Dense(X.shape[1])(x)
+    x = Dense(Y_reconstruct.shape[1])(x)
     x = Activation('linear')(x)
     output_layer = x
     model = Model(input_layer, output_layer)
     model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss='mean_squared_error')
     print(model.summary())
-    model.fit(x=training_data, y=Y, batch_size=batch_size, epochs=epochs)
+    model.fit(x=X, y=Y_reconstruct, batch_size=batch_size, epochs=epochs)
     
     return model
 

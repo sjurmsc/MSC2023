@@ -30,20 +30,21 @@ def split_image_into_data_packets(traces, image_shape, dim=2, mode='cut_lower', 
 
     overlap: The amount of traces that can overlap between the images
     """
-    assert overlap < image_shape[0]  # Allowing overlap of all but one trace
+    width_shape, height_shape = image_shape
+    assert overlap < width_shape  # Allowing overlap of all but one trace
 
     if len(image_shape) == 1:
         lower_bound = traces.shape[1]
     else:
-        lower_bound = image_shape[1]
+        lower_bound = height_shape
 
     tracescount = traces.shape[0]
-    delta = image_shape[0]-overlap
+    delta = width_shape-overlap
 
     X = []
-    idx = [0, image_shape[0]]
+    idx = [0, width_shape]
     while idx[1] < tracescount:
-        X.append(traces[idx[0]:idx[1], upper_bound:(upper_bound+lower_bound)])
+        X.append(traces[idx[0]:idx[1], :])
         idx[0] += delta ; idx[1] += delta
     
     return array(X)
