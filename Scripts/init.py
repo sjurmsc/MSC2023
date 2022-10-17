@@ -110,6 +110,7 @@ if __name__ == '__main__':
     width_shape = 10
     height_shape = 500
     upper_bound = 600
+    
     train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     print(train_data.shape)
@@ -140,6 +141,7 @@ if __name__ == '__main__':
     
 
     # CONFIG
+    global config
     config = dict()
     config['nb_filters']            = 2
     config['kernel_size']           = 8 # JR used 5
@@ -179,7 +181,7 @@ if __name__ == '__main__':
 
             def objective(trial):
                 sfunc = dict()
-                sfunc['float'], sfunc['int'], sfunc['catagorical'] = [trial.suggest_float, trial.suggest_int, trial.suggest_catagorical]
+                sfunc['float'], sfunc['int'], sfunc['catagorical'] = [trial.suggest_float, trial.suggest_int, trial.suggest_categorical]
 
                 for key, items in config_range.items():
                     suggest_func = sfunc[items[0]]
