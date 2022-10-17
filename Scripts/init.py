@@ -24,13 +24,49 @@ class RunModels:
     """
     Takes settings and runs a model based on it
     """
-    def __init__(self, settings):
-        self.group = new_group()
-        self.init_time = datetime.now()
-        pass
+    def __init__(self, train_data, test_data, config, config_range=None):
+        self.config = config
+        self.config_range = config_range
+        self.model_name_gen = give_modelname()
+        self.train_data = train_data
+        self.test_data = test_data
 
     def modelname(self):
         pass
+
+    def objective(self, trial):
+        sfunc = dict()
+        sfunc['float'], sfunc['int'], sfunc['categorical'] = [trial.suggest_float, trial.suggest_int, trial.suggest_categorical]
+
+        for key, items in config_range.items():
+            suggest_func = sfunc[items[0]]
+            self.config[key] = suggest_func(key, *items[1])
+
+        model = compiled_TCN(self.train_data, self.config)
+        error = model.evaluate(self.test_data, self.test_data, verbose=0)
+        groupname, modelname = next(self.model_name_gen)
+        model_loc = './Models/{}/{}'.format(groupname, modelname)
+        if not os.path.isdir(model_loc):
+            os.mkdir(model_loc)
+        model.save(model_loc)
+
+        # Image
+        cmap = plt.cm.get_cmap('seismic')  
+        p, pt = create_pred_image_from_1d(model, self.train_data, self.train_data)
+
+        image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(groupname)
+        if not os.path.isdir(image_folder):
+            os.makedirs(image_folder, exist_ok=True)
+        
+        # Image with comparisons
+        p_name = image_folder + '/{}_combined_pred.jpg'.format(modelname)
+        im_p = cmap(p)
+        img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
+
+        with open(model_loc + '/' + 'config.json', 'w') as w_file:
+            w_file.write(json.dumps(config, indent=4))
+
+        return error
 
 
 """
@@ -102,17 +138,17 @@ if __name__ == '__main__':
     TESTDATA = traces[split_loc:]
     
     
-    # train_data = TRAINDATA.reshape((len(TRAINDATA), len(TRAINDATA[0]), 1))
-    # test_data = TESTDATA.reshape((len(TESTDATA), len(TESTDATA[0]), 1))
+    train_data = TRAINDATA.reshape((len(TRAINDATA), len(TRAINDATA[0]), 1))
+    test_data = TESTDATA.reshape((len(TESTDATA), len(TESTDATA[0]), 1))
 
     # Must structure the data into an array format
     ol = 2
     width_shape = 10
     height_shape = 500
     upper_bound = 600
-    
-    train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
-    test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
+
+    # train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
+    # test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     print(train_data.shape)
 
     # Exporting images to the TEMP folder %%%%%%%%%%%%%%% TEMPORARY
@@ -146,13 +182,13 @@ if __name__ == '__main__':
     config['nb_filters']            = 2
     config['kernel_size']           = 8 # JR used 5
     config['dilations']             = [1, 2, 4, 8, 16, 32]
-    config['padding']               = 'same'
+    config['padding']               = 'causal'
     config['use_skip_connections']  = True
-    config['dropout_rate']          = 0.1
+    config['dropout_rate']          = 0.01
     config['return_sequences']      = True
     config['activation']            = 'relu'
     config['convolution_type']      = 'Conv1D'
-    config['learn_rate']            = 0.01
+    config['learn_rate']            = 0.03
     config['kernel_initializer']    = 'he_normal'
     config['use_batch_norm']        = False
     config['use_layer_norm']        = False
@@ -170,37 +206,24 @@ if __name__ == '__main__':
     if makemodel:
         model_name_gen = give_modelname()
 
-
         if use_optuna:
             # First using a couple of demonstrative values
             config_range = dict()
-            config_range['learn_rate']      = ('float', (0.001, 0.1))
+            # Floats
+            config_range['learn_rate']      = ('float', (0.005, 0.05))
             config_range['dropout_rate']    = ('float', (0.01, 0.1))
-            config_range['padding']         = ('categorical', ['causal', 'same'])
+
+            # Ints
+            config_range['nb_filters']      = ('int', (1, 8))
+            config_range['batch_size']      = ('int', (20, 40))
+            config_range['epochs']          = ('int', (10, 50))
+            # Categoricals
+            config_range['padding']         = ('categorical', (['causal', 'same'],))
 
 
-            def objective(trial):
-                sfunc = dict()
-                sfunc['float'], sfunc['int'], sfunc['catagorical'] = [trial.suggest_float, trial.suggest_int, trial.suggest_categorical]
-
-                for key, items in config_range.items():
-                    suggest_func = sfunc[items[0]]
-                    config[key] = suggest_func(key, *items[1])
-
-                model = compiled_TCN(train_data, config)
-                error = model.evaluate(test_data, test_data, verbose=0)
-                groupname, modelname = next(model_name_gen)
-                model_loc = './Models/{}/{}'.format(groupname, modelname)
-                if not os.path.isdir(model_loc):
-                    os.mkdir(model_loc)
-                model.save(model_loc)
-                with open(model_loc + '/' + 'config.json', 'w') as w_file:
-                    w_file.write(json.dumps(config))
-                config = next(config_iter)
-
-                return error[1]
+            R = RunModels(train_data, test_data, config, config_range)
             study = optuna.create_study()
-            study.optimize(objective, n_trials=10)
+            study.optimize(R.objective, n_trials=50)
 
         else:
             variable_config = dict()

@@ -383,28 +383,32 @@ def compiled_TCN(training_data, config):
 
     # Reconstruciton module
     for k in range(1):
-        x = Conv2D(filters=nb_filters, 
+        x = Conv1D(filters=nb_filters, 
                    kernel_size=kernel_size,
                    padding = padding,
                    activation='relu',
                    name = 'Reconstruction_{}'.format(k)       
         )(x)
     x = Flatten()(x)
-    x = Dense(X.shape[1]*X.shape[2])(x)
+    x = Dense(X.shape[1])(x)
     x = Activation('linear')(x)
     output_layer = x
     model = Model(input_layer, output_layer)
     model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss='mean_squared_error')
     print(model.summary())
-    model.fit(x=X, y=Y_reconstruct, batch_size=batch_size, epochs=epochs)
+    model.fit(x=X, y=Y, batch_size=batch_size, epochs=epochs)
     
     return model
 
 
 
-
+import numpy as np
 # Loss Function
-def weight_share_loss():
-    pass
+def weight_share_loss(y_true, y_pred):
+    """
+    """
+    yt_reg, yt_recon = y_true[0], y_true[1]
+    yp_reg, yp_recon = y_pred[0], y_pred[1]
+    recon_loss = _# 1/ N_a *np.sum(np.linalg.norm)
 
 
