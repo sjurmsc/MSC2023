@@ -66,6 +66,7 @@ import os.path
 import numpy as np
 from scipy.stats import describe
 from itertools import product, permutations
+import optuna
 
 # Functions
 class config_iterator:
@@ -86,7 +87,10 @@ class config_iterator:
         return config
 
 
+
+
 if __name__ == '__main__':
+    use_optuna = True
     # Load data
     seis_data_fp = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
     traces, z = get_traces(seis_data_fp)
@@ -142,23 +146,34 @@ if __name__ == '__main__':
     config['dropout_rate']          = 0.1
     config['return_sequences']      = True
     config['activation']            = 'relu'
-    config['convolution_type']      = 'Conv2D'
+    config['convolution_type']      = 'Conv1D'
     config['learn_rate']            = 0.01
     config['kernel_initializer']    = 'he_normal'
     config['use_batch_norm']        = False
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
 
-    # Iteratives
+    config['batch_size']            = 20
+    config['epochs']                = 12
 
-    variable_config = dict()
-    variable_config['nb_filters'] = [1, 2]
-    variable_config['kernel_size'] = [8]
-    config_iter = config_iterator(config, variable_config)
+    # Iteratives
+    if use_optuna:
+        def objective(trial):
+
+            model = compiled_TCN(train_data, config)
+            error = model.evaluate(X_validation, y_validation, verbose=0)
+            return error[1]
+        study = optuna.create_study()
+        study.optimize(objective, n_trials=10)
+    else:
+
+        variable_config = dict()
+        variable_config['nb_filters'] = [1, 2]
+        variable_config['kernel_size'] = [8]
+        config_iter = config_iterator(config, variable_config)
     
     # ML
-    makemodel = True
-    loadmodel = not makemodel
+    makemodel = True; loadmodel = not makemodel
 
     if makemodel:
         # model_name_gen = give_modelname()
