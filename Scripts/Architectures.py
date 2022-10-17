@@ -328,7 +328,7 @@ def TCN1D(trainX, param):
     # return model
 
 
-def compiled_TCN(training_data, config, batch_size=20, epochs=100):
+def compiled_TCN(training_data, config):
     """
     @ Author: Sjur [in progress]
     Three temporal blocks as feature extractions
@@ -351,6 +351,9 @@ def compiled_TCN(training_data, config, batch_size=20, epochs=100):
     use_batch_norm = config['use_batch_norm']
     use_layer_norm = config['use_layer_norm']
     use_weight_norm = config['use_weight_norm']
+
+    batch_size = config['batch_size']
+    epochs = config['epochs']
 
     # Data
     X, Y = training_data, training_data[:, :, :]

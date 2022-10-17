@@ -136,6 +136,9 @@ if __name__ == '__main__':
     # test_data_X = test_data.copy()
     # test_data_Y = [val.flatten() for val in test_data_X]
 
+
+    
+
     # CONFIG
     config = dict()
     config['nb_filters']            = 2
@@ -157,38 +160,65 @@ if __name__ == '__main__':
     config['epochs']                = 12
 
     # Iteratives
-    if use_optuna:
-        def objective(trial):
-
-            model = compiled_TCN(train_data, config)
-            error = model.evaluate(X_validation, y_validation, verbose=0)
-            return error[1]
-        study = optuna.create_study()
-        study.optimize(objective, n_trials=10)
-    else:
-
-        variable_config = dict()
-        variable_config['nb_filters'] = [1, 2]
-        variable_config['kernel_size'] = [8]
-        config_iter = config_iterator(config, variable_config)
+    
     
     # ML
     makemodel = True; loadmodel = not makemodel
 
     if makemodel:
-        # model_name_gen = give_modelname()
-        # config = next(config_iter)
-        while config != None:
-            # groupname, modelname = next(model_name_gen)
-            model = compiled_TCN(train_data, config, epochs=12)
-            
-            model_loc = './Models/{}/{}'.format(groupname, modelname)
-            if not os.path.isdir(model_loc):
-                os.mkdir(model_loc)
-            # model.save(model_loc)
-            with open(model_loc + '/' + 'config.json', 'w') as w_file:
-                w_file.write(json.dumps(config))
+        model_name_gen = give_modelname()
+
+
+        if use_optuna:
+            # First using a couple of demonstrative values
+            config_range = dict()
+            config_range['learn_rate']      = ('float', (0.001, 0.1))
+            config_range['dropout_rate']    = ('float', (0.01, 0.1))
+            config_range['padding']         = ('categorical', ['causal', 'same'])
+
+
+            def objective(trial):
+                sfunc = dict()
+                sfunc['float'], sfunc['int'], sfunc['catagorical'] = [trial.suggest_float, trial.suggest_int, trial.suggest_catagorical]
+
+                for key, items in config_range.items():
+                    suggest_func = sfunc[items[0]]
+                    config[key] = suggest_func(key, *items[1])
+
+                model = compiled_TCN(train_data, config)
+                error = model.evaluate(test_data, test_data, verbose=0)
+                groupname, modelname = next(model_name_gen)
+                model_loc = './Models/{}/{}'.format(groupname, modelname)
+                if not os.path.isdir(model_loc):
+                    os.mkdir(model_loc)
+                model.save(model_loc)
+                with open(model_loc + '/' + 'config.json', 'w') as w_file:
+                    w_file.write(json.dumps(config))
+                config = next(config_iter)
+
+                return error[1]
+            study = optuna.create_study()
+            study.optimize(objective, n_trials=10)
+
+        else:
+            variable_config = dict()
+            variable_config['nb_filters'] = [1, 2]
+            variable_config['kernel_size'] = [8]
+            config_iter = config_iterator(config, variable_config)
+
             config = next(config_iter)
+
+            while config != None:
+                groupname, modelname = next(model_name_gen)
+                model = compiled_TCN(train_data, config)
+                
+                model_loc = './Models/{}/{}'.format(groupname, modelname)
+                if not os.path.isdir(model_loc):
+                    os.mkdir(model_loc)
+                model.save(model_loc)
+                with open(model_loc + '/' + 'config.json', 'w') as w_file:
+                    w_file.write(json.dumps(config))
+                config = next(config_iter)
             
     if loadmodel:
         groupname = 'AAE'
