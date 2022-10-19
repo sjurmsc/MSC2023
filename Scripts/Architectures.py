@@ -406,6 +406,7 @@ import numpy as np
 # Loss Function
 def weight_share_loss(y_true, y_pred):
     """
+    As described in Mustafa et al. (2022)
     """
     yt_reg, yt_recon = y_true[0], y_true[1]
     yp_reg, yp_recon = y_pred[0], y_pred[1]
