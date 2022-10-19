@@ -31,6 +31,10 @@ class RunModels:
         self.train_data = train_data
         self.test_data = test_data
 
+        self.st_dev = stats.tstd(traces, axis=None)
+        norm = mpl.colors.Normalize(-self.st_dev, self.st_dev)
+        self.cmap = lambda x : plt.cm.seismic(norm(x))
+
     def modelname(self):
         pass
 
@@ -51,7 +55,7 @@ class RunModels:
         model.save(model_loc)
 
         # Image
-        cmap = plt.cm.get_cmap('seismic')  
+        cmap = self.cmap #plt.cm.get_cmap('seismic')  
         p, pt = create_pred_image_from_1d(model, self.train_data, self.train_data)
 
         image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(groupname)
@@ -97,10 +101,12 @@ for training where certain fields are not needed, these may be filled with None,
 
 
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from glob import glob
 import os.path
 import numpy as np
-from scipy.stats import describe
+import scipy.stats as stats
+import statistics
 from itertools import product, permutations
 import optuna
 
@@ -150,6 +156,15 @@ if __name__ == '__main__':
     # train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     # test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     print(train_data.shape)
+
+    # Visuals
+    """
+    Needs normalization within the standard deviations of the population
+    """
+    st_dev = stats.tstd(traces, axis=None)
+    norm = mpl.colors.Normalize(-st_dev, st_dev)
+    cmap = lambda x : plt.cm.seismic(norm(x))
+
 
     # Exporting images to the TEMP folder %%%%%%%%%%%%%%% TEMPORARY
     do = False
@@ -250,7 +265,7 @@ if __name__ == '__main__':
         model = load_model('./Models/{}/0'.format(groupname))
         
         
-    # cmap = plt.cm.get_cmap('seismic')  
+    # cmap = plt.cm.seismic  
     
     # p, pt = create_pred_image_from_1d(model, train_data, train_data)
 

@@ -48,3 +48,12 @@ def split_image_into_data_packets(traces, image_shape, dim=2, mode='cut_lower', 
         idx[0] += delta ; idx[1] += delta
     
     return array(X)
+
+
+def pair_well_and_seismic():
+    """
+    For a given log trace, this function locates the appropriate seismic trace,
+    and allows for adding the neighboring traces to output a seismic image
+    centered at the well position. 
+    """
+    pass
