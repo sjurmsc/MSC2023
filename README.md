@@ -7,6 +7,9 @@ Current best performing reconstruction module:
 ./TEMP/AAE/combined_pred.jpg
 
 # Blog:
+### Wednesday 19.10.2022
+I realize its been a while sist I gave an update last. I have implemented a script that lets me permute different model configurations. This works with a python generator that I use to give the models systematic names. I also implemented using optuna, which automatically adjusts the hyperparameters. This also works with the systematic naming. At present, I have a model which takes in the seismic image and outputs a similar looking image reliably with a loss of approx 1.4. Soon I'm going to start to predict on acoustic impedance, since that dataset is exhaustive. After that I'm going to experiment on using the feature recognition of these models on predicting CPT parameters. Academics wise, I'm going to start by justifying the prediction of acoustic impedance geologically. The leap to prediction of CPT parameters heavily relies on the ability to infer information about CPT values both from recognizing geological features (texturally), and correlating with the amplitude of the seismic signal.
+
 ### Monday 03.10.2022
 I have ran a couple of models now, and have been somewhat able to overfit to a training image. I'm planning to run optuna this week to see how well I can have the TCN perform. After trying to upload the ML-weights to the repository I encountered some issues with pushing it. I think the file size is too big for the models, and that they will need to be downloaded seperately. If you are reading this it means that I sorted out the issue, and was able to push to the repo. 
 
