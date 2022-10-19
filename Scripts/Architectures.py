@@ -409,6 +409,8 @@ def weight_share_loss(y_true, y_pred):
     """
     yt_reg, yt_recon = y_true[0], y_true[1]
     yp_reg, yp_recon = y_pred[0], y_pred[1]
-    recon_loss = _# 1/ N_a *np.sum(np.linalg.norm)
+    recon_loss = None # 1/ N_a *np.sum(np.linalg.norm)
+    total_loss = None
+    return total_loss
 
 
