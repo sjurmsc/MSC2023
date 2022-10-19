@@ -69,7 +69,7 @@ class RunModels:
 
         replace_md_image(p_name)
         with open(model_loc + '/' + 'config.json', 'w') as w_file:
-            w_file.write(json.dumps(config, indent=4))
+            w_file.write(json.dumps(config, indent=2))
 
         return error
 
@@ -266,25 +266,10 @@ if __name__ == '__main__':
         model = load_model('./Models/{}/0'.format(groupname))
         
         
-    # cmap = plt.cm.seismic  
-    
-    # p, pt = create_pred_image_from_1d(model, train_data, train_data)
-
-    
-    
-    # image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(groupname)
-    # if not os.path.isdir(image_folder):
-    #     os.mkdir(image_folder)
-    
-    # # Image with comparisons
-    # p_name = image_folder + '/combined_pred.jpg'
-    # im_p = cmap(p)
-    # img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
-    # replace_md_image('./{}'.format(p_name[21:]))
     
     # histogram_data = (pt[0].flatten(), pt[1].flatten())
     
-    # colors = ['y', 'b']
+    # colors = ['orange', 'b']
 
     # plt.hist(histogram_data, 20, density=True, color=colors)
     # plt.show()
