@@ -404,14 +404,20 @@ def compiled_TCN(training_data, config):
 
 import numpy as np
 # Loss Function
+
+def model_loss(y_true, y_pred):
+    loss = 1/len(y_true)*np.sum(np.linalg.norm((y_pred-y_true), ord=2))
+    return loss
+
 def weight_share_loss(y_true, y_pred):
     """
     As described in Mustafa et al. (2022)
     """
     yt_reg, yt_recon = y_true[0], y_true[1]
     yp_reg, yp_recon = y_pred[0], y_pred[1]
-    recon_loss = None # 1/ N_a *np.sum(np.linalg.norm)
-    total_loss = None
+    recon_loss = model_loss(yt_recon, yp_recon)
+    reg_loss = model_loss(yt_reg, yp_reg)
+    total_loss = reg_loss + recon_loss
     return total_loss
 
 
