@@ -136,14 +136,20 @@ if __name__ == '__main__':
     use_optuna = True
     # Load data
     seis_data_fp = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
+    ai_data = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG.Abs_Zp.sgy'
+
     traces, z = get_traces(seis_data_fp)
     traces = traces[100:1100, 650:1000]
+    ai, z = get_traces(ai_data)
+    ai = ai[100:1100, 650:1000]
 
     # Splitting into test and training data for naive comparison
     split_loc = traces.shape[0]//2
     TRAINDATA = traces[:split_loc]
     TESTDATA = traces[split_loc:]
     
+    ai_TRAINDATA = ai[:split_loc]
+    ai_TESTDATA = ai[split_loc:]
     
     train_data = TRAINDATA.reshape((len(TRAINDATA), len(TRAINDATA[0]), 1))
     test_data = TESTDATA.reshape((len(TESTDATA), len(TESTDATA[0]), 1))
@@ -167,38 +173,12 @@ if __name__ == '__main__':
     cmap = lambda x : plt.cm.seismic(norm(x))
 
 
-    # Exporting images to the TEMP folder %%%%%%%%%%%%%%% TEMPORARY
-    do = False
-    if do:
-        cmap = plt.cm.get_cmap('seismic')
-        image_folder = 'C:/Users/SjB/MSC2023/TEMP/seismic_images'
-        files = glob(image_folder + '/*')
-        for f in files:
-            os.remove(f)
-
-        for i, image in enumerate(train_data):
-            f_name = image_folder + '/{}.jpg'.format(i)
-            im = cmap(image.T)
-            img = Image.fromarray((im[:, :, :3]*255).astype(np.uint8)).save(f_name)
-        
-            #norm = plt.Normalize(vmin = image.min(), vmax = image.max())
-            #im = cmap(norm(image.T))
-            #plt.imsave(image_folder+'\\{}.jpg'.format(i), im, cmap='seismic')
-    # .%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    # test_data_X = test_data.copy()
-    # test_data_Y = [val.flatten() for val in test_data_X]
-
-
-    
-
     # CONFIG
-    global config
     config = dict()
     config['nb_filters']            = 2
     config['kernel_size']           = 8 # JR used 5
     config['dilations']             = [1, 2, 4, 8, 16, 32]
-    config['padding']               = 'causal'
+    config['padding']               = 'same'
     config['use_skip_connections']  = True
     config['dropout_rate']          = 0.01
     config['return_sequences']      = True
@@ -212,11 +192,9 @@ if __name__ == '__main__':
 
     config['batch_size']            = 20
     config['epochs']                = 12
+    config['convolution_depth']     = 3
 
     # Iteratives
-    
-    
-    # ML
     makemodel = True; loadmodel = not makemodel
 
     if makemodel:
@@ -233,6 +211,7 @@ if __name__ == '__main__':
             config_range['nb_filters']      = ('int', (1, 8))
             config_range['batch_size']      = ('int', (20, 40))
             config_range['epochs']          = ('int', (10, 50))
+
             # Categoricals
             config_range['padding']         = ('categorical', (['causal', 'same'],))
 

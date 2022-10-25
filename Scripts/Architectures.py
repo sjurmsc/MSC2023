@@ -337,23 +337,24 @@ def compiled_TCN(training_data, config):
 
    This function only works for reconstruction at present moment 
     """
-    nb_filters = config['nb_filters']
-    kernel_size = config['kernel_size']
-    dilations = config['dilations']
-    padding = config['padding']
-    use_skip_connections = config['use_skip_connections']
-    dropout_rate = config['dropout_rate']
-    return_sequences = config['return_sequences']
-    activation = config['activation']
-    convolution_type = config['convolution_type']
-    lr = config['learn_rate']
-    kernel_initializer = config['kernel_initializer']
-    use_batch_norm = config['use_batch_norm']
-    use_layer_norm = config['use_layer_norm']
-    use_weight_norm = config['use_weight_norm']
+    nb_filters              = config['nb_filters']
+    kernel_size             = config['kernel_size']
+    dilations               = config['dilations']
+    padding                 = config['padding']
+    use_skip_connections    = config['use_skip_connections']
+    dropout_rate            = config['dropout_rate']
+    return_sequences        = config['return_sequences']
+    activation              = config['activation']
+    convolution_type        = config['convolution_type']
+    lr                      = config['learn_rate']
+    kernel_initializer      = config['kernel_initializer']
+    use_batch_norm          = config['use_batch_norm']
+    use_layer_norm          = config['use_layer_norm']
+    use_weight_norm         = config['use_weight_norm']
 
-    batch_size = config['batch_size']
-    epochs = config['epochs']
+    batch_size              = config['batch_size']
+    epochs                  = config['epochs']
+    conv_depth              = config['convolution_depth']
 
     # Data
     X, Y = training_data, training_data[:, :, :]
@@ -379,33 +380,51 @@ def compiled_TCN(training_data, config):
     )(input_layer)
 
     # Regression module
-    # TBA
+    for k in range(conv_depth):
+        if k == 0: out = x
+        else: out = r
+        r = Conv1D(filters=nb_filters,
+                    kernel_size=kernel_size,
+                    padding = padding,
+                    activation = 'relu',
+                    name = 'Regression_{}'.format(k)
+        )(out)
 
     # Reconstruciton module
-    for k in range(1):
-        x = Conv1D(filters=nb_filters, 
+    conv_func = Conv1D
+    dense_output_shape = X.shape[1]
+    if convolution_type == 'Conv2D': conv_func = Conv2D; dense_output_shape = X.shape[1]*X.shape[2] # Not quite sure
+
+    for k in range(conv_depth):
+        x = conv_func(filters=nb_filters, 
                    kernel_size=kernel_size,
                    padding = padding,
                    activation='relu',
                    name = 'Reconstruction_{}'.format(k)       
         )(x)
     x = Flatten()(x)
-    x = Dense(X.shape[1])(x)
+    x = Dense(dense_output_shape)(x)
     x = Activation('linear')(x)
-    output_layer = x
-    model = Model(input_layer, output_layer)
-    model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss='mean_squared_error')
+
+
+    output_layer = [out, x] # Regression, reconstruction
+
+    model = Model(inputs = input_layer, 
+                  outputs = output_layer)
+    model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss=weight_share_loss)
     print(model.summary())
     model.fit(x=X, y=Y, batch_size=batch_size, epochs=epochs)
     
     return model
 
 
-
-import numpy as np
 # Loss Function
+import numpy as np
 
 def model_loss(y_true, y_pred):
+    """
+    Not sure if dimension tolerant
+    """
     loss = 1/len(y_true)*np.sum(np.linalg.norm((y_pred-y_true), ord=2))
     return loss
 
