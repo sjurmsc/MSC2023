@@ -16,7 +16,7 @@ def get_traces(fp, mmap=True):
     This function should conserve some information about the domain (time or depth) of
     the data.
     """
-    with segyio.open(fp) as seis_data:
+    with segyio.open(fp, ignore_geometry=True) as seis_data:
         z = seis_data.samples
         if mmap:
             seis_data.mmap()  # Only to be used if the file size is small compared to available memory

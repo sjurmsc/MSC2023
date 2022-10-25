@@ -389,6 +389,9 @@ def compiled_TCN(training_data, config):
                     activation = 'relu',
                     name = 'Regression_{}'.format(k)
         )(out)
+    r = Flatten()(r)
+    r = Dense(Y[0].shape[1])(r)
+    r = Activation('linear')(r)
 
     # Reconstruciton module
     conv_func = Conv1D
@@ -407,11 +410,11 @@ def compiled_TCN(training_data, config):
     x = Activation('linear')(x)
 
 
-    output_layer = [out, x] # Regression, reconstruction
+    output_layer = [r, x] # Regression, reconstruction
 
     model = Model(inputs = input_layer, 
                   outputs = output_layer)
-    model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss=weight_share_loss)
+    model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss='mean_squared_error')
     print(model.summary())
     model.fit(x=X, y=Y, batch_size=batch_size, epochs=epochs)
     
@@ -420,12 +423,10 @@ def compiled_TCN(training_data, config):
 
 # Loss Function
 import numpy as np
+import tensorflow as tf
 
 def model_loss(y_true, y_pred):
-    """
-    Not sure if dimension tolerant
-    """
-    loss = 1/len(y_true)*np.sum(np.linalg.norm((y_pred-y_true), ord=2))
+    loss = tf.reduce_mean(tf.norm((y_pred-y_true), ord=2))
     return loss
 
 def weight_share_loss(y_true, y_pred):

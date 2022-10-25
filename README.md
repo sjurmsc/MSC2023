@@ -3,10 +3,13 @@
 URL to assignment: https://www.overleaf.com/read/tzwckfrpfbvw
 
 Current best performing reconstruction module:
-![](./TEMP/AAO/1_combined_pred.jpg) 
-./TEMP/AAO/1_combined_pred.jpg
+![](C:/Users/SjB/MSC2023/TEMP/AAR/3_combined_pred.jpg)
+C:/Users/SjB/MSC2023/TEMP/AAR/3_combined_pred.jpg
 
 # Blog:
+### Tuesday 25.10.2022
+I have implemented the multi-output architecture of the model. I have started to test out the multi output prediction using the acoustic impedance values from TNW. Currently, my laptop is not nearly powerful enough to run these models. Even in 1D. I have been talking with IT, both at NGI and NTNU, and tomorrow I'm getting access to a powerful desktop computer which I will remote access using my computer. This way, It will be possible to run computations at any time. This will be good because it will let optuna get the time to zero in on good model parameters. The architecture is essentially finished, only lacking minor tweaks for dimension tolerance and input feature amount tolerance. Some of the minor other funcitons for visualizations and statistics require some update for the new multi-output model, but this should not take too much effort.
+
 ### Wednesday 19.10.2022
 I realize its been a while sist I gave an update last. I have implemented a script that lets me permute different model configurations. This works with a python generator that I use to give the models systematic names. I also implemented using optuna, which automatically adjusts the hyperparameters. This also works with the systematic naming. At present, I have a model which takes in the seismic image and outputs a similar looking image reliably with a loss of approx 1.4. Soon I'm going to start to predict on acoustic impedance, since that dataset is exhaustive. After that I'm going to experiment on using the feature recognition of these models on predicting CPT parameters. Academics wise, I'm going to start by justifying the prediction of acoustic impedance geologically. The leap to prediction of CPT parameters heavily relies on the ability to infer information about CPT values both from recognizing geological features (texturally), and correlating with the amplitude of the seismic signal.
 

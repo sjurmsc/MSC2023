@@ -47,7 +47,7 @@ class RunModels:
             self.config[key] = suggest_func(key, *items[1])
 
         model = compiled_TCN(self.train_data, self.config)
-        error = model.evaluate(self.test_data, self.test_data, verbose=0)
+        error = model.evaluate(self.test_data[1], self.test_data, verbose=0)
         groupname, modelname = next(self.model_name_gen)
         model_loc = './Models/{}/{}'.format(groupname, modelname)
         if not os.path.isdir(model_loc):
@@ -56,7 +56,7 @@ class RunModels:
 
         # Image
         cmap = self.cmap #plt.cm.get_cmap('seismic')  
-        p, pt = create_pred_image_from_1d(model, self.train_data, self.train_data)
+        p, pt = create_pred_image_from_1d(model, self.train_data[1], self.train_data)
 
         image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(groupname)
         if not os.path.isdir(image_folder):
@@ -139,9 +139,9 @@ if __name__ == '__main__':
     ai_data = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG.Abs_Zp.sgy'
 
     traces, z = get_traces(seis_data_fp)
-    traces = traces[100:1100, 650:1000]
+    traces = traces[:, :]
     ai, z = get_traces(ai_data)
-    ai = ai[100:1100, 650:1000]
+    ai = ai[:, :]
 
     # Splitting into test and training data for naive comparison
     split_loc = traces.shape[0]//2
@@ -162,7 +162,7 @@ if __name__ == '__main__':
 
     # train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     # test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
-    print(train_data.shape)
+    #print(train_data.shape)
 
     # Visuals
     """
@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
     config['batch_size']            = 20
     config['epochs']                = 12
-    config['convolution_depth']     = 1
+    config['convolution_depth']     = 2
 
     # Iteratives
     makemodel = True; loadmodel = not makemodel
