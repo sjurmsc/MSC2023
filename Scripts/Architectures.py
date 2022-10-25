@@ -25,8 +25,8 @@ class ResidualBlock(Layer):
                  padding: str,
                  activation: str = 'relu',
                  convolution_type: str = 'Conv2D',
-                 dropout_rate: float = 0., # Should be float?
-                 kernel_initializer: str = 'he_normal', # ?????????????????????????
+                 dropout_rate: float = 0.,
+                 kernel_initializer: str = 'he_normal',
                  use_batch_norm: bool = False,
                  use_layer_norm: bool = False,
                  use_weight_norm: bool = False,
