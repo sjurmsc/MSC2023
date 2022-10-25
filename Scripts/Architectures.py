@@ -357,7 +357,7 @@ def compiled_TCN(training_data, config):
     conv_depth              = config['convolution_depth']
 
     # Data
-    X, Y = training_data, training_data[:, :, :]
+    X, Y = training_data[1], training_data
     Y_reconstruct = array([dat.flatten() for dat in X])
 
     # input_shape = tuple([*X.shape[1:], nb_filters])
@@ -400,7 +400,7 @@ def compiled_TCN(training_data, config):
                    kernel_size=kernel_size,
                    padding = padding,
                    activation='relu',
-                   name = 'Reconstruction_{}'.format(k)       
+                   name = 'Reconstruction_{}'.format(k)
         )(x)
     x = Flatten()(x)
     x = Dense(dense_output_shape)(x)

@@ -151,8 +151,8 @@ if __name__ == '__main__':
     ai_TRAINDATA = ai[:split_loc]
     ai_TESTDATA = ai[split_loc:]
     
-    train_data = TRAINDATA.reshape((len(TRAINDATA), len(TRAINDATA[0]), 1))
-    test_data = TESTDATA.reshape((len(TESTDATA), len(TESTDATA[0]), 1))
+    train_data =    [ai_TRAINDATA, TRAINDATA.reshape((len(TRAINDATA), len(TRAINDATA[0]), 1))]
+    test_data =     [ai_TESTDATA, TESTDATA.reshape((len(TESTDATA), len(TESTDATA[0]), 1))]
 
     # Must structure the data into an array format
     ol = 2
@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
     config['batch_size']            = 20
     config['epochs']                = 12
-    config['convolution_depth']     = 3
+    config['convolution_depth']     = 1
 
     # Iteratives
     makemodel = True; loadmodel = not makemodel
@@ -213,7 +213,7 @@ if __name__ == '__main__':
             config_range['epochs']          = ('int', (10, 50))
 
             # Categoricals
-            config_range['padding']         = ('categorical', (['causal', 'same'],))
+            #config_range['padding']         = ('categorical', (['causal', 'same'],))
 
 
             R = RunModels(train_data, test_data, config, config_range)
