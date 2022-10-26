@@ -32,8 +32,9 @@ class RunModels:
         self.test_data = test_data
 
         self.st_dev = stats.tstd(traces, axis=None)
-        norm = mpl.colors.Normalize(-self.st_dev, self.st_dev)
-        self.cmap = lambda x : plt.cm.seismic(norm(x))
+        seis_norm = mpl.colors.Normalize(-self.st_dev, self.st_dev)
+        self.seismic_cmap = lambda x : plt.cm.seismic(seis_norm(x))
+
 
     def modelname(self):
         pass
@@ -48,6 +49,8 @@ class RunModels:
 
         model = compiled_TCN(self.train_data, self.config)
         error = model.evaluate(self.test_data[1], self.test_data, verbose=0)
+        
+        # Saving the model
         groupname, modelname = next(self.model_name_gen)
         model_loc = './Models/{}/{}'.format(groupname, modelname)
         if not os.path.isdir(model_loc):
@@ -55,8 +58,10 @@ class RunModels:
         model.save(model_loc)
 
         # Image
-        cmap = self.cmap #plt.cm.get_cmap('seismic')  
-        p, pt = create_pred_image_from_1d(model, self.train_data[1], self.train_data)
+        seis_cmap = self.seis_cmap
+        ai_cmap = self.ai_cmap
+        
+        p, pt = create_pred_image_from_1d(model, self.train_data)
 
         image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(groupname)
         if not os.path.isdir(image_folder):
@@ -67,7 +72,8 @@ class RunModels:
         im_p = cmap(p)
         img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
 
-        replace_md_image(p_name)
+        
+        replace_md_image(p_name, error)
         with open(model_loc + '/' + 'config.json', 'w') as w_file:
             w_file.write(json.dumps(config, indent=2))
 

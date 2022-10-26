@@ -2,10 +2,11 @@
 
 URL to assignment: https://www.overleaf.com/read/tzwckfrpfbvw
 
-Current best performing reconstruction module:
+Current best performing reconstruction module with score 10.0:
 ![](C:/Users/SjB/MSC2023/TEMP/AAR/3_combined_pred.jpg)
 C:/Users/SjB/MSC2023/TEMP/AAR/3_combined_pred.jpg
 
+---
 # Blog:
 ### Tuesday 25.10.2022
 I have implemented the multi-output architecture of the model. I have started to test out the multi output prediction using the acoustic impedance values from TNW. Currently, my laptop is not nearly powerful enough to run these models. Even in 1D. I have been talking with IT, both at NGI and NTNU, and tomorrow I'm getting access to a powerful desktop computer which I will remote access using my computer. This way, It will be possible to run computations at any time. This will be good because it will let optuna get the time to zero in on good model parameters. The architecture is essentially finished, only lacking minor tweaks for dimension tolerance and input feature amount tolerance. Some of the minor other funcitons for visualizations and statistics require some update for the new multi-output model, but this should not take too much effort.

@@ -53,21 +53,55 @@ def give_modelname():
         yield groupname, next(n)
 
 
-def replace_md_image(filepath):
+def update_scores(modelname, score):
+    score_file = 'Models/_scores.json'
+    scores = json.loads(score_file)
+
+    if len(score)>1: regression_score, reconstruction_score = score
+    else: reconstruciton_score = score
+
+    rec_scoreboard = scores['recon_scores']
+    reg_scoreboard = scores['regression_scores']
+
+    # Pruning condition
+
+def replace_md_image(filepath, score):
     """
     Replaces the image in the github markdown document with the image at
     the given filepath
     """
+    if len(score)>1:
+        score = score[1]
+
     with open('README.md', 'r') as readfile:
         lines = readfile.readlines()
 
+        # Truncates filepath
+        abs_fp_idx = filepath.find('MSC2023') + len('MSC2023')
+        trunc_filepath = '.' + filepath[abs_fp_idx:]
+
+        
+
         # Gets first instance of markdown image
         j = [i for i, str in enumerate(lines) if str.startswith('!')][0]
-        lines[j] = f'![]({filepath})\n'
+
+        # Gets old score
+        score_loc = j-1
+        score_line = lines[score_loc]
+        old score_idx = score_line.find('score ') + len('score ')
+        old_score = float(score_line[old_score_idx:score_line.find(':')])
+
+        if score > old_score: return # The image only gets replaced if the score is better
+        
+        new_score_line = score_line[:old_score_idx] + str(score) + ':\n'
+        lines[score_loc] = new_score_line
+
+        # Adds the new image
+        lines[j] = f'![]({trunc_filepath})\n'
 
         # Adds descriptive text underneath the image
-        if '.jpg' in lines[j+1]: lines[j+1] = f'{filepath}\n'
-        else: lines[j] += f'*{filepath}*\n'
+        if '.jpg' in lines[j+1]: lines[j+1] = f'{trunc_filepath}\n'
+        else: lines[j] += f'*{trunc_filepath}*\n'
 
         with open('README.md', 'w') as writefile:
             writefile.writelines(lines)
@@ -103,11 +137,16 @@ def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font 
 import numpy as np
 from numpy.linalg import norm
 
-def create_pred_image_from_1d(model, X, gt_data, aspect_r=1.33333, mode='sbs'):
+def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     # Decide based on stats which section is the best predicting
     # Moving window statistics
-    gt_ai, gt_seis = gt_data
-    samples = gt_ai.shape[1] #pass # Amount of columns (to be rows)
+    if len(gt_data.shape) == 2:
+
+        gt_ai, X = gt_data
+        samples = gt_ai.shape[1] #pass # Amount of columns (to be rows)
+        pred_ai, pred_recon = model.predict(X)
+
+    
     traces = int(aspect_r*samples)  #the breadth of the image is the aspect_ratio*height
     
     if mode == 'sbs':
@@ -118,9 +157,8 @@ def create_pred_image_from_1d(model, X, gt_data, aspect_r=1.33333, mode='sbs'):
     # pred = np.array([])
     # for i in range(X.shape[0]):
     #     pred = np.row_stack(pred, model.predict(gt_data[i, :]))
-    pred_ai, pred_recon = model.predict(X) # 
+     # 
     
-
     scr = []
 
     # Decide what slice is best, by loss (l2 error norm)
