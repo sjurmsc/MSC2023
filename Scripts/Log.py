@@ -10,6 +10,7 @@ import sys
 from datetime import datetime
 import json
 from PIL import Image
+import numpy as np
 
 
 def gname(old_name):
@@ -55,15 +56,30 @@ def give_modelname():
 
 def update_scores(modelname, score):
     score_file = 'Models/_scores.json'
-    scores = json.loads(score_file)
+    
+    with open(score_file, 'r') as readfile:
+        scores = json.loads(readfile.read())
 
-    if len(score)>1: regression_score, reconstruction_score = score
+
+    if len(score)>1:
+        regression_score, reconstruction_score = score
+        if np.any([regression_score < x for x in scores['regression_scores'].values()]):
+            scores['regression_scores'][modelname] = regression_score
+
     else: reconstruciton_score = score
 
-    rec_scoreboard = scores['recon_scores']
-    reg_scoreboard = scores['regression_scores']
+    if np.any([reconstruction_score < x for x in scores['recon_scores'].values()]):
+        scores['recon_scores'][modelname] = reconstruction_score
+    else:
+        return False
 
-    # Pruning condition
+    # Pruning condition (Amount of etries must not exceed 10)
+
+
+    with open(score_file, 'w') as writefile:
+        writefile.write(json.dumps(scores, inline=2))
+    return True
+
 
 def replace_md_image(filepath, score):
     """
@@ -184,4 +200,5 @@ if __name__ == '__main__':
     # k_obj = object()
     # k_obj._control = {'test' : [1, 2, 3]}
     # log_it(k_obj)
-    replace_md_image('Models/07-09-2022_14.12.12/coming_soon.jpg')
+    # replace_md_image('Models/07-09-2022_14.12.12/coming_soon.jpg')
+    print('Hello World!')

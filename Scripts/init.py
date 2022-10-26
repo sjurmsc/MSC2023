@@ -72,8 +72,9 @@ class RunModels:
         im_p = cmap(p)
         img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
 
-        
-        replace_md_image(p_name, error)
+        if update_scores('{}/{}'.format(groupname, modelname), error):
+            replace_md_image(p_name, error)
+
         with open(model_loc + '/' + 'config.json', 'w') as w_file:
             w_file.write(json.dumps(config, indent=2))
 
