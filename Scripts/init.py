@@ -48,7 +48,9 @@ class RunModels:
             self.config[key] = suggest_func(key, *items[1])
 
         model = compiled_TCN(self.train_data, self.config)
-        error = model.evaluate(self.test_data[1], self.test_data, verbose=0)
+
+        X, Y = self.test_data[1], self.test_data
+        error = model.evaluate(X, Y, verbose=0)
         
         # Saving the model
         groupname, modelname = next(self.model_name_gen)

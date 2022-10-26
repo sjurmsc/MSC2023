@@ -358,7 +358,7 @@ def compiled_TCN(training_data, config):
 
     # Data
     X, Y = training_data[1], training_data
-    Y_reconstruct = array([dat.flatten() for dat in X])
+    # Y_reconstruct = array([dat.flatten() for dat in X])
 
     # input_shape = tuple([*X.shape[1:], nb_filters])
     input_layer = Input(shape=tuple(X.shape[1:]))
@@ -408,7 +408,6 @@ def compiled_TCN(training_data, config):
     x = Flatten()(x)
     x = Dense(dense_output_shape)(x)
     x = Activation('linear')(x)
-
 
     output_layer = [r, x] # Regression, reconstruction
 
