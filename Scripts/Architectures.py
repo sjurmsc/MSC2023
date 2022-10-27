@@ -391,7 +391,7 @@ def compiled_TCN(training_data, config):
         )(out)
     r = Flatten()(r)
     r = Dense(Y[0].shape[1])(r)
-    r = Activation('linear')(r)
+    r = Activation('linear', name='regression_output')(r)
 
     # Reconstruciton module
     conv_func = Conv1D
@@ -407,13 +407,14 @@ def compiled_TCN(training_data, config):
         )(x)
     x = Flatten()(x)
     x = Dense(dense_output_shape)(x)
-    x = Activation('linear')(x)
+    x = Activation('linear', name='reconstruction_output')(x)
 
     output_layer = [r, x] # Regression, reconstruction
 
     model = Model(inputs = input_layer, 
                   outputs = output_layer)
-    model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss='mean_squared_error')
+    model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss={'regression_output' : 'mean_squared_error',
+                                                                   'reconstruction_output' : 'mean_squared_error'})
     print(model.summary())
     model.fit(x=X, y=Y, batch_size=batch_size, epochs=epochs)
     

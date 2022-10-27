@@ -33,7 +33,8 @@ class RunModels:
 
         self.st_dev = stats.tstd(traces, axis=None)
         seis_norm = mpl.colors.Normalize(-self.st_dev, self.st_dev)
-        self.seismic_cmap = lambda x : plt.cm.seismic(seis_norm(x))
+        self.seis_cmap = lambda x : plt.cm.seismic(seis_norm(x))
+        self.ai_cmap = None
 
 
     def modelname(self):
@@ -50,7 +51,7 @@ class RunModels:
         model = compiled_TCN(self.train_data, self.config)
 
         X, Y = self.test_data[1], self.test_data
-        error = model.evaluate(X, Y, verbose=0)
+        reg_error, rec_error = model.evaluate(X, Y, verbose=0)
         
         # Saving the model
         groupname, modelname = next(self.model_name_gen)
@@ -71,16 +72,16 @@ class RunModels:
         
         # Image with comparisons
         p_name = image_folder + '/{}_combined_pred.jpg'.format(modelname)
-        im_p = cmap(p)
+        im_p = ai_cmap(p)
         img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
 
-        if update_scores('{}/{}'.format(groupname, modelname), error):
-            replace_md_image(p_name, error)
+        if update_scores('{}/{}'.format(groupname, modelname), rec_error):
+            replace_md_image(p_name, rec_error)
 
         with open(model_loc + '/' + 'config.json', 'w') as w_file:
             w_file.write(json.dumps(config, indent=2))
 
-        return error
+        return reg_error + rec_error
 
 
 """
