@@ -104,7 +104,7 @@ def replace_md_image(filepath, score):
         # Gets old score
         score_loc = j-1
         score_line = lines[score_loc]
-        old score_idx = score_line.find('score ') + len('score ')
+        old_score_idx = score_line.find('score ') + len('score ')
         old_score = float(score_line[old_score_idx:score_line.find(':')])
 
         if score > old_score: return # The image only gets replaced if the score is better

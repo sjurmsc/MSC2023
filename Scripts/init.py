@@ -142,8 +142,8 @@ class config_iterator:
 if __name__ == '__main__':
     use_optuna = True
     # Load data
-    seis_data_fp = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
-    ai_data = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG.Abs_Zp.sgy'
+    seis_data_fp = r'C:\Users\sjurbey\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
+    ai_data = r'C:\Users\sjurbey\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG.Abs_Zp.sgy'
 
     traces, z = get_traces(seis_data_fp)
     traces = traces[:, :]
