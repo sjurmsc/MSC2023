@@ -417,7 +417,7 @@ def compiled_TCN(training_data, config, **kwargs):
                                                                    'reconstruction_output' : 'mean_squared_error'})
     print(model.summary())
     print('\n')
-    print((batch_size, *X))
+    print((batch_size, *X).shape)
     model.fit(x=(batch_size, *X), y=(batch_size, *Y), batch_size=batch_size, epochs=epochs, **kwargs)
     
     return model
