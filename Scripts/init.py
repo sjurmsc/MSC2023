@@ -64,11 +64,10 @@ class RunModels:
         model.save(model_loc)
 
         # Evaluating the model
-        X, Y = np.array(self.test_data[1]), np.array(self.test_data)
-        x = X.reshape(1, -1)
-        y = Y.reshape(1, -1)
-        reg_error, rec_error = model.evaluate(x, y, verbose=0)
-        
+        X, Y = self.test_data[1], self.test_data
+        error = model.evaluate(X, Y, batch_size = 1, verbose=0)
+        print(error)
+        reg_error, rec_error = error
         # Image
         seis_cmap = self.seis_cmap
         ai_cmap = self.ai_cmap
