@@ -56,12 +56,6 @@ class RunModels:
 
         model = compiled_TCN(self.train_data, self.config, callbacks=self.tb_callback)
 
-        X, Y = self.test_data[1], self.test_data
-        x = X.reshape(1, -1)
-        y = Y.reshape(1, -1)
-
-        reg_error, rec_error = model.evaluate(x, y, verbose=0)
-        
         # Saving the model
         model_loc = './Models/{}/{}'.format(groupname, modelname)
 
@@ -69,6 +63,12 @@ class RunModels:
             os.mkdir(model_loc)
         model.save(model_loc)
 
+        # Evaluating the model
+        X, Y = np.array(self.test_data[1]), np.array(self.test_data)
+        x = X.reshape(1, -1)
+        y = Y.reshape(1, -1)
+        reg_error, rec_error = model.evaluate(x, y, verbose=0)
+        
         # Image
         seis_cmap = self.seis_cmap
         ai_cmap = self.ai_cmap
