@@ -15,6 +15,7 @@ from PIL import Image
 import numpy as np
 from keras.models import load_model
 import tensorflow as tf
+from sklearn.model_selection import train_test_split
 
 # My scripts
 from Log import *
