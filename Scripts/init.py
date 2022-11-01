@@ -217,7 +217,7 @@ if __name__ == '__main__':
     config['convolution_depth']     = 2
 
     # Iteratives
-    makemodel = True; loadmodel = not makemodel
+    makemodel = False; loadmodel = not makemodel
 
     if makemodel:
         model_name_gen = give_modelname()
@@ -263,10 +263,11 @@ if __name__ == '__main__':
                 config = next(config_iter)
             
     if loadmodel:
-        groupname = 'AAE'
+        groupname = 'ABA'
         model = load_model('./Models/{}/0'.format(groupname))
         
-        
+        X, Y = test_data[1], test_data
+        error = model.evaluate(X, Y, batch_size = 1, verbose=0)
     
     # histogram_data = (pt[0].flatten(), pt[1].flatten())
     
