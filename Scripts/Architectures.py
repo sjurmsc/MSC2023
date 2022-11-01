@@ -328,7 +328,7 @@ def TCN1D(trainX, param):
     # return model
 
 
-def compiled_TCN(training_data, config):
+def compiled_TCN(training_data, config, **kwargs):
     """
     @ Author: Sjur [in progress]
     Three temporal blocks as feature extractions
@@ -416,7 +416,7 @@ def compiled_TCN(training_data, config):
     model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss={'regression_output' : 'mean_squared_error',
                                                                    'reconstruction_output' : 'mean_squared_error'})
     print(model.summary())
-    model.fit(x=X, y=Y, batch_size=batch_size, epochs=epochs)
+    model.fit(x=X, y=Y, batch_size=batch_size, epochs=epochs, **kwargs)
     
     return model
 

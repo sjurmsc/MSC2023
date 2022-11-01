@@ -14,6 +14,7 @@ import segyio
 from PIL import Image
 import numpy as np
 from keras.models import load_model
+import tensorflow as tf
 
 # My scripts
 from Log import *
@@ -41,6 +42,11 @@ class RunModels:
         pass
 
     def objective(self, trial):
+        groupname, modelname = next(self.model_name_gen)
+        tbdir = './_tb/{}/{}'.format(groupname, modelname)
+        os.makedirs(tbdir, exist_ok=True)
+        tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tbdir, histogram_freq=1)
+
         sfunc = dict()
         sfunc['float'], sfunc['int'], sfunc['categorical'] = [trial.suggest_float, trial.suggest_int, trial.suggest_categorical]
 
@@ -48,14 +54,14 @@ class RunModels:
             suggest_func = sfunc[items[0]]
             self.config[key] = suggest_func(key, *items[1])
 
-        model = compiled_TCN(self.train_data, self.config)
+        model = compiled_TCN(self.train_data, self.config, callbacks=tb_callback)
 
         X, Y = self.test_data[1], self.test_data
         reg_error, rec_error = model.evaluate(X, Y, verbose=0)
         
         # Saving the model
-        groupname, modelname = next(self.model_name_gen)
         model_loc = './Models/{}/{}'.format(groupname, modelname)
+
         if not os.path.isdir(model_loc):
             os.mkdir(model_loc)
         model.save(model_loc)
@@ -66,7 +72,9 @@ class RunModels:
         
         p, pt = create_pred_image_from_1d(model, self.train_data)
 
-        image_folder = 'C:/Users/SjB/MSC2023/TEMP/{}'.format(groupname)
+        if not os.path.isdir('./TEMP'):
+            os.mkdir('./TEMP')
+        image_folder = './TEMP/{}'.format(groupname)
         if not os.path.isdir(image_folder):
             os.makedirs(image_folder, exist_ok=True)
         
@@ -145,8 +153,8 @@ class config_iterator:
 if __name__ == '__main__':
     use_optuna = True
     # Load data
-    seis_data_fp = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
-    ai_data = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG.Abs_Zp.sgy'
+    seis_data_fp = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
+    ai_data = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG.Abs_Zp.sgy'
 
     traces, z = get_traces(seis_data_fp)
     traces = traces[:, :]
