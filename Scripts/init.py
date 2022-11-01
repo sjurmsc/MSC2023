@@ -45,7 +45,7 @@ class RunModels:
         groupname, modelname = next(self.model_name_gen)
         tbdir = './_tb/{}/{}'.format(groupname, modelname)
         os.makedirs(tbdir, exist_ok=True)
-        tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tbdir, histogram_freq=1)
+        self.tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tbdir, histogram_freq=1)
 
         sfunc = dict()
         sfunc['float'], sfunc['int'], sfunc['categorical'] = [trial.suggest_float, trial.suggest_int, trial.suggest_categorical]
@@ -54,7 +54,7 @@ class RunModels:
             suggest_func = sfunc[items[0]]
             self.config[key] = suggest_func(key, *items[1])
 
-        model = compiled_TCN(self.train_data, self.config, callbacks=tb_callback)
+        model = compiled_TCN(self.train_data, self.config, callbacks=self.tb_callback)
 
         X, Y = self.test_data[1], self.test_data
         reg_error, rec_error = model.evaluate(X, Y, verbose=0)
@@ -154,6 +154,7 @@ if __name__ == '__main__':
     use_optuna = True
     # Load data
 
+    OD_fp = Path('../OneDrive - NGI/Documents/NTNU/MSC_DATA')
     seis_data_fp = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
     ai_data = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG.Abs_Zp.sgy'
 
@@ -228,8 +229,8 @@ if __name__ == '__main__':
 
             # Ints
             config_range['nb_filters']      = ('int', (1, 8))
-            config_range['batch_size']      = ('int', (20, 40))
-            config_range['epochs']          = ('int', (10, 50))
+            config_range['batch_size']      = ('int', (20, 25))
+            config_range['epochs']          = ('int', (10, 20))
 
             # Categoricals
             #config_range['padding']         = ('categorical', (['causal', 'same'],))
