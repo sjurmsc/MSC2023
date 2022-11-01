@@ -57,7 +57,10 @@ class RunModels:
         model = compiled_TCN(self.train_data, self.config, callbacks=self.tb_callback)
 
         X, Y = self.test_data[1], self.test_data
-        reg_error, rec_error = model.evaluate(X, Y, verbose=0)
+        x = X.reshape(1, -1)
+        y = Y.reshape(1, -1)
+
+        reg_error, rec_error = model.evaluate(x, y, verbose=0)
         
         # Saving the model
         model_loc = './Models/{}/{}'.format(groupname, modelname)
