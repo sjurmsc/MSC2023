@@ -15,6 +15,7 @@ from PIL import Image
 import numpy as np
 from keras.models import load_model
 import tensorflow as tf
+from sklearn.model_selection import train_test_split
 
 # My scripts
 from Log import *
@@ -264,11 +265,14 @@ if __name__ == '__main__':
             
     if loadmodel:
         groupname = 'ABA'
-        model = load_model('./Models/{}/0'.format(groupname))
+        model = load_model('../Models/{}/0'.format(groupname))
         
-        X, Y = np.array(test_data[1]), np.array(test_data)
+
+        test_data = [test_data[0], test_data[1][:len(test_data[0])]]
+        X, Y = test_data[1], test_data
+
         error = model.evaluate(X, Y, batch_size = 1, verbose=0)
-    
+        print(error)
     # histogram_data = (pt[0].flatten(), pt[1].flatten())
     
     # colors = ['orange', 'b']
