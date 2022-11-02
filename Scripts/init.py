@@ -267,8 +267,10 @@ if __name__ == '__main__':
         groupname = 'ABA'
         model = load_model('./Models/{}/0'.format(groupname))
         
+
         test_data = [test_data[0], test_data[1][:len(test_data[0])]]
         X, Y = test_data[1], test_data
+
         error = model.evaluate(X, Y, batch_size = 1, verbose=0)
         print(error)
     # histogram_data = (pt[0].flatten(), pt[1].flatten())
