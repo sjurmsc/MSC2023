@@ -154,7 +154,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True
+    use_optuna = True ; n_trials = 50
     # Load data
 
     OD_fp = Path('../OneDrive - NGI/Documents/NTNU/MSC_DATA')
@@ -218,7 +218,7 @@ if __name__ == '__main__':
     config['convolution_depth']     = 2
 
     # Iteratives
-    makemodel = False; loadmodel = not makemodel
+    makemodel = True; loadmodel = not makemodel
 
     if makemodel:
         model_name_gen = give_modelname()
@@ -241,7 +241,7 @@ if __name__ == '__main__':
 
             R = RunModels(train_data, test_data, config, config_range)
             study = optuna.create_study()
-            study.optimize(R.objective, n_trials=50)
+            study.optimize(R.objective, n_trials=n_trials)
 
         else:
             variable_config = dict()
