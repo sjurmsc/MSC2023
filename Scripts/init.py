@@ -265,7 +265,7 @@ if __name__ == '__main__':
             
     if loadmodel:
         groupname = 'ABA'
-        model = load_model('../Models/{}/0'.format(groupname))
+        model = load_model('./Models/{}/0'.format(groupname))
         
 
         test_data = [test_data[0], test_data[1][:len(test_data[0])]]
