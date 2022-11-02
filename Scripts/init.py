@@ -232,8 +232,8 @@ if __name__ == '__main__':
 
             # Ints
             config_range['nb_filters']      = ('int', (1, 8))
-            config_range['batch_size']      = ('int', (20, 25))
-            config_range['epochs']          = ('int', (10, 20))
+            config_range['batch_size']      = ('int', (20, 40))
+            config_range['epochs']          = ('int', (10, 100))
 
             # Categoricals
             #config_range['padding']         = ('categorical', (['causal', 'same'],))

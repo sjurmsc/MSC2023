@@ -156,9 +156,10 @@ from numpy.linalg import norm
 def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     # Decide based on stats which section is the best predicting
     # Moving window statistics
-    if len(gt_data.shape) == 2:
+    if len(gt_data) == 2:
 
         gt_ai, X = gt_data
+        gt_ai = np.array(gt_ai)
         samples = gt_ai.shape[1] #pass # Amount of columns (to be rows)
         pred_ai, pred_recon = model.predict(X)
 
