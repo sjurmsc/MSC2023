@@ -65,7 +65,8 @@ class RunModels:
         model.save(model_loc)
 
         # Evaluating the model
-        X, Y = self.test_data[1], self.test_data
+        test_data = [test_data[0], test_data[1][:len(test_data[0])]]
+        X, Y = test_data[1], test_data
         error = model.evaluate(X, Y, batch_size = 1, verbose=0)
         tot_error, reg_error, rec_error = error
         # Image
