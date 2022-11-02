@@ -266,7 +266,7 @@ if __name__ == '__main__':
         groupname = 'ABA'
         model = load_model('./Models/{}/0'.format(groupname))
         
-        X, Y = test_data[1], test_data
+        X, Y = np.array(test_data[1]), np.array(test_data)
         error = model.evaluate(X, Y, batch_size = 1, verbose=0)
     
     # histogram_data = (pt[0].flatten(), pt[1].flatten())
