@@ -24,7 +24,20 @@ def gname(old_name):
         new_name = gname(old_name[:-1]) + 'A'
     return new_name
 
-def new_group():
+def update_groupstate():
+    """Keeps groupstate updated after any model run
+    """
+    from git import Repo
+    try:
+        repo = Repo('.')
+        repo.git.add('Models/_groupstate.json')
+        repo.commit('Modelrun {} automatic push'.format(groupname))
+        origin = repo.remote(name = 'origin')
+        origin.push()
+    except:
+        print('Unable to push to remote repo')
+
+def new_group(push=True):
     """
     Creates a log of the model being run and puts it in the \Models 
     directory. Uses the RunModel object to extract the needed values
@@ -36,11 +49,14 @@ def new_group():
         group_name = group['Group']
 
         state.write(json.dumps(group))
+    
 
     # Creates parent directory
     m = Path('./Models')
     new = m.joinpath(group_name)
     Path.mkdir(new, parents=True, exist_ok=True)
+    
+    if push: update_groupstate()
     return group_name
 
 def nats(k):
@@ -200,6 +216,7 @@ def save_training_progression(data, model_fp):
     filename = 'train_progress'
     data = np.array(data)
     data.savez(model_fp + '/' + filename)
+
 
 
 #%% Only used for testing the code

@@ -138,7 +138,7 @@ import scipy.stats as stats
 import statistics
 from itertools import product, permutations
 import optuna
-from git import Repo
+
 
 # Functions
 class config_iterator:
@@ -283,14 +283,7 @@ if __name__ == '__main__':
         error = model.evaluate(X, Y, batch_size = 1, verbose=0)
         print(error)
     
-    try:
-        repo = Repo('.')
-        repo.git.add('Models/_groupstate.json')
-        repo.commit('Modelrun {} automatic push'.format(groupname))
-        origin = repo.remote(name = 'origin')
-        origin.push()
-    except:
-        print('Unable to push to remote repo')
+    
     # histogram_data = (pt[0].flatten(), pt[1].flatten())
     
     # colors = ['orange', 'b']
