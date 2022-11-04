@@ -102,6 +102,7 @@ class RunModels:
         X, Y = test_data[1], test_data
         error = model.evaluate(X, Y, batch_size = 1, verbose=0)
         tot_error, reg_error, rec_error = error
+        
         # Image
         seis_cmap = self.seis_cmap
         ai_cmap = self.target_cmap
