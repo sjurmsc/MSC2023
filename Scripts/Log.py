@@ -76,7 +76,7 @@ def update_scores(modelname, score):
     with open(score_file, 'r') as readfile:
         scores = json.loads(readfile.read())
 
-    if len(list(score))>1:
+    if len([score])>1:
         regression_score, reconstruction_score = score
         if np.any([regression_score < x for x in scores['regression_scores'].values()]):
             scores['regression_scores'][modelname] = regression_score
@@ -100,7 +100,7 @@ def replace_md_image(filepath, score):
     Replaces the image in the github markdown document with the image at
     the given filepath
     """
-    if len(list(score))>1:
+    if len([score])>1:
         score = score[1]
 
     with open('README.md', 'r') as readfile:
