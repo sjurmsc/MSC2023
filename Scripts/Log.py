@@ -91,7 +91,7 @@ def update_scores(modelname, score):
     # Pruning condition (Amount of etries must not exceed 10)
 
     with open(score_file, 'w') as writefile:
-        writefile.write(json.dumps(scores, inline=2))
+        writefile.write(json.dumps(scores, indent=2))
     return True
 
 
