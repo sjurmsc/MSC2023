@@ -60,7 +60,6 @@ def update_scores(modelname, score):
     with open(score_file, 'r') as readfile:
         scores = json.loads(readfile.read())
 
-
     if len(score)>1:
         regression_score, reconstruction_score = score
         if np.any([regression_score < x for x in scores['regression_scores'].values()]):
@@ -74,7 +73,6 @@ def update_scores(modelname, score):
         return False
 
     # Pruning condition (Amount of etries must not exceed 10)
-
 
     with open(score_file, 'w') as writefile:
         writefile.write(json.dumps(scores, inline=2))
@@ -195,7 +193,13 @@ def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     p = np.row_stack((pred_matrix, gt_matrix))
     return p.T, (pred_matrix.T, gt_matrix.T) # quickfix
 
-
+def save_training_progression(data, model_fp):
+    """Dumps the progression into npz file, so that it may be plotted with
+    different rcParams in the future
+    """
+    filename = 'train_progress'
+    data = np.array(data)
+    data.savez(model_fp + '/' + filename)
 
 
 #%% Only used for testing the code

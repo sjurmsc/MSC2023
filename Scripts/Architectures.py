@@ -417,9 +417,9 @@ def compiled_TCN(training_data, config, **kwargs):
                                                                    'reconstruction_output' : 'mean_squared_error'})
     print(model.summary())
 
-    model.fit(x=X, y=Y, batch_size=batch_size, epochs=epochs, **kwargs)
+    History = model.fit(x=X, y=Y, batch_size=batch_size, epochs=epochs, **kwargs)
     
-    return model
+    return model, History
 
 
 # Loss Function

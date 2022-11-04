@@ -58,10 +58,18 @@ class RunModels:
         self.train_data = train_data
         self.test_data = test_data
 
-        self.st_dev = stats.tstd(traces, axis=None)
-        seis_norm = mpl.colors.Normalize(-self.st_dev, self.st_dev)
+        
+        if len(self.train_data) == 2:
+            target, traces = self.train_data
+            self.target_st_dev = stats.tstd(target, axis=None)
+            target_norm = mpl.colors.Normalize(-self.target_st_dev, self.target_st_dev)
+            self.target_cmap = lambda x : plt.cm.plasma(target_norm(x))
+        elif len(self.train_data) == 1:
+            traces = self.train_data
+        self.seis_st_dev = stats.tstd(traces, axis=None)
+        seis_norm = mpl.colors.Normalize(-self.seis_st_dev, self.seis_st_dev)
         self.seis_cmap = lambda x : plt.cm.seismic(seis_norm(x))
-        self.ai_cmap = None
+        
 
 
     def modelname(self):
@@ -96,7 +104,7 @@ class RunModels:
         tot_error, reg_error, rec_error = error
         # Image
         seis_cmap = self.seis_cmap
-        ai_cmap = self.ai_cmap
+        ai_cmap = self.target_cmap
         
         p, pt = create_pred_image_from_1d(model, self.train_data)
 
@@ -129,6 +137,7 @@ import scipy.stats as stats
 import statistics
 from itertools import product, permutations
 import optuna
+from git import Repo
 
 # Functions
 class config_iterator:
@@ -189,8 +198,8 @@ if __name__ == '__main__':
     """
     Needs normalization within the standard deviations of the population
     """
-    st_dev = stats.tstd(traces, axis=None)
-    norm = mpl.colors.Normalize(-st_dev, st_dev)
+    seis_st_dev = stats.tstd(traces, axis=None)
+    norm = mpl.colors.Normalize(-seis_st_dev, seis_st_dev)
     cmap = lambda x : plt.cm.seismic(norm(x))
 
 
@@ -251,7 +260,7 @@ if __name__ == '__main__':
 
             while config != None:
                 groupname, modelname = next(model_name_gen)
-                model = compiled_TCN(train_data, config)
+                model, History = compiled_TCN(train_data, config)
                 
                 model_loc = './Models/{}/{}'.format(groupname, modelname)
                 if not os.path.isdir(model_loc):
@@ -259,6 +268,7 @@ if __name__ == '__main__':
                 model.save(model_loc)
                 with open(model_loc + '/' + 'config.json', 'w') as w_file:
                     w_file.write(json.dumps(config))
+                save_training_progression(History.history, model_loc)
                 config = next(config_iter)
             
     if loadmodel:
@@ -271,6 +281,15 @@ if __name__ == '__main__':
 
         error = model.evaluate(X, Y, batch_size = 1, verbose=0)
         print(error)
+    
+    try:
+        repo = Repo('.')
+        repo.git.add('Models/_groupstate.json')
+        repo.commit('Modelrun {} automatic push'.format(groupname))
+        origin = repo.remote(name = 'origin')
+        origin.push()
+    except:
+        print('Unable to push to remote repo')
     # histogram_data = (pt[0].flatten(), pt[1].flatten())
     
     # colors = ['orange', 'b']
