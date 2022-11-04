@@ -81,7 +81,7 @@ def update_scores(modelname, score):
         if np.any([regression_score < x for x in scores['regression_scores'].values()]):
             scores['regression_scores'][modelname] = regression_score
 
-    else: reconstruciton_score = score
+    else: reconstruction_score = score
 
     if np.any([reconstruction_score < x for x in scores['recon_scores'].values()]):
         scores['recon_scores'][modelname] = reconstruction_score
