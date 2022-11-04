@@ -100,7 +100,7 @@ def replace_md_image(filepath, score):
     Replaces the image in the github markdown document with the image at
     the given filepath
     """
-    if len(score)>1:
+    if len(list(score))>1:
         score = score[1]
 
     with open('README.md', 'r') as readfile:
