@@ -104,7 +104,7 @@ class RunModels:
         tot_error, reg_error, rec_error = error
         # Image
         seis_cmap = self.seis_cmap
-        ai_cmap = self.ai_cmap
+        ai_cmap = self.target_cmap
         
         p, pt = create_pred_image_from_1d(model, self.train_data)
 
@@ -260,7 +260,7 @@ if __name__ == '__main__':
 
             while config != None:
                 groupname, modelname = next(model_name_gen)
-                model = compiled_TCN(train_data, config)
+                model, History = compiled_TCN(train_data, config)
                 
                 model_loc = './Models/{}/{}'.format(groupname, modelname)
                 if not os.path.isdir(model_loc):
@@ -268,6 +268,7 @@ if __name__ == '__main__':
                 model.save(model_loc)
                 with open(model_loc + '/' + 'config.json', 'w') as w_file:
                     w_file.write(json.dumps(config))
+                save_training_progression(History.history, model_loc)
                 config = next(config_iter)
             
     if loadmodel:
