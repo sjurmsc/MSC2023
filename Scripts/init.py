@@ -88,7 +88,7 @@ class RunModels:
             suggest_func = sfunc[items[0]]
             self.config[key] = suggest_func(key, *items[1])
 
-        model = compiled_TCN(self.train_data, self.config, callbacks=self.tb_callback)
+        model, History = compiled_TCN(self.train_data, self.config, callbacks=self.tb_callback)
 
         # Saving the model
         model_loc = './Models/{}/{}'.format(groupname, modelname)
@@ -124,6 +124,7 @@ class RunModels:
 
         with open(model_loc + '/' + 'config.json', 'w') as w_file:
             w_file.write(json.dumps(config, indent=2))
+        save_training_progression(History.history, model_loc)
 
         return reg_error + rec_error
 
