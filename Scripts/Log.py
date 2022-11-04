@@ -156,20 +156,23 @@ from numpy.linalg import norm
 def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     # Decide based on stats which section is the best predicting
     # Moving window statistics
-    if len(gt_data) == 2:
 
-        gt_ai, X = gt_data
-        gt_ai = np.array(gt_ai)
-        samples = gt_ai.shape[1] #pass # Amount of columns (to be rows)
-        pred_ai, pred_recon = model.predict(X)
-
+    X = gt_data
+    if len(X) == 2:
+        truth, X = X
+    elif len(X) == 1:
+        truth = X
+    truth = np.array(truth)
+    samples = truth.shape[1] #pass # Amount of columns (to be rows)
+    pred = model.predict(X)
+    if len(pred) == 2: pred, pred_recon = pred
     
     traces = int(aspect_r*samples)  #the breadth of the image is the aspect_ratio*height
     
     if mode == 'sbs':
         traces //= 2
 
-    #gt_ai = gt_ai.reshape(gt_ai.shape[:-1])
+    #truth = truth.reshape(truth.shape[:-1])
     
     # pred = np.array([])
     # for i in range(X.shape[0]):
@@ -179,15 +182,15 @@ def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     scr = []
 
     # Decide what slice is best, by loss (l2 error norm)
-    for s_idx in range(len(gt_ai)-traces):
+    for s_idx in range(len(truth)-traces):
         s = slice(s_idx, s_idx+traces)
-        score = norm(pred_ai[s]-gt_ai[s], 2)
+        score = norm(pred[s]-truth[s], 2)
         scr.append(score)
 
     slce = scr.index(np.min(scr))
     s = slice(slce, slce+traces)
 
-    pred_matrix = pred_ai[s] ; gt_matrix = gt_ai[s]
+    pred_matrix = pred[s] ; gt_matrix = truth[s]
 
     p = np.row_stack((pred_matrix, gt_matrix))
     return p.T, (pred_matrix.T, gt_matrix.T) # quickfix

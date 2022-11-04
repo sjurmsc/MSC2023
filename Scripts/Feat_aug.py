@@ -13,7 +13,7 @@ def get_data_loc():
     return json.loads(d_filepath)
 
 
-def get_traces(fp, mmap=True, zrange: tuple = (None,), length: int = None):
+def get_traces(fp, mmap=True, zrange: tuple = (None,), length: int = None, ztrunc=100):
     """
     This function should conserve some information about the domain (time or depth) of
     the data.
@@ -23,9 +23,10 @@ def get_traces(fp, mmap=True, zrange: tuple = (None,), length: int = None):
         if mmap:
             seis_data.mmap()  # Only to be used if the file size is small compared to available memory
         traces = segyio.collect(seis_data.trace)
-    if zrange[0] != None:
-        pass
+    # if zrange[0] != None:
+    #     pass
         #zmin = z[]
+    traces, z = traces[z<ztrunc], z[z<ztrunc]
     return traces, z
 
 

@@ -6,6 +6,31 @@ this script will contain all instructions for which networks to run on odin
 
 All git operations will happen in this script
 """
+
+"""
+In settings must be:
+network: f.ex 2DTCN, 1DTCN, 2DTCN_WS [weight sharing], Randomforest ... etc
+# What the network is, will affect what the init script uses to initialize the model
+
+if TCN networks:
+    dropout:
+    kernel_size
+    filters
+    loss
+    dilation
+    
+
+for all networks:
+    dataset: contains the label names that can be used as keys for retrieving file paths
+            for getting the data [file paths must be robust, and located either on p: or in the
+            repo]
+    epochs: 
+    batches:
+    learn_rate:
+
+for training where certain fields are not needed, these may be filled with None, or be omitted
+"""
+
 # External packages
 import json
 import time
@@ -93,33 +118,6 @@ class RunModels:
             w_file.write(json.dumps(config, indent=2))
 
         return reg_error + rec_error
-
-
-"""
-In settings must be:
-network: f.ex 2DTCN, 1DTCN, 2DTCN_WS [weight sharing], Randomforest ... etc
-# What the network is, will affect what the init script uses to initialize the model
-
-if TCN networks:
-    dropout:
-    kernel_size
-    filters
-    loss
-    dilation
-    
-
-for all networks:
-    dataset: contains the label names that can be used as keys for retrieving file paths
-            for getting the data [file paths must be robust, and located either on p: or in the
-            repo]
-    epochs: 
-    batches:
-    learn_rate:
-
-for training where certain fields are not needed, these may be filled with None, or be omitted
-"""
-
-
 
 
 import matplotlib.pyplot as plt
