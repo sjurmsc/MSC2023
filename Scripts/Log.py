@@ -60,7 +60,6 @@ def update_scores(modelname, score):
     with open(score_file, 'r') as readfile:
         scores = json.loads(readfile.read())
 
-
     if len(score)>1:
         regression_score, reconstruction_score = score
         if np.any([regression_score < x for x in scores['regression_scores'].values()]):
@@ -74,7 +73,6 @@ def update_scores(modelname, score):
         return False
 
     # Pruning condition (Amount of etries must not exceed 10)
-
 
     with open(score_file, 'w') as writefile:
         writefile.write(json.dumps(scores, inline=2))
