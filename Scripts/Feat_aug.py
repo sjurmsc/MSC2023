@@ -26,7 +26,7 @@ def get_traces(fp, mmap=True, zrange: tuple = (None,), length: int = None, ztrun
     # if zrange[0] != None:
     #     pass
         #zmin = z[]
-    traces, z = traces[z<ztrunc], z[z<ztrunc]
+    traces, z = traces[:, z<ztrunc], z[z<ztrunc]
     return traces, z
 
 
