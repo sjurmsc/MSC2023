@@ -24,14 +24,14 @@ def gname(old_name):
         new_name = gname(old_name[:-1]) + 'A'
     return new_name
 
-def update_groupstate():
+def update_groupstate(gname):
     """Keeps groupstate updated after any model run
     """
     from git import Repo
     try:
         repo = Repo('.')
         repo.git.add('Models/_groupstate.json')
-        repo.commit('Modelrun {} automatic push'.format(groupname))
+        repo.index.commit('Modelrun {} automatic push'.format(gname))
         origin = repo.remote(name = 'origin')
         origin.push()
     except:
@@ -56,7 +56,7 @@ def new_group(push=True):
     new = m.joinpath(group_name)
     Path.mkdir(new, parents=True, exist_ok=True)
     
-    if push: update_groupstate()
+    if push: update_groupstate(group['Group'])
     return group_name
 
 def nats(k):
