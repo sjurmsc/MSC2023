@@ -2,9 +2,9 @@
 
 URL to assignment: https://www.overleaf.com/read/tzwckfrpfbvw
 
-Current best performing reconstruction module with score 10.0:
-![](C:/Users/SjB/MSC2023/TEMP/AAR/3_combined_pred.jpg)
-C:/Users/SjB/MSC2023/TEMP/AAR/3_combined_pred.jpg
+Current best performing reconstruction module with score 1.6018363237380981:
+![](./ABU/0_combined_pred.jpg)
+./ABU/0_combined_pred.jpg
 
 ---
 # Blog:
