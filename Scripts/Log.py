@@ -76,6 +76,8 @@ def update_scores(modelname, score):
     with open(score_file, 'r') as readfile:
         scores = json.loads(readfile.read()) # Make sure score file is not empty
 
+    if not len(scores): return True
+
     if len([score])>1:
         regression_score, reconstruction_score = score
         if np.any([regression_score < x for x in scores['regression_scores'].values()]):
