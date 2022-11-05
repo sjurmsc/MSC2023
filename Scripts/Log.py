@@ -74,7 +74,7 @@ def update_scores(modelname, score):
     score_file = 'Models/_scores.json'
     
     with open(score_file, 'r') as readfile:
-        scores = json.loads(readfile.read())
+        scores = json.loads(readfile.read()) # Make sure score file is not empty
 
     if len([score])>1:
         regression_score, reconstruction_score = score
