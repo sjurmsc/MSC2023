@@ -213,14 +213,14 @@ if __name__ == '__main__':
     config = dict()
     config['nb_filters']            = 2
     config['kernel_size']           = 8 # JR used 5
-    config['dilations']             = [1, 2, 4, 8, 16, 32]
+    config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
-    config['dropout_rate']          = 0.01
+    config['dropout_rate']          = 0.04
     config['return_sequences']      = True
     config['activation']            = 'relu'
     config['convolution_type']      = 'Conv1D'
-    config['learn_rate']            = 0.03
+    config['learn_rate']            = 0.01
     config['kernel_initializer']    = 'he_normal'
     config['use_batch_norm']        = False
     config['use_layer_norm']        = False
@@ -228,7 +228,7 @@ if __name__ == '__main__':
 
     config['batch_size']            = 20
     config['epochs']                = 12
-    config['convolution_depth']     = 2
+    config['convolution_depth']     = 3
 
     # Iteratives
     makemodel = True; loadmodel = not makemodel
@@ -246,7 +246,7 @@ if __name__ == '__main__':
             # Ints
             config_range['nb_filters']      = ('int', (1, 8))
             config_range['batch_size']      = ('int', (20, 40))
-            config_range['epochs']          = ('int', (10, 100))
+            config_range['epochs']          = ('int', (75, 200))
 
             # Categoricals
             #config_range['padding']         = ('categorical', (['causal', 'same'],))
