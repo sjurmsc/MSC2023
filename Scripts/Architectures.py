@@ -317,6 +317,7 @@ class TCN(Layer):
         config['kernel_initializer'] = self.kernel_initializer
         return config
 
+"""
 class CNN(Layer):
 def __init__(self,
              kernel_size=3,
@@ -362,6 +363,7 @@ def build(self):
     x = Dense(dense_output_shape)(x)
     x = Activation('linear', name='reconstruction_output')(x)
     return x
+"""
 
 def TCN1D(trainX, param):
     """
@@ -425,7 +427,7 @@ def compiled_TCN(training_data, config, **kwargs):
     )(input_layer)
 
     # Regression module
-    r = CNN()(x)
+    #r = CNN()(x)
     for k in range(conv_depth):
         if k == 0: out = x
         else: out = r
@@ -440,7 +442,7 @@ def compiled_TCN(training_data, config, **kwargs):
     r = Activation('linear', name='regression_output')(r)
 
     # Reconstruciton module
-    x = CNN()(x)
+    #x = CNN()(x)
     conv_func = Conv1D
     dense_output_shape = X.shape[1]
     if convolution_type == 'Conv2D': conv_func = Conv2D; dense_output_shape = X.shape[1]*X.shape[2] # Not quite sure

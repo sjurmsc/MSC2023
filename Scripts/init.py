@@ -167,7 +167,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 2
+    use_optuna = True ; n_trials = 10
     # Load data
 
     OD_fp = Path('../OneDrive - NGI/Documents/NTNU/MSC_DATA')
@@ -244,7 +244,7 @@ if __name__ == '__main__':
             config_range['dropout_rate']    = ('float', (0.01, 0.1))
 
             # Ints
-            config_range['nb_filters']      = ('int', (1, 8))
+            config_range['nb_filters']      = ('int', (2, 8))
             config_range['batch_size']      = ('int', (20, 40))
             config_range['epochs']          = ('int', (75, 200))
 

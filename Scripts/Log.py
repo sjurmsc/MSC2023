@@ -194,7 +194,7 @@ def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     difference_matrix = pred-truth
     norm_list = [norm(i, 2) for i in difference_matrix]
     norm_arr = np.array(norm_list)
-    moving_window_mean = np.convolve(norm_arr, np.ones(traces), mode='valid')
+    moving_window_mean = list(np.convolve(norm_arr, np.ones(traces), mode='valid'))
 
     slce = moving_window_mean.index(np.min(moving_window_mean))
     s = slice(slce, slce+traces)
