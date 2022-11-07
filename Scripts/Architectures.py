@@ -317,6 +317,51 @@ class TCN(Layer):
         config['kernel_initializer'] = self.kernel_initializer
         return config
 
+class CNN(Layer):
+def __init__(self,
+             kernel_size=3,
+             padding='causal',
+             dropout_rate=0.0,
+             activation='relu',
+             convolution_type = 'Conv2D',
+             kernel_initializer='he_normal',
+             use_batch_norm=False,
+             use_layer_norm=False,
+             use_weight_norm=False,
+             **kwargs):
+    
+
+    self.kernel_size = kernel_size
+    self.padding = padding
+    self.dropout_rate = dropout_rate
+    self.activation = activation
+    self.convolution_type = convolution_type
+    self.kernel_initializer = kernel_initializer
+
+    # Not sure if needed..
+    self.use_batch_norm = use_batch_norm
+    self.use_layer_norm = use_layer_norm
+    self.use_weight_norm = use_weight_norm
+
+    super(CNN, self).__init__(**kwargs)
+
+    self.conv_func = Conv2D
+    if convolution_type == 'Conv1D':
+        self.conv_func = Conv1D
+    
+
+def build(self):
+    for k in range(conv_depth):
+        x = self.conv_func(filters=nb_filters, 
+                           kernel_size=kernel_size,
+                           padding = padding,
+                           activation='relu',
+                           name = name
+        )(x)
+    x = Flatten()(x)
+    x = Dense(dense_output_shape)(x)
+    x = Activation('linear', name='reconstruction_output')(x)
+    return x
 
 def TCN1D(trainX, param):
     """
@@ -380,6 +425,7 @@ def compiled_TCN(training_data, config, **kwargs):
     )(input_layer)
 
     # Regression module
+    r = CNN()(x)
     for k in range(conv_depth):
         if k == 0: out = x
         else: out = r
@@ -394,6 +440,7 @@ def compiled_TCN(training_data, config, **kwargs):
     r = Activation('linear', name='regression_output')(r)
 
     # Reconstruciton module
+    x = CNN()(x)
     conv_func = Conv1D
     dense_output_shape = X.shape[1]
     if convolution_type == 'Conv2D': conv_func = Conv2D; dense_output_shape = X.shape[1]*X.shape[2] # Not quite sure
