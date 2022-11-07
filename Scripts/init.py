@@ -174,9 +174,9 @@ if __name__ == '__main__':
     seis_data_fp = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
     ai_data = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG.Abs_Zp.sgy'
 
-    traces, z = get_traces(seis_data_fp)
+    traces, z_traces = get_traces(seis_data_fp)
     traces = traces[:, :]
-    ai, z = get_traces(ai_data)
+    ai, z_ai = get_traces(ai_data)
     ai = ai[:, :]
 
     # Splitting into test and training data for naive comparison
