@@ -190,27 +190,13 @@ def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     if mode == 'sbs':
         traces //= 2
 
-    #truth = truth.reshape(truth.shape[:-1])
-    
-    # pred = np.array([])
-    # for i in range(X.shape[0]):
-    #     pred = np.row_stack(pred, model.predict(gt_data[i, :]))
-     # 
-    
-    scr = []
-
     # Decide what slice is best, by loss (l2 error norm)
     difference_matrix = pred-truth
     norm_list = [norm(i, 2) for i in difference_matrix]
-    kernel_size = traces
-    
+    norm_arr = np.array(norm_list)
+    moving_window_mean = np.convolve(norm_arr, np.ones(traces), mode='valid')
 
-    for s_idx in range(len(truth)-traces):
-        s = slice(s_idx, s_idx+traces)
-        score = norm(pred[s]-truth[s], 2)
-        scr.append(score)
-
-    slce = scr.index(np.min(scr))
+    slce = moving_window_mean.index(np.min(moving_window_mean))
     s = slice(slce, slce+traces)
 
     pred_matrix = pred[s] ; gt_matrix = truth[s]
