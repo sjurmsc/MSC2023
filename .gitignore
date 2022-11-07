@@ -8,3 +8,4 @@ TEMP/seismic_images
 TEMP/*/*.jpg
 _tb/*
 !TEMP/AAO/1_combined_pred.jpg
+!TEMP/ABW/0_combined_pred.jpg
