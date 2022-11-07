@@ -107,10 +107,11 @@ def replace_md_image(filepath, score):
         lines = readfile.readlines()
 
         # Truncates filepath
-        abs_fp_idx = filepath.find('MSC2023') + len('MSC2023')
-        trunc_filepath = '.' + filepath[abs_fp_idx:]
-
+        abs_fp_idx = 0
+        if 'MSC2023' in filepath:
+            abs_fp_idx = filepath.find('MSC2023') + len('MSC2023')
         
+        trunc_filepath = '.' + filepath[abs_fp_idx:]
 
         # Gets first instance of markdown image
         j = [i for i, str in enumerate(lines) if str.startswith('!')][0]
@@ -135,6 +136,9 @@ def replace_md_image(filepath, score):
 
         with open('README.md', 'w') as writefile:
             writefile.writelines(lines)
+
+        with open('.gitignore', 'a') as file:
+            file.write('\n!' + trunc_filepath[1:])
 
 
 
