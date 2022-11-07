@@ -222,6 +222,8 @@ def save_training_progression(data, model_fp):
     np.savez(model_fp + '/' + filename, data)
 
 
+def prediction_histogram(pred, true):
+    
 
 #%% Only used for testing the code
 

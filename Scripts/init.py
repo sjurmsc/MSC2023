@@ -61,8 +61,11 @@ class RunModels:
         
         if len(self.train_data) == 2:
             target, traces = self.train_data
-            self.target_st_dev = stats.tstd(target, axis=None)
-            target_norm = mpl.colors.Normalize(-self.target_st_dev, self.target_st_dev)
+            flat_target = target.flatten()
+            self.target_max = np.max(flat_target, axis=None)
+            self.target_min = np.min(flat_target[np.nonzero(flat_target)])
+
+            target_norm = mpl.colors.Normalize(self.target_min, self.target_max)
             self.target_cmap = lambda x : plt.cm.plasma(target_norm(x))
         elif len(self.train_data) == 1:
             traces = self.train_data
