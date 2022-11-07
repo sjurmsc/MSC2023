@@ -200,6 +200,11 @@ def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     scr = []
 
     # Decide what slice is best, by loss (l2 error norm)
+    difference_matrix = pred-truth
+    norm_list = [norm(i, 2) for i in difference_matrix]
+    kernel_size = traces
+    
+
     for s_idx in range(len(truth)-traces):
         s = slice(s_idx, s_idx+traces)
         score = norm(pred[s]-truth[s], 2)
