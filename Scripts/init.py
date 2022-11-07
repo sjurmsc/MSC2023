@@ -111,6 +111,7 @@ class RunModels:
         ai_cmap = self.target_cmap
         
         p, pt = create_pred_image_from_1d(model, self.train_data)
+        prediction_histogram(pt[0], pt[1], bins=500)
 
         if not os.path.isdir('./TEMP'):
             os.mkdir('./TEMP')
@@ -166,7 +167,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 50
+    use_optuna = True ; n_trials = 2
     # Load data
 
     OD_fp = Path('../OneDrive - NGI/Documents/NTNU/MSC_DATA')
@@ -255,6 +256,7 @@ if __name__ == '__main__':
             study = optuna.create_study()
             study.optimize(R.objective, n_trials=n_trials)
 
+
         else:
             variable_config = dict()
             variable_config['nb_filters'] = [1, 2]
@@ -275,7 +277,7 @@ if __name__ == '__main__':
                     w_file.write(json.dumps(config))
                 save_training_progression(History.history, model_loc)
                 config = next(config_iter)
-            
+    plt.show()
     if loadmodel:
         groupname = 'ABA'
         model = load_model('./Models/{}/0'.format(groupname))

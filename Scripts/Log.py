@@ -221,9 +221,13 @@ def save_training_progression(data, model_fp):
     data = np.array(data)
     np.savez(model_fp + '/' + filename, data)
 
+from matplotlib.pyplot import hist
 
-def prediction_histogram(pred, true):
-    
+def prediction_histogram(pred, true, **kwargs):
+    pred = np.array(pred) ; true = np.array(true)
+    pred = pred.flatten() ; true = true.flatten()
+    return hist((pred, true), **kwargs)
+
 
 #%% Only used for testing the code
 
