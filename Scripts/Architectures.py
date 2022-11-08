@@ -319,77 +319,78 @@ class TCN(Layer):
 
 
 class CNN(Layer):
-def __init__(self,
-             nb_filters=64,
-             kernel_size=3,
-             nb_stacks=3,
-             padding='same',
-             dropout_rate=0.0,
-             activation='relu',
-             convolution_type = 'Conv2D',
-             kernel_initializer='he_normal',
-             use_batch_norm=False,
-             use_layer_norm=False,
-             use_weight_norm=False,
-             **kwargs):
-    
-    self.nb_filters = nb_filters
-    self.kernel_size = kernel_size
-    self.nb_stacks = nb_stacks
-    self.padding = padding
-    self.dropout_rate = dropout_rate
-    self.activation = activation
-    self.convolution_type = convolution_type
-    self.kernel_initializer = kernel_initializer
 
-    # Not sure if needed..
-    self.use_batch_norm = use_batch_norm
-    self.use_layer_norm = use_layer_norm
-    self.use_weight_norm = use_weight_norm
+    def __init__(self,
+                nb_filters=64,
+                kernel_size=3,
+                nb_stacks=3,
+                padding='same',
+                dropout_rate=0.0,
+                activation='relu',
+                convolution_type = 'Conv2D',
+                kernel_initializer='he_normal',
+                use_batch_norm=False,
+                use_layer_norm=False,
+                use_weight_norm=False,
+                **kwargs):
+        
+        self.nb_filters = nb_filters
+        self.kernel_size = kernel_size
+        self.nb_stacks = nb_stacks
+        self.padding = padding
+        self.dropout_rate = dropout_rate
+        self.activation = activation
+        self.convolution_type = convolution_type
+        self.kernel_initializer = kernel_initializer
 
-    self.conv_blocks = []
-    self.layers_outputs = []
-    self.build_output_shape = None
+        # Not sure if needed..
+        self.use_batch_norm = use_batch_norm
+        self.use_layer_norm = use_layer_norm
+        self.use_weight_norm = use_weight_norm
 
-    self.conv_func = Conv2D
-    if convolution_type == 'Conv1D':
-        self.conv_func = Conv1D
+        self.conv_blocks = []
+        self.layers_outputs = []
+        self.build_output_shape = None
 
-    super(CNN, self).__init__(**kwargs)
+        self.conv_func = Conv2D
+        if convolution_type == 'Conv1D':
+            self.conv_func = Conv1D
 
-    
-    
+        super(CNN, self).__init__(**kwargs)
 
-def build(self, input_shape):
+        
+        
 
-    self.build_output_shape = input_shape
-    self.conv_blocks = []
+    def build(self, input_shape):
 
-    for k in range(self.nb_stacks):
-        for i, f in enumerate(self.nb_filters):
-            conv_filters = self.nb_filters[i] if isinstance(self.nb_filters, list) else self.nb_filters
-            self.conv_blocks.append(self.conv_func(filters=conv_filters, 
-                                                kernel_size=self.kernel_size,
-                                                padding = self.padding,
-                                                activation=self.activation,
-                                                dropout_rate=self.dropout_rate,
-                                                kernel_initializer=self.kernel_initializer,
-                                                name='convolution_layer_{}'.format(len(self.conv_blocks))))
-    
-    for layer in self.conv_blocks:
-        self.__setattr__(layer.name, layer)
+        self.build_output_shape = input_shape
+        self.conv_blocks = []
+
+        for k in range(self.nb_stacks):
+            for i, f in enumerate(self.nb_filters):
+                conv_filters = self.nb_filters[i] if isinstance(self.nb_filters, list) else self.nb_filters
+                self.conv_blocks.append(self.conv_func(filters=conv_filters, 
+                                                    kernel_size=self.kernel_size,
+                                                    padding = self.padding,
+                                                    activation=self.activation,
+                                                    dropout_rate=self.dropout_rate,
+                                                    kernel_initializer=self.kernel_initializer,
+                                                    name='convolution_layer_{}'.format(len(self.conv_blocks))))
+        
+        for layer in self.conv_blocks:
+            self.__setattr__(layer.name, layer)
 
 
-def call(self, inputs, training=None, **kwargs):
-    x = inputs
-    self.layers_outputs = [x]
-    for conv_block in self.conv_blocks:
-        try:
-            x = conv_block(x, training=training)
-        except TypeError: # also backwards compatibiltiy
-            x = conv_block(K.cast(x, 'float32'), training=training)
-            self.layers_outputs.append(x)
-    return x
+    def call(self, inputs, training=None, **kwargs):
+        x = inputs
+        self.layers_outputs = [x]
+        for conv_block in self.conv_blocks:
+            try:
+                x = conv_block(x, training=training)
+            except TypeError: # also backwards compatibiltiy
+                x = conv_block(K.cast(x, 'float32'), training=training)
+                self.layers_outputs.append(x)
+        return x
 
 
 def TCN1D(trainX, param):
