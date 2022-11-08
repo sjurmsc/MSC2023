@@ -182,7 +182,7 @@ if __name__ == '__main__':
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
 
-    config['nb_tcn_stacks']         = 3
+    config['nb_tcn_stacks']         = 1
     config['nb_reg_stacks']         = 3
     config['nb_rec_stacks']         = 3    
 
