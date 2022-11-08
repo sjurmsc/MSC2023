@@ -11,6 +11,7 @@ from datetime import datetime
 import json
 from PIL import Image
 import numpy as np
+from git import Repo
 
 
 def gname(old_name):
@@ -24,18 +25,14 @@ def gname(old_name):
         new_name = gname(old_name[:-1]) + 'A'
     return new_name
 
+
 def update_groupstate(gname):
     """Keeps groupstate updated after any model run
     """
-    from git import Repo
-    try:
-        repo = Repo('.')
-        repo.git.add('Models/_groupstate.json')
-        repo.index.commit('Modelrun {} automatic push'.format(gname))
-        origin = repo.remote(name = 'origin')
-        origin.push()
-    except:
-        print('Unable to push to remote repo')
+    fp = 'Models/_groupstate.json'
+    message = 'Modelrun {} automatic push'.format(gname)
+    repo_push(fp, message)
+
 
 def new_group(push=True):
     """
@@ -92,6 +89,9 @@ def update_scores(modelname, score):
 
     with open(score_file, 'w') as writefile:
         writefile.write(json.dumps(scores, indent=2))
+
+
+
     return True
 
 
@@ -100,7 +100,7 @@ def replace_md_image(filepath, score):
     Replaces the image in the github markdown document with the image at
     the given filepath
     """
-    from git import Repo
+
 
     if len([score])>1:
         score = score[1]
@@ -142,16 +142,9 @@ def replace_md_image(filepath, score):
     with open('.gitignore', 'a') as file:
         file.write('\n!' + trunc_filepath[1:])
         
-    try:
-        repo = Repo('.')
-        repo.git.add('.gitignore')
-        repo.git.add('README.md')
-        repo.index.commit('Replacing Markdown Image')
-        origin = repo.remote(name='origin')
-        origin.push()
-
-    except:
-        print('Unable to push to remote repo')
+    fps = ['.gitignore', 'README.md']
+    message = 'Replacing Markdown Image'
+    repo_push(fps, message)
 
 
 
@@ -232,6 +225,16 @@ def prediction_histogram(pred, true, **kwargs):
     pred = pred.flatten() ; true = true.flatten()
     return hist((pred, true), **kwargs)
 
+def repo_push(fps, message):
+    try:
+        repo = Repo('.')
+        for fp in [fps]:
+            repo.git.add(fp)
+        repo.index.commit(message)
+        origin = repo.remote(name = 'origin')
+        origin.push()
+    except:
+        print('Unable to push to remote repo')
 
 #%% Only used for testing the code
 

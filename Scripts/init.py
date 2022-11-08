@@ -7,30 +7,6 @@ this script will contain all instructions for which networks to run on odin
 All git operations will happen in this script
 """
 
-"""
-In settings must be:
-network: f.ex 2DTCN, 1DTCN, 2DTCN_WS [weight sharing], Randomforest ... etc
-# What the network is, will affect what the init script uses to initialize the model
-
-if TCN networks:
-    dropout:
-    kernel_size
-    filters
-    loss
-    dilation
-    
-
-for all networks:
-    dataset: contains the label names that can be used as keys for retrieving file paths
-            for getting the data [file paths must be robust, and located either on p: or in the
-            repo]
-    epochs: 
-    batches:
-    learn_rate:
-
-for training where certain fields are not needed, these may be filled with None, or be omitted
-"""
-
 # External packages
 import json
 import time
@@ -41,6 +17,14 @@ import numpy as np
 from keras.models import load_model
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from glob import glob
+import os.path
+import numpy as np
+import scipy.stats as stats
+from itertools import product
+import optuna
 
 # My scripts
 from Log import *
@@ -72,11 +56,6 @@ class RunModels:
         self.seis_st_dev = stats.tstd(traces, axis=None)
         seis_norm = mpl.colors.Normalize(-self.seis_st_dev, self.seis_st_dev)
         self.seis_cmap = lambda x : plt.cm.seismic(seis_norm(x))
-        
-
-
-    def modelname(self):
-        pass
 
     def objective(self, trial):
         groupname, modelname = next(self.model_name_gen)
@@ -134,18 +113,6 @@ class RunModels:
         return reg_error + rec_error
 
 
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-from glob import glob
-import os.path
-import numpy as np
-import scipy.stats as stats
-import statistics
-from itertools import product, permutations
-import optuna
-
-
-# Functions
 class config_iterator:
     def __init__(self, config, variable_config):
         self.config = config
@@ -162,8 +129,6 @@ class config_iterator:
         for key, val in zip(self.keys, vals):
             config[key] = val
         return config
-
-
 
 
 if __name__ == '__main__':
@@ -203,7 +168,6 @@ if __name__ == '__main__':
     config = dict()
     config['nb_filters']            = 2
     config['kernel_size']           = 8 # JR used 5
-    config['nb_tcn_stacks']         = 3
     config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
@@ -213,14 +177,18 @@ if __name__ == '__main__':
     config['convolution_type']      = 'Conv1D'
     config['learn_rate']            = 0.01
     config['kernel_initializer']    = 'he_normal'
+
     config['use_batch_norm']        = False
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
 
+    config['nb_tcn_stacks']         = 3
+    config['nb_reg_stacks']         = 3
+    config['nb_rec_stacks']         = 3    
+
     config['batch_size']            = 20
     config['epochs']                = 12
-    config['nb_reg_stacks']         = 3
-    config['nb_rec_stacks']         = 3
+
 
     # Iteratives
     makemodel = True; loadmodel = not makemodel
