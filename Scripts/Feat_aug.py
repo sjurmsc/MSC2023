@@ -101,9 +101,10 @@ def update_data_dict():
         folder
     """
     data_json = './Data/data.json'
+    root = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/'
     data_dict = {
-        'TNW_AI' : '../OneDrive - NGI/Documents/NTNU/MSC_DATA/',
-        'TNW_seismic' : '../OneDrive - NGI/Documents/NTNU/MSC_DATA/'
+        '00_AI'                 : root + '00_AI',
+        '2DUHRS_06_MIG_DEPTH'   : root + '2DUHRS_06_MIG_DEPTH'
     }
     with open(data_json, 'w') as writefile:
         writefile.write(json.dumps(data_dict, indent=2))
