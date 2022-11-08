@@ -174,9 +174,9 @@ if __name__ == '__main__':
     seis_data_fp = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
     ai_data = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG.Abs_Zp.sgy'
 
-    traces, z = get_traces(seis_data_fp)
+    traces, z_traces = get_traces(seis_data_fp)
     traces = traces[:, :]
-    ai, z = get_traces(ai_data)
+    ai, z_ai = get_traces(ai_data)
     ai = ai[:, :]
 
     # Splitting into test and training data for naive comparison
@@ -213,6 +213,7 @@ if __name__ == '__main__':
     config = dict()
     config['nb_filters']            = 2
     config['kernel_size']           = 8 # JR used 5
+    config['nb_tcn_stacks']         = 3
     config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
@@ -228,7 +229,8 @@ if __name__ == '__main__':
 
     config['batch_size']            = 20
     config['epochs']                = 12
-    config['convolution_depth']     = 3
+    config['nb_reg_stacks']         = 3
+    config['nb_rec_stacks']         = 3
 
     # Iteratives
     makemodel = True; loadmodel = not makemodel
