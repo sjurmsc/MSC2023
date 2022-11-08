@@ -241,6 +241,7 @@ if __name__ == '__main__':
         if use_optuna:
             # First using a couple of demonstrative values
             config_range = dict()
+            
             # Floats
             config_range['learn_rate']      = ('float', (0.005, 0.05))
             config_range['dropout_rate']    = ('float', (0.01, 0.1))
@@ -279,7 +280,7 @@ if __name__ == '__main__':
                     w_file.write(json.dumps(config))
                 save_training_progression(History.history, model_loc)
                 config = next(config_iter)
-    plt.show()
+
     if loadmodel:
         groupname = 'ABA'
         model = load_model('./Models/{}/0'.format(groupname))
@@ -297,8 +298,6 @@ if __name__ == '__main__':
     # colors = ['orange', 'b']
 
     # plt.hist(histogram_data, 20, density=True, color=colors)
-    # plt.show()
+    plt.show()
 
-    # scores = model.evaluate(test_data, test_data)
-    # print('score: {}'.format(scores))
 
