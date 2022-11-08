@@ -192,21 +192,11 @@ if __name__ == '__main__':
 
     # Must structure the data into an array format
     ol = 2
-    width_shape = 10
-    height_shape = 500
     upper_bound = 600
 
     # train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     # test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     #print(train_data.shape)
-
-    # Visuals
-    """
-    Needs normalization within the standard deviations of the population
-    """
-    seis_st_dev = stats.tstd(traces, axis=None)
-    norm = mpl.colors.Normalize(-seis_st_dev, seis_st_dev)
-    cmap = lambda x : plt.cm.seismic(norm(x))
 
 
     # CONFIG

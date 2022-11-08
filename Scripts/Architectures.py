@@ -404,16 +404,6 @@ class CNN(Layer):
         return config
 
 
-def TCN1D(trainX, param):
-    """
-    JR used trainx to decide dimensions of the architecture
-    """
-    pass
-    
-
-    # return model
-
-
 def compiled_TCN(training_data, config, **kwargs):
     """
     @ Author: Sjur [in progress]

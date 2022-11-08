@@ -39,11 +39,6 @@ def split_image_into_data_packets(traces, image_shape, dim=2, mode='cut_lower', 
     width_shape, height_shape = image_shape
     assert overlap < width_shape  # Allowing overlap of all but one trace
 
-    if len(image_shape) == 1:
-        lower_bound = traces.shape[1]
-    else:
-        lower_bound = height_shape
-
     tracescount = traces.shape[0]
     delta = width_shape-overlap
 
