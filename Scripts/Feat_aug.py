@@ -32,15 +32,15 @@ def get_traces(fp, mmap=True, zrange: tuple = (None,), length: int = None, ztrun
     return traces, z
 
 
-def split_image_into_data_packets(traces, image_shape, dim=2, mode='cut_lower', upper_bound=0, overlap=0):
+def split_image_into_data_packets(traces, width_shape=7, dim=2, mode='cut_lower', upper_bound=0, overlap=0):
     """
     Only Func i need before starting to train models
 
     overlap: The amount of traces that can overlap between the images
     """
-    width_shape, height_shape = image_shape
-    assert overlap < width_shape  # Allowing overlap of all but one trace
-
+    
+    assert overlap < width_shape, 'Overlap cannot excede the with of the seismic image'
+    
     tracescount = traces.shape[0]
     delta = width_shape-overlap
 

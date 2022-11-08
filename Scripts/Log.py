@@ -167,7 +167,7 @@ def create_ai_error_image(e, seismic_image, image_normalize=True):
         norm = Normalize(np.min(seismic_image, axis=None), np.max(seismic_image, axis=None))
         seismic_image = Image.fromarray(norm(seismic_image), mode='RGBA')
 
-
+    error_image = seismic_image.alpha_composite(scaled_e)
 
     return error_image
 
