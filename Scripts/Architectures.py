@@ -325,7 +325,6 @@ class CNN(Layer):
                 kernel_size=3,
                 nb_stacks=3,
                 padding='same',
-                dropout_rate=0.0,
                 activation='relu',
                 convolution_type = 'Conv2D',
                 kernel_initializer='he_normal',
@@ -338,7 +337,6 @@ class CNN(Layer):
         self.kernel_size = kernel_size
         self.nb_stacks = nb_stacks
         self.padding = padding
-        self.dropout_rate = dropout_rate
         self.activation = activation
         self.convolution_type = convolution_type
         self.kernel_initializer = kernel_initializer
@@ -373,7 +371,6 @@ class CNN(Layer):
                                                     kernel_size=self.kernel_size,
                                                     padding = self.padding,
                                                     activation=self.activation,
-                                                    dropout_rate=self.dropout_rate,
                                                     kernel_initializer=self.kernel_initializer,
                                                     name='convolution_layer_{}'.format(len(self.conv_blocks))))
         
