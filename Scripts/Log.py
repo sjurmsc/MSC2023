@@ -91,7 +91,6 @@ def update_scores(modelname, score):
         writefile.write(json.dumps(scores, indent=2))
 
 
-
     return True
 
 
@@ -142,7 +141,7 @@ def replace_md_image(filepath, score):
     with open('.gitignore', 'a') as file:
         file.write('\n!' + trunc_filepath[1:])
         
-    fps = ['.gitignore', 'README.md']
+    fps = ['.gitignore', 'README.md', 'Models/_scores.json']
     message = 'Replacing Markdown Image'
     repo_push(fps, message)
 
