@@ -317,11 +317,13 @@ class TCN(Layer):
         config['kernel_initializer'] = self.kernel_initializer
         return config
 
-"""
+
 class CNN(Layer):
 def __init__(self,
+             nb_filters=64,
              kernel_size=3,
-             padding='causal',
+             nb_stacks=3,
+             padding='same',
              dropout_rate=0.0,
              activation='relu',
              convolution_type = 'Conv2D',
@@ -331,8 +333,9 @@ def __init__(self,
              use_weight_norm=False,
              **kwargs):
     
-
+    self.nb_filters = nb_filters
     self.kernel_size = kernel_size
+    self.nb_stacks = nb_stacks
     self.padding = padding
     self.dropout_rate = dropout_rate
     self.activation = activation
@@ -344,26 +347,50 @@ def __init__(self,
     self.use_layer_norm = use_layer_norm
     self.use_weight_norm = use_weight_norm
 
-    super(CNN, self).__init__(**kwargs)
+    self.conv_blocks = []
+    self.layers_outputs = []
+    self.build_output_shape = None
 
     self.conv_func = Conv2D
     if convolution_type == 'Conv1D':
         self.conv_func = Conv1D
+
+    super(CNN, self).__init__(**kwargs)
+
+    
     
 
-def build(self):
-    for k in range(conv_depth):
-        x = self.conv_func(filters=nb_filters, 
-                           kernel_size=kernel_size,
-                           padding = padding,
-                           activation='relu',
-                           name = name
-        )(x)
-    x = Flatten()(x)
-    x = Dense(dense_output_shape)(x)
-    x = Activation('linear', name='reconstruction_output')(x)
+def build(self, input_shape):
+
+    self.build_output_shape = input_shape
+    self.conv_blocks = []
+
+    for k in range(self.nb_stacks):
+        for i, f in enumerate(self.nb_filters):
+            conv_filters = self.nb_filters[i] if isinstance(self.nb_filters, list) else self.nb_filters
+            self.conv_blocks.append(self.conv_func(filters=conv_filters, 
+                                                kernel_size=self.kernel_size,
+                                                padding = self.padding,
+                                                activation=self.activation,
+                                                dropout_rate=self.dropout_rate,
+                                                kernel_initializer=self.kernel_initializer,
+                                                name='convolution_layer_{}'.format(len(self.conv_blocks))))
+    
+    for layer in self.conv_blocks:
+        self.__setattr__(layer.name, layer)
+
+
+def call(self, inputs, training=None, **kwargs):
+    x = inputs
+    self.layers_outputs = [x]
+    for conv_block in self.conv_blocks:
+        try:
+            x = conv_block(x, training=training)
+        except TypeError: # also backwards compatibiltiy
+            x = conv_block(K.cast(x, 'float32'), training=training)
+            self.layers_outputs.append(x)
     return x
-"""
+
 
 def TCN1D(trainX, param):
     """
@@ -386,6 +413,9 @@ def compiled_TCN(training_data, config, **kwargs):
     """
     nb_filters              = config['nb_filters']
     kernel_size             = config['kernel_size']
+    nb_tcn_stacks           = config['nb_tcn_stacks']
+    nb_reg_stacks           = config['nb_reg_stacks']
+    nb_rec_stacks           = config['nb_rec_stacks']
     dilations               = config['dilations']
     padding                 = config['padding']
     use_skip_connections    = config['use_skip_connections']
@@ -401,7 +431,7 @@ def compiled_TCN(training_data, config, **kwargs):
 
     batch_size              = config['batch_size']
     epochs                  = config['epochs']
-    conv_depth              = config['convolution_depth']
+
 
     # Data
     X, Y = training_data[1], training_data
@@ -413,6 +443,7 @@ def compiled_TCN(training_data, config, **kwargs):
     # Feature Extraction module
     x = TCN(nb_filters=nb_filters,
             kernel_size=kernel_size,
+            nb_stacks=nb_tcn_stacks,
             dilations=dilations,
             padding=padding,
             use_skip_connections=use_skip_connections,
@@ -427,38 +458,39 @@ def compiled_TCN(training_data, config, **kwargs):
     )(input_layer)
 
     # Regression module
-    #r = CNN()(x)
-    for k in range(conv_depth):
-        if k == 0: out = x
-        else: out = r
-        r = Conv1D(filters=nb_filters,
-                    kernel_size=kernel_size,
-                    padding = padding,
-                    activation = 'relu',
-                    name = 'Regression_{}'.format(k)
-        )(out)
-    r = Flatten()(r)
-    r = Dense(Y[0].shape[1])(r)
-    r = Activation('linear', name='regression_output')(r)
+    reg = CNN(nb_filters=nb_filters,
+            kernel_size=kernel_size,
+            nb_stacks=nb_reg_stacks,
+            padding=padding,
+            activation='relu',
+            convolution_type='Conv1D',
+            kernel_initializer=kernel_initializer,
+            name = 'Regression_module'
+            )(x)
+
+    reg = Flatten()(reg)
+    reg = Dense(Y[0].shape[1])(reg)
+    reg = Activation('linear', name='regression_output')(reg)
 
     # Reconstruciton module
-    #x = CNN()(x)
-    conv_func = Conv1D
+    rec = CNN(nb_filters=nb_filters,
+            kernel_size=kernel_size,
+            nb_stacks=nb_rec_stacks,
+            padding=padding,
+            activation=activation,
+            convolution_type=convolution_type,
+            kernel_initializer=kernel_initializer,
+            name = 'Reconstruction_module'
+            )(x)
+
     dense_output_shape = X.shape[1]
-    if convolution_type == 'Conv2D': conv_func = Conv2D; dense_output_shape = X.shape[1]*X.shape[2] # Not quite sure
+    if convolution_type == 'Conv2D': dense_output_shape = X.shape[1]*X.shape[2] # Not quite sure
 
-    for k in range(conv_depth):
-        x = conv_func(filters=nb_filters, 
-                   kernel_size=kernel_size,
-                   padding = padding,
-                   activation='relu',
-                   name = 'Reconstruction_{}'.format(k)
-        )(x)
-    x = Flatten()(x)
-    x = Dense(dense_output_shape)(x)
-    x = Activation('linear', name='reconstruction_output')(x)
+    rec = Flatten()(rec)
+    rec = Dense(dense_output_shape)(rec)
+    rec = Activation('linear', name='reconstruction_output')(rec)
 
-    output_layer = [r, x] # Regression, reconstruction
+    output_layer = [reg, rec] # Regression, reconstruction
 
     model = Model(inputs = input_layer, 
                   outputs = output_layer)

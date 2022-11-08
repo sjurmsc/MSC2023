@@ -213,6 +213,7 @@ if __name__ == '__main__':
     config = dict()
     config['nb_filters']            = 2
     config['kernel_size']           = 8 # JR used 5
+    config['nb_tcn_stacks']         = 3
     config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
@@ -228,7 +229,8 @@ if __name__ == '__main__':
 
     config['batch_size']            = 20
     config['epochs']                = 12
-    config['convolution_depth']     = 3
+    config['nb_reg_stacks']         = 3
+    config['nb_rec_stacks']         = 3
 
     # Iteratives
     makemodel = True; loadmodel = not makemodel
