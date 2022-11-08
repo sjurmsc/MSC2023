@@ -389,6 +389,20 @@ class CNN(Layer):
                 self.layers_outputs.append(x)
         return x
 
+    def get_config(self):
+        config = super(CNN, self).get_config()
+        config['nb_filters'] = self.nb_filters
+        config['kernel_size'] = self.kernel_size
+        config['nb_stacks'] = self.nb_stacks
+        config['padding'] = self.padding
+        config['activation'] = self.activation
+        config['convolution_type'] = self.convolution_type
+        config['kernel_initializer'] = self.kernel_initializer
+        config['use_batch_norm'] = self.use_batch_norm
+        config['use_layer_norm'] = self.use_layer_norm
+        config['use_weight_norm'] = self.use_weight_norm
+        return config
+
 
 def TCN1D(trainX, param):
     """
