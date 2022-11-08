@@ -1,4 +1,6 @@
-# Functions to be used for feature augmentation
+"""
+Functions to be used for feature augmentation
+"""
 import segyio
 import json
 from numpy import array
@@ -50,6 +52,7 @@ def split_image_into_data_packets(traces, image_shape, dim=2, mode='cut_lower', 
     
     return array(X)
 
+
 def sgy_to_keras_dataset(data_label_list, 
                         test_size, 
                         zrange: tuple = (None,), 
@@ -74,6 +77,7 @@ def sgy_to_keras_dataset(data_label_list,
         return train_dataset, test_dataset, val
     return train_dataset, test_dataset
 
+
 def pair_well_and_seismic():
     """
     For a given log trace, this function locates the appropriate seismic trace,
@@ -82,11 +86,13 @@ def pair_well_and_seismic():
     """
     pass
 
+
 def load_data_dict():
     data_json = './Data/data.json'
     with open(data_json, 'r') as readfile:
         data_dict = readfile.read()
     return data_dict
+
 
 def update_data_dict():
     """ Edit this funciton to change the filepaths to the relevant data
@@ -102,8 +108,10 @@ def update_data_dict():
     with open(data_json, 'w') as writefile:
         writefile.write(json.dumps(data_dict, indent=2))
 
+
 def combine_seismic_traces():
     pass
+
 
 def format_input_output(dataset):
     regression_data, seismic_data = dataset

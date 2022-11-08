@@ -12,6 +12,9 @@ import json
 from PIL import Image
 import numpy as np
 from git import Repo
+from matplotlib.pyplot import hist
+import numpy as np
+from numpy.linalg import norm
 
 
 def gname(old_name):
@@ -56,9 +59,11 @@ def new_group(push=True):
     if push: update_groupstate(group['Group'])
     return group_name
 
+
 def nats(k):
     yield k
     yield from nats(k+1)
+
 
 def give_modelname():
     n = nats(0)
@@ -146,7 +151,6 @@ def replace_md_image(filepath, score):
     repo_push(fps, message)
 
 
-
 def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font = 'carlito', fontsize=20, dpi=300):
     """
     Function creates a side by side image of the prediction versus the
@@ -173,8 +177,6 @@ def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font 
     
     d.end_document()
 
-import numpy as np
-from numpy.linalg import norm
 
 def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     # Decide based on stats which section is the best predicting
@@ -209,6 +211,7 @@ def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     p = np.row_stack((pred_matrix, gt_matrix))
     return p.T, (pred_matrix.T, gt_matrix.T) # quickfix
 
+
 def save_training_progression(data, model_fp):
     """Dumps the progression into npz file, so that it may be plotted with
     different rcParams in the future
@@ -217,14 +220,18 @@ def save_training_progression(data, model_fp):
     data = np.array(data)
     np.savez(model_fp + '/' + filename, data)
 
-from matplotlib.pyplot import hist
 
 def prediction_histogram(pred, true, **kwargs):
     pred = np.array(pred) ; true = np.array(true)
     pred = pred.flatten() ; true = true.flatten()
     return hist((pred, true), **kwargs)
 
+
 def repo_push(fps, message):
+    """
+    Automatically pushes selected files to repo
+    with an automatic commit message.
+    """
     try:
         repo = Repo('.')
         for fp in [fps]:
@@ -235,8 +242,8 @@ def repo_push(fps, message):
     except:
         print('Unable to push to remote repo')
 
-#%% Only used for testing the code
 
+# Only used for testing the code
 if __name__ == '__main__':
     # k_obj = object()
     # k_obj._control = {'test' : [1, 2, 3]}
