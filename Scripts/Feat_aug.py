@@ -3,7 +3,7 @@ Functions to be used for feature augmentation
 """
 import segyio
 import json
-from numpy import array
+from numpy import array, column_stack
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from os import listdir
@@ -70,8 +70,8 @@ def sgy_to_keras_dataset(X_data_label_list,
 
 
     # Something to evaluate that z is same for all in a feature
-    X = []
-    y = []
+    X = array([])
+    y = array([])
 
     for i, key in enumerate(X_data_label_list):
         x_dir = Path(data_dict[key])
@@ -80,11 +80,11 @@ def sgy_to_keras_dataset(X_data_label_list,
         for xm, ym in matched:
             x_traces, z_X = get_traces(xm, zrange=zrange)
             y_traces, z_Y = get_traces(ym, zrange=zrange)
-            X.append(x_traces)
-            y.append(y_traces)
-
+            X = column_stack((X, x_traces))
+            y = column_stack((y, y_traces))
         # Add the data to the dataset, must be robust for AI, CPT or seismic data
-    X = array(X) ; y = array(y)
+    
+    #X = array(X) ; y = array(y)
     print(X.shape, y.shape)
     dataset = array(dataset)
 
