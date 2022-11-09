@@ -15,6 +15,7 @@ from git import Repo
 from matplotlib.pyplot import hist
 import numpy as np
 from numpy.linalg import norm
+from matplotlib.colors import Normalize
 
 
 def gname(old_name):
@@ -149,6 +150,26 @@ def replace_md_image(filepath, score):
     fps = ['.gitignore', 'README.md', 'Models/_scores.json']
     message = 'Replacing Markdown Image'
     repo_push(fps, message)
+
+
+def create_ai_error_image(e, seismic_image, image_normalize=True):
+    """
+    e: prediction error
+    This function presumes that the depth of e and the seismic image is the same
+    seismic image is presumed to be raw data
+    """
+    seismic_image = np.array(seismic_image)
+    e = np.array(e)
+    
+    scaled_e = Image.fromarray(e, mode='RGBA').resize(seismic_image.shape)
+
+    if image_normalize:
+        norm = Normalize(np.min(seismic_image, axis=None), np.max(seismic_image, axis=None))
+        seismic_image = Image.fromarray(norm(seismic_image), mode='RGBA')
+
+    error_image = seismic_image.alpha_composite(scaled_e)
+
+    return error_image
 
 
 def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font = 'carlito', fontsize=20, dpi=300):

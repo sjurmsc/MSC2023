@@ -32,15 +32,15 @@ def get_traces(fp, mmap=True, zrange: tuple = (None,), length: int = None, ztrun
     return traces, z
 
 
-def split_image_into_data_packets(traces, image_shape, dim=2, mode='cut_lower', upper_bound=0, overlap=0):
+def split_image_into_data_packets(traces, width_shape=7, dim=2, mode='cut_lower', upper_bound=0, overlap=0):
     """
     Only Func i need before starting to train models
 
     overlap: The amount of traces that can overlap between the images
     """
-    width_shape, height_shape = image_shape
-    assert overlap < width_shape  # Allowing overlap of all but one trace
-
+    
+    assert overlap < width_shape, 'Overlap cannot excede the with of the seismic image'
+    
     tracescount = traces.shape[0]
     delta = width_shape-overlap
 
@@ -101,9 +101,10 @@ def update_data_dict():
         folder
     """
     data_json = './Data/data.json'
+    root = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/'
     data_dict = {
-        'TNW_AI' : '../OneDrive - NGI/Documents/NTNU/MSC_DATA/',
-        'TNW_seismic' : '../OneDrive - NGI/Documents/NTNU/MSC_DATA/'
+        '00_AI'                 : root + '00_AI',
+        '2DUHRS_06_MIG_DEPTH'   : root + '2DUHRS_06_MIG_DEPTH'
     }
     with open(data_json, 'w') as writefile:
         writefile.write(json.dumps(data_dict, indent=2))

@@ -59,8 +59,8 @@ class RunModels:
 
     def objective(self, trial):
         groupname, modelname = next(self.model_name_gen)
-        tbdir = './_tb/{}/{}'.format(groupname, modelname)
-        os.makedirs(tbdir, exist_ok=True)
+        
+        tbdir = './_tb'
         self.tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tbdir, histogram_freq=1)
 
         sfunc = dict()
@@ -75,8 +75,7 @@ class RunModels:
         # Saving the model
         model_loc = './Models/{}/{}'.format(groupname, modelname)
 
-        if not os.path.isdir(model_loc):
-            os.mkdir(model_loc)
+        if not os.path.isdir(model_loc): os.mkdir(model_loc)
         model.save(model_loc)
 
         # Evaluating the model
@@ -90,13 +89,11 @@ class RunModels:
         ai_cmap = self.target_cmap
         
         p, pt = create_pred_image_from_1d(model, self.train_data)
-        prediction_histogram(pt[0], pt[1], bins=500)
+        #prediction_histogram(pt[0], pt[1], bins=500)
 
-        if not os.path.isdir('./TEMP'):
-            os.mkdir('./TEMP')
+        if not os.path.isdir('./TEMP'): os.mkdir('./TEMP')
         image_folder = './TEMP/{}'.format(groupname)
-        if not os.path.isdir(image_folder):
-            os.makedirs(image_folder, exist_ok=True)
+        if not os.path.isdir(image_folder): os.makedirs(image_folder, exist_ok=True)
         
         # Image with comparisons
         p_name = image_folder + '/{}_combined_pred.jpg'.format(modelname)
@@ -132,7 +129,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 10
+    use_optuna = True ; n_trials = 1
     # Load data
 
     OD_fp = Path('../OneDrive - NGI/Documents/NTNU/MSC_DATA')
@@ -174,7 +171,7 @@ if __name__ == '__main__':
     config['dropout_rate']          = 0.04
     config['return_sequences']      = True
     config['activation']            = 'relu'
-    config['convolution_type']      = 'Conv1D'
+    config['convolution_type']      = 'Conv2D'
     config['learn_rate']            = 0.01
     config['kernel_initializer']    = 'he_normal'
 
@@ -186,8 +183,12 @@ if __name__ == '__main__':
     config['nb_reg_stacks']         = 3
     config['nb_rec_stacks']         = 3    
 
-    config['batch_size']            = 20
-    config['epochs']                = 12
+    config['batch_size']            = 12
+    config['epochs']                = 60
+
+    config['seismic_data']          = '2DUHRS_06_MIG_DEPTH'
+    config['ai_data']               = '00_AI'
+    config['cpt_data']              = ''
 
 
     # Iteratives
@@ -206,7 +207,7 @@ if __name__ == '__main__':
 
             # Ints
             config_range['nb_filters']      = ('int', (2, 8))
-            config_range['batch_size']      = ('int', (20, 40))
+            # config_range['batch_size']      = ('int', (20, 40))
             config_range['epochs']          = ('int', (75, 200))
 
             # Categoricals
@@ -249,13 +250,3 @@ if __name__ == '__main__':
 
         error = model.evaluate(X, Y, batch_size = 1, verbose=0)
         print(error)
-    
-    
-    # histogram_data = (pt[0].flatten(), pt[1].flatten())
-    
-    # colors = ['orange', 'b']
-
-    # plt.hist(histogram_data, 20, density=True, color=colors)
-    plt.show()
-
-
