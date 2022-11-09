@@ -129,7 +129,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 10
+    use_optuna = True ; n_trials = 1
     # Load data
 
     OD_fp = Path('../OneDrive - NGI/Documents/NTNU/MSC_DATA')
@@ -183,8 +183,8 @@ if __name__ == '__main__':
     config['nb_reg_stacks']         = 3
     config['nb_rec_stacks']         = 3    
 
-    config['batch_size']            = 20
-    config['epochs']                = 12
+    config['batch_size']            = 12
+    config['epochs']                = 60
 
     config['seismic_data']          = '2DUHRS_06_MIG_DEPTH'
     config['ai_data']               = '00_AI'
@@ -207,7 +207,7 @@ if __name__ == '__main__':
 
             # Ints
             config_range['nb_filters']      = ('int', (2, 8))
-            config_range['batch_size']      = ('int', (20, 40))
+            # config_range['batch_size']      = ('int', (20, 40))
             config_range['epochs']          = ('int', (75, 200))
 
             # Categoricals
