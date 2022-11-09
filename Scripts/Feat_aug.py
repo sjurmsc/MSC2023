@@ -56,7 +56,7 @@ def split_image_into_data_packets(traces, width_shape=7, dim=2, mode='cut_lower'
 
 def sgy_to_keras_dataset(X_data_label_list,
                          y_data_label_list,
-                         test_size, 
+                         test_size=0.5, 
                          feature_dimension = 1,
                          zrange: tuple = (None,), 
                          validation = False, 
@@ -70,13 +70,22 @@ def sgy_to_keras_dataset(X_data_label_list,
 
 
     # Something to evaluate that z is same for all in a feature
-    
-    for key in X_data_label_list:
-        data_dir = Path(data_dict[key])
-        for fname in data_dir.glob('*.sgy'):
-            trace, z = get_traces((data_dir / fname), zrange=zrange)
+    X = []
+    y = []
+
+    for i, key in enumerate(X_data_label_list):
+        x_dir = Path(data_dict[key])
+        y_dir = Path(data_dict[y_data_label_list[i]])
+        matched = match_files(x_dir, y_dir)
+        for xm, ym in matched:
+            x_traces, z_X = get_traces(xm, zrange=zrange)
+            y_traces, z_Y = get_traces(ym, zrange=zrange)
+            X.append(x_traces)
+            y.append(y_traces)
+
         # Add the data to the dataset, must be robust for AI, CPT or seismic data
-    
+    X = array(X) ; y = array(y)
+    print(X.shape, y.shape)
     dataset = array(dataset)
 
     
@@ -103,12 +112,22 @@ def match_files(X_folder_loc, y_folder_loc, file_extension='.sgy'):
     Filenames corresponding to each other are returned as a list
     of tuples in the form [(X_file, y_file)]
     """
-    X_dir = Path(X_folder_loc); y_dir = Path(y_folder_loc)
+    X_dir = list(Path(X_folder_loc).glob('*'+file_extension)); y_dir = list(Path(y_folder_loc).glob('*'+file_extension))
 
-    X_prefixes = []
-    for fname in X_dir.glob('*'+file_extension):
-        [fname[fname.find('_', 3)]]
+    file_pairs = []
+    for i, fname in enumerate(X_dir):
+        prefix = fname.name[:find_nth(fname.name, '_', 3)]
+        j_list = []
+        for j, yfile in enumerate(y_dir):
+            y_str = str(yfile)
+            if prefix in y_str:
+                file_pairs.append((str(fname), y_str))
+                j_list.append(j)
+        [y_dir.pop(j) for j in j_list]
+    return file_pairs
 
+
+                
 
 def pair_well_and_seismic():
     """
@@ -146,16 +165,20 @@ def combine_seismic_traces():
     pass
 
 
-def find_nth(haystack, needle, n):
-    n = abs(n)
-    max_needle_amount = len(haystack.split(needle))-1; assert n < max_needle_amount
-    if n:
-        loc = find_nth(haystack[haystack.find(needle)+1:], needle, n-1)
+def find_nth(haystack, needle, n : int):
+    n = abs(n); assert n > 0
+    max_needle_amount = len(haystack.split(needle)); assert n < max_needle_amount
+    if n-1:
+        intermed = haystack.find(needle) + 1
+        loc = intermed + find_nth(haystack[intermed:], needle, n-1)
     else:
-        return len(haystack[haystack.find(needle):])
-    return len(haystack) - loc
+        return haystack.find(needle)
+    return loc
 
 def format_input_output(dataset):
     regression_data, seismic_data = dataset
     X = seismic_data; Y = dataset
-    
+
+if __name__ == '__main__':
+
+    sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'])
