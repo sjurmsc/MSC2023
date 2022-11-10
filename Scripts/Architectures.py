@@ -436,7 +436,7 @@ def compiled_TCN(training_data, config, **kwargs):
 
 
     # Data
-    X, Y = training_data[1], training_data
+    X, y = training_data
     # Y_reconstruct = array([dat.flatten() for dat in X])
 
     # input_shape = tuple([*X.shape[1:], nb_filters])
@@ -471,7 +471,7 @@ def compiled_TCN(training_data, config, **kwargs):
             )(x)
 
     reg = Flatten()(reg)
-    reg = Dense(Y[0].shape[1])(reg)
+    reg = Dense(y[0].shape[1])(reg)
     reg = Activation('linear', name='regression_output')(reg)
 
     # Reconstruciton module
@@ -500,7 +500,7 @@ def compiled_TCN(training_data, config, **kwargs):
                                                                    'reconstruction_output' : 'mean_squared_error'})
     print(model.summary())
 
-    History = model.fit(x=X, y=Y, batch_size=batch_size, epochs=epochs, **kwargs)
+    History = model.fit(x=X, y=y, batch_size=batch_size, epochs=epochs, **kwargs)
     
     return model, History
 

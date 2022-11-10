@@ -70,7 +70,7 @@ class RunModels:
             suggest_func = sfunc[items[0]]
             self.config[key] = suggest_func(key, *items[1])
 
-        model, History = compiled_TCN(self.train_data, self.config, callbacks=self.tb_callback)
+        model, History = compiled_TCN(self.train_data, self.config, callbacks=[self.tb_callback])
 
         # Saving the model
         model_loc = './Models/{}/{}'.format(groupname, modelname)
@@ -130,35 +130,18 @@ class config_iterator:
 
 if __name__ == '__main__':
     use_optuna = True ; n_trials = 1
-    # Load data
-
-    OD_fp = Path('../OneDrive - NGI/Documents/NTNU/MSC_DATA')
-    seis_data_fp = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG_DPT.sgy' # Location to seismic data
-    ai_data = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\TNW_B02_5110_MIG.Abs_Zp.sgy'
-
-    traces, z_traces = get_traces(seis_data_fp)
-    traces = traces[:, :]
-    ai, z_ai = get_traces(ai_data)
-    ai = ai[:, :]
-
-    # Splitting into test and training data for naive comparison
-    split_loc = traces.shape[0]//2
-    TRAINDATA = traces[:split_loc]
-    TESTDATA = traces[split_loc:]
-    
-    ai_TRAINDATA = ai[:split_loc]
-    ai_TESTDATA = ai[split_loc:]
-    
-    train_data =    [ai_TRAINDATA, TRAINDATA.reshape((len(TRAINDATA), len(TRAINDATA[0]), 1))]
-    test_data =     [ai_TESTDATA, TESTDATA.reshape((len(TESTDATA), len(TESTDATA[0]), 1))]
+    makemodel = True; loadmodel = not makemodel
 
     # Must structure the data into an array format
-    ol = 2
-    upper_bound = 600
+    # ol = 2
+    # upper_bound = 600
 
     # train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     # test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     #print(train_data.shape)
+
+
+
 
 
     # CONFIG
@@ -190,9 +173,17 @@ if __name__ == '__main__':
     config['ai_data']               = '00_AI'
     config['cpt_data']              = ''
 
+    # Retrieving the data
+    seismic_datasets =  list(config['seismic_data'])
+    ai_datasets =       list(config['ai_data'])
+    cpt_datasets =      list(config['cpt_data'])
 
-    # Iteratives
-    makemodel = True; loadmodel = not makemodel
+    if len(ai_datasets):
+        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets)
+        test_X, test_y = test_data
+
+    if len(cpt_datasets):
+        raise ValueError('This should not be populated yet')
 
     if makemodel:
         model_name_gen = give_modelname()
