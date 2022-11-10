@@ -171,7 +171,7 @@ if __name__ == '__main__':
     config['dropout_rate']          = 0.04
     config['return_sequences']      = True
     config['activation']            = 'relu'
-    config['convolution_type']      = 'Conv2D'
+    config['convolution_type']      = 'Conv1D'
     config['learn_rate']            = 0.01
     config['kernel_initializer']    = 'he_normal'
 
