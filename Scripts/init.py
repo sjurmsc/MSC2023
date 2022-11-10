@@ -133,12 +133,15 @@ if __name__ == '__main__':
     makemodel = True; loadmodel = not makemodel
 
     # Must structure the data into an array format
-    ol = 2
-    upper_bound = 600
+    # ol = 2
+    # upper_bound = 600
 
     # train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     # test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
     #print(train_data.shape)
+
+
+
 
 
     # CONFIG
@@ -170,6 +173,17 @@ if __name__ == '__main__':
     config['ai_data']               = '00_AI'
     config['cpt_data']              = ''
 
+    # Retrieving the data
+    seismic_datasets =  list(config['seismic_data'])
+    ai_datasets =       list(config['ai_data'])
+    cpt_datasets =      list(config['cpt_data'])
+
+    if len(ai_datasets):
+        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets)
+        test_X, test_y = test_data
+
+    if len(cpt_datasets):
+        raise ValueError('This should not be populated yet')
 
     if makemodel:
         model_name_gen = give_modelname()

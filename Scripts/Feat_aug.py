@@ -3,7 +3,7 @@ Functions to be used for feature augmentation
 """
 import segyio
 import json
-from numpy import array, column_stack
+from numpy import array, row_stack
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from os import listdir
@@ -56,9 +56,10 @@ def split_image_into_data_packets(traces, width_shape=7, dim=2, mode='cut_lower'
 
 def sgy_to_keras_dataset(X_data_label_list,
                          y_data_label_list,
-                         test_size=0.5, 
+                         test_size=0.2, 
                          feature_dimension = 1,
                          zrange: tuple = (None,), 
+                         reconstruction = True,
                          validation = False, 
                          normalize = 'MinMaxScaler',
                          random_state=1):
@@ -66,8 +67,6 @@ def sgy_to_keras_dataset(X_data_label_list,
     random_state may be passed for recreating results
     """
     data_dict = load_data_dict()
-    dataset = [] # Features within must be in the shape X[,y]
-
 
     # Something to evaluate that z is same for all in a feature
     X = array([])
@@ -80,27 +79,37 @@ def sgy_to_keras_dataset(X_data_label_list,
         for xm, ym in matched:
             x_traces, z_X = get_traces(xm, zrange=zrange)
             y_traces, z_Y = get_traces(ym, zrange=zrange)
-            X = column_stack((X, x_traces))
-            y = column_stack((y, y_traces))
+            if not len(X):
+                X = array(x_traces)
+                y = array(y_traces)
+            else:
+                X = row_stack((X, x_traces))
+                y = row_stack((y, y_traces))
         # Add the data to the dataset, must be robust for AI, CPT or seismic data
     
-    #X = array(X) ; y = array(y)
     print(X.shape, y.shape)
-    dataset = array(dataset)
-
-    
     
     # Normalization
     if normalize == 'MinMaxScaler':
         scaler = MinMaxScaler()
         X_new = scaler.fit_transform(X, y)
+        X = X_new
     
-    train_dataset, test_dataset = train_test_split(dataset, test_size=test_size, random_state=random_state)  # dataset must be np.array
+    train_X, train_y, test_X, test_y = train_test_split(X, y, test_size=test_size, random_state=random_state)  # dataset must be np.array
     
     if validation:
-        test_dataset, val = train_test_split(test_dataset, test_size=test_size, random_state=random_state)
-        return train_dataset, test_dataset, val
-    return train_dataset, test_dataset
+        test_X, test_y, val_X, val_y = train_test_split(test_X, test_y, test_size=test_size, random_state=random_state)
+        if reconstruction:
+            train_y = [train_y, train_X]
+            test_y = [test_y, test_X]
+            val_y = [val_y, val_X]
+        return (train_X, train_y), (test_X, test_y), (val_X, val_y)
+    
+    if reconstruction:
+        train_y = [train_y, train_X]
+        test_y = [test_y, test_X]
+
+    return (train_X, train_y), (test_X, test_y)
 
 
 def collect_sgy_data_in_dataset():
