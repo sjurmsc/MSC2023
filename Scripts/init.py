@@ -169,9 +169,9 @@ if __name__ == '__main__':
     config['batch_size']            = 12
     config['epochs']                = 60
 
-    config['seismic_data']          = '2DUHRS_06_MIG_DEPTH'
-    config['ai_data']               = '00_AI'
-    config['cpt_data']              = ''
+    config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
+    config['ai_data']               = ['00_AI']
+    config['cpt_data']              = ['']
 
     # Retrieving the data
     seismic_datasets =  list(config['seismic_data'])
@@ -182,8 +182,8 @@ if __name__ == '__main__':
         train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets)
         test_X, test_y = test_data
 
-    if len(cpt_datasets):
-        raise ValueError('This should not be populated yet')
+    # elif len(cpt_datasets):
+    #     raise ValueError('This should not be populated yet')
 
     if makemodel:
         model_name_gen = give_modelname()
