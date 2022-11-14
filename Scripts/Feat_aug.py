@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from os import listdir
 from pathlib import Path
+import sys
 
 # Functions for loading data
 
@@ -29,7 +30,6 @@ def get_traces(fp, mmap=True, zrange: tuple = (None,100), length: int = None):
     # if zrange[0] != None:
     #     pass
         #zmin = z[]
-
     
     traces, z = traces[:, z<zrange[1]], z[z<zrange[1]]
     return traces, z
@@ -47,9 +47,9 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100)):
                 X_data.mmap(); y_data.mmap()
             nums_y = segyio.collect(y_data.attributes(segyio.TraceField.TRACE_SEQUENCE_LINE))
             nums_X = segyio.collect(X_data.attributes(segyio.TraceField.TRACE_SEQUENCE_LINE))
-            nums = intersect1d(nums_X, nums_y)
-            y_traces = segyio.collect(y_data.trace)[:, :zrange[1]]
-            X_traces = segyio.collect(X_data.trace)[nums, :zrange[1]]
+            _, idx_X, idx_y = intersect1d(nums_X, nums_y, return_indices=True)
+            y_traces = segyio.collect(y_data.trace)[idx_y, z_y<zrange[1]]
+            X_traces = segyio.collect(X_data.trace)[idx_X, z_X<zrange[1]]
     return X_traces, y_traces, (z_X, z_y)
         
 
@@ -90,14 +90,17 @@ def sgy_to_keras_dataset(X_data_label_list,
     data_dict = load_data_dict()
 
     # Something to evaluate that z is same for all in a feature
-    X = array([])
-    y = array([])
+    X = array([]); y = array([])
 
     for i, key in enumerate(X_data_label_list):
         x_dir = Path(data_dict[key])
         y_dir = Path(data_dict[y_data_label_list[i]])
-        matched = match_files(x_dir, y_dir)
-        for xm, ym in matched:
+        matched = match_files(x_dir, y_dir); m_len = len(matched)
+        for i, (xm, ym) in enumerate(matched):
+            # Giving feedback to how the collection is going
+            sys.stdout.write('\rCollecting trace data into dataset {}/{}'.format(i+1, m_len))
+            sys.stdout.flush()
+
             x_traces, y_traces, z = get_matching_traces(xm, ym, zrange=zrange)
 
             if not len(X):
@@ -106,9 +109,6 @@ def sgy_to_keras_dataset(X_data_label_list,
             else:
                 X = row_stack((X, x_traces))
                 y = row_stack((y, y_traces))
-        # Add the data to the dataset, must be robust for AI, CPT or seismic data
-    
-    print(X.shape, y.shape)
     
     # Normalization
     if normalize == 'MinMaxScaler':
@@ -155,9 +155,7 @@ def match_files(X_folder_loc, y_folder_loc, file_extension='.sgy'):
                 j_list.append(j)
         [y_dir.pop(j) for j in j_list]
     return file_pairs
-
-
-                
+          
 
 def pair_well_and_seismic():
     """
