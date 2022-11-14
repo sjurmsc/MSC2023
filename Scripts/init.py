@@ -129,7 +129,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 1
+    use_optuna = True ; n_trials = 50
     makemodel = True; loadmodel = not makemodel
 
     # Must structure the data into an array format
