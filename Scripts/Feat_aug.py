@@ -47,9 +47,9 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100)):
                 X_data.mmap(); y_data.mmap()
             nums_y = segyio.collect(y_data.attributes(segyio.TraceField.TRACE_SEQUENCE_LINE))
             nums_X = segyio.collect(X_data.attributes(segyio.TraceField.TRACE_SEQUENCE_LINE))
-            nums = intersect1d(nums_X, nums_y)
-            y_traces = segyio.collect(y_data.trace)[:, :zrange[1]]
-            X_traces = segyio.collect(X_data.trace)[nums, :zrange[1]]
+            _, idx_X, idx_y = intersect1d(nums_X, nums_y, return_indices=True)
+            y_traces = segyio.collect(y_data.trace)[idx_y, z_y<zrange[1]]
+            X_traces = segyio.collect(X_data.trace)[idx_X, z_X<zrange[1]]
     return X_traces, y_traces, (z_X, z_y)
         
 
