@@ -3,7 +3,7 @@ Functions to be used for feature augmentation
 """
 import segyio
 import json
-from numpy import array, row_stack
+from numpy import array, row_stack, intersect1d
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from os import listdir
@@ -16,7 +16,7 @@ def get_data_loc():
     return json.loads(d_filepath)
 
 
-def get_traces(fp, mmap=True, zrange: tuple = (None,), length: int = None, ztrunc=100):
+def get_traces(fp, mmap=True, zrange: tuple = (None,100), length: int = None):
     """
     This function should conserve some information about the domain (time or depth) of
     the data.
@@ -29,8 +29,29 @@ def get_traces(fp, mmap=True, zrange: tuple = (None,), length: int = None, ztrun
     # if zrange[0] != None:
     #     pass
         #zmin = z[]
-    traces, z = traces[:, z<ztrunc], z[z<ztrunc]
+
+    
+    traces, z = traces[:, z<zrange[1]], z[z<zrange[1]]
     return traces, z
+
+
+def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100)):
+    """
+    Function to assist in maintaining cardinality of the dataset
+    """
+    with segyio.open(fp_X, ignore_geometry=True) as X_data:
+        with segyio.open(fp_y, ignore_geometry=True) as y_data:
+            z_X = X_data.samples
+            z_y = y_data.samples
+            if mmap:
+                X_data.mmap(); y_data.mmap()
+            nums_y = segyio.collect(y_data.attributes(segyio.TraceField.TRACE_SEQUENCE_LINE))
+            nums_X = segyio.collect(X_data.attributes(segyio.TraceField.TRACE_SEQUENCE_LINE))
+            nums = intersect1d(nums_X, nums_y)
+            y_traces = segyio.collect(y_data.trace)[:, :zrange[1]]
+            X_traces = segyio.collect(X_data.trace)[nums, :zrange[1]]
+    return X_traces, y_traces, (z_X, z_y)
+        
 
 
 def split_image_into_data_packets(traces, width_shape=7, dim=2, mode='cut_lower', upper_bound=0, overlap=0):
@@ -58,7 +79,7 @@ def sgy_to_keras_dataset(X_data_label_list,
                          y_data_label_list,
                          test_size=0.2, 
                          feature_dimension = 1,
-                         zrange: tuple = (None,), 
+                         zrange: tuple = (None, 100), 
                          reconstruction = True,
                          validation = False, 
                          normalize = 'MinMaxScaler',
@@ -77,8 +98,8 @@ def sgy_to_keras_dataset(X_data_label_list,
         y_dir = Path(data_dict[y_data_label_list[i]])
         matched = match_files(x_dir, y_dir)
         for xm, ym in matched:
-            x_traces, z_X = get_traces(xm, zrange=zrange)
-            y_traces, z_Y = get_traces(ym, zrange=zrange)
+            x_traces, y_traces, z = get_matching_traces(xm, ym, zrange=zrange)
+
             if not len(X):
                 X = array(x_traces)
                 y = array(y_traces)
