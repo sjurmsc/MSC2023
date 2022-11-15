@@ -93,7 +93,8 @@ def sgy_to_keras_dataset(X_data_label_list,
                          reconstruction = True,
                          validation = False, 
                          normalize = 'MinMaxScaler',
-                         random_state=1):
+                         random_state=1,
+                         fraction_data=False):
     """
     random_state may be passed for recreating results
     """
@@ -105,7 +106,9 @@ def sgy_to_keras_dataset(X_data_label_list,
     for i, key in enumerate(X_data_label_list):
         x_dir = Path(data_dict[key])
         y_dir = Path(data_dict[y_data_label_list[i]])
-        matched = match_files(x_dir, y_dir); m_len = len(matched)
+        matched = match_files(x_dir, y_dir)
+        if fraction_data: matched = matched[:int(len(matched)*fraction_data)]
+        m_len = len(matched)
         for i, (xm, ym) in enumerate(matched):
             # Giving feedback to how the collection is going
             sys.stdout.write('\rCollecting trace data into dataset {}/{}'.format(i+1, m_len))
