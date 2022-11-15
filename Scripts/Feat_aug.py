@@ -122,17 +122,20 @@ def sgy_to_keras_dataset(X_data_label_list,
             else:
                 X = row_stack((X, x_traces))
                 y = row_stack((y, y_traces))
+    sys.stdout.write('\n'); sys.stdout.flush()
     
     # Normalization
     if normalize == 'MinMaxScaler':
         scaler = MinMaxScaler()
         X_new = scaler.fit_transform(X, y)
         X = X_new
-    
-    train_X, train_y, test_X, test_y = train_test_split(X, y, test_size=test_size, random_state=random_state)  # dataset must be np.array
+    print(X.shape, y.shape)
+    train_X, test_X, train_y, test_y = train_test_split(X, y, 
+                                                        test_size=test_size, 
+                                                        random_state=random_state)  # dataset must be np.array
     
     if validation:
-        test_X, test_y, val_X, val_y = train_test_split(test_X, test_y, test_size=test_size, random_state=random_state)
+        test_X, val_X, test_y, val_y = train_test_split(test_X, test_y, test_size=test_size, random_state=random_state)
         if reconstruction:
             train_y = [train_y, train_X]
             test_y = [test_y, test_X]
@@ -142,7 +145,6 @@ def sgy_to_keras_dataset(X_data_label_list,
     if reconstruction:
         train_y = [train_y, train_X]
         test_y = [test_y, test_X]
-
     return (train_X, train_y), (test_X, test_y)
 
 
@@ -222,4 +224,4 @@ def format_input_output(dataset):
 
 if __name__ == '__main__':
 
-    sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'])
+    sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'], fraction_data=0.05)
