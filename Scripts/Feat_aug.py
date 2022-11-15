@@ -52,8 +52,8 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100)):
             if mmap: X_data.mmap(); y_data.mmap() # initiate mmap mode for large datasets
 
             # get information about what traces are overlapping
-            nums_X = segyio.collect(X_data.attributes(segyio.TraceField.TRACE_SEQUENCE_LINE))
-            nums_y = segyio.collect(y_data.attributes(segyio.TraceField.TRACE_SEQUENCE_LINE))
+            nums_X = segyio.collect(X_data.attributes(segyio.TraceField.CDP))
+            nums_y = segyio.collect(y_data.attributes(segyio.TraceField.CDP))
             _, idx_X, idx_y = intersect1d(nums_X, nums_y, return_indices=True)
             assert len(idx_X) == len(idx_y)
 
