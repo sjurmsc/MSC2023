@@ -129,7 +129,7 @@ def sgy_to_keras_dataset(X_data_label_list,
         scaler = MinMaxScaler()
         X_new = scaler.fit_transform(X, y)
         X = X_new
-    print(X.shape, y.shape)
+
     train_X, test_X, train_y, test_y = train_test_split(X, y, 
                                                         test_size=test_size, 
                                                         random_state=random_state)  # dataset must be np.array

@@ -439,7 +439,7 @@ def compiled_TCN(training_data, config, **kwargs):
     X, y = training_data
     # Y_reconstruct = array([dat.flatten() for dat in X])
 
-    input_shape = tuple([*X.shape[1:], nb_filters])
+    input_shape = tuple([*X.shape[1:]])
     input_layer = Input(shape=input_shape)
 
     # Feature Extraction module
