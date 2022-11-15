@@ -44,8 +44,13 @@ class RunModels:
 
         
         if len(self.train_data) == 2:
-            target, traces = self.train_data
-            flat_target = target.flatten()
+            traces, train_y = self.train_data
+            if len(train_y) == 2:
+                flat_target = train_y[0].flatten()
+            elif len(train_y) == 1:
+                flat_target = train_y.flatten()
+            else: raise ValueError('Unexpected dimansionality of target')
+
             self.target_max = np.max(flat_target, axis=None)
             self.target_min = np.min(flat_target[np.nonzero(flat_target)])
 
@@ -53,6 +58,8 @@ class RunModels:
             self.target_cmap = lambda x : plt.cm.plasma(target_norm(x))
         elif len(self.train_data) == 1:
             traces = self.train_data
+            raise ValueError('This part should not run')
+
         self.seis_st_dev = stats.tstd(traces, axis=None)
         seis_norm = mpl.colors.Normalize(-self.seis_st_dev, self.seis_st_dev)
         self.seis_cmap = lambda x : plt.cm.seismic(seis_norm(x))
@@ -79,8 +86,7 @@ class RunModels:
         model.save(model_loc)
 
         # Evaluating the model
-        test_data = [self.test_data[0], self.test_data[1][:len(self.test_data[0])]]
-        X, Y = test_data[1], test_data
+        X, Y = test_data
         error = model.evaluate(X, Y, batch_size = 1, verbose=0)
         tot_error, reg_error, rec_error = error
         
@@ -228,16 +234,13 @@ if __name__ == '__main__':
                 model.save(model_loc)
                 with open(model_loc + '/' + 'config.json', 'w') as w_file:
                     w_file.write(json.dumps(config))
+
                 save_training_progression(History.history, model_loc)
+
                 config = next(config_iter)
 
     if loadmodel:
         groupname = 'ABA'
         model = load_model('./Models/{}/0'.format(groupname))
-        
-
-        test_data = [test_data[0], test_data[1][:len(test_data[0])]]
-        X, Y = test_data[1], test_data
-
-        error = model.evaluate(X, Y, batch_size = 1, verbose=0)
+        error = model.evaluate(test_X, test_y, batch_size = 1, verbose=0)
         print(error)
