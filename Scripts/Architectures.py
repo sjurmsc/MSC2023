@@ -437,9 +437,8 @@ def compiled_TCN(training_data, config, **kwargs):
 
     # Data
     X, y = training_data
-    # Y_reconstruct = array([dat.flatten() for dat in X])
 
-    input_shape = tuple([*X.shape[1:]])
+    input_shape = tuple([*X.shape[1:], 1])
     input_layer = Input(shape=input_shape)
 
     # Feature Extraction module
@@ -456,7 +455,8 @@ def compiled_TCN(training_data, config, **kwargs):
             kernel_initializer=kernel_initializer,
             use_batch_norm=use_batch_norm,
             use_layer_norm=use_layer_norm,
-            use_weight_norm=use_weight_norm
+            use_weight_norm=use_weight_norm,
+            name='Feature_recognition_module'
     )(input_layer)
 
     # Regression module
