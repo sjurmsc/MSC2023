@@ -3,7 +3,7 @@ Functions to be used for feature augmentation
 """
 import segyio
 import json
-from numpy import array, row_stack, intersect1d
+from numpy import array, row_stack, intersect1d, where, amax
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from os import listdir
@@ -41,15 +41,25 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100)):
     """
     with segyio.open(fp_X, ignore_geometry=True) as X_data:
         with segyio.open(fp_y, ignore_geometry=True) as y_data:
+            # retrieving depth values for target and input data
             z_X = X_data.samples
             z_y = y_data.samples
-            if mmap:
-                X_data.mmap(); y_data.mmap()
-            nums_y = segyio.collect(y_data.attributes(segyio.TraceField.TRACE_SEQUENCE_LINE))
+
+            # getting index of max depth for truncation
+            X_max_idx = amax(where(z_X <= zrange[1]))
+            y_max_idx = amax(where(z_y <= zrange[1]))
+
+            if mmap: X_data.mmap(); y_data.mmap() # initiate mmap mode for large datasets
+
+            # get information about what traces are overlapping
             nums_X = segyio.collect(X_data.attributes(segyio.TraceField.TRACE_SEQUENCE_LINE))
+            nums_y = segyio.collect(y_data.attributes(segyio.TraceField.TRACE_SEQUENCE_LINE))
             _, idx_X, idx_y = intersect1d(nums_X, nums_y, return_indices=True)
-            y_traces = segyio.collect(y_data.trace)[idx_y, z_y<zrange[1]]
-            X_traces = segyio.collect(X_data.trace)[idx_X, z_X<zrange[1]]
+            assert len(idx_X) == len(idx_y)
+
+            # collect the data
+            X_traces = segyio.collect(X_data.trace)[idx_X, :X_max_idx]
+            y_traces = segyio.collect(y_data.trace)[idx_y, :y_max_idx]
     return X_traces, y_traces, (z_X, z_y)
         
 
