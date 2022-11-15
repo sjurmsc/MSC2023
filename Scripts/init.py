@@ -138,18 +138,6 @@ if __name__ == '__main__':
     use_optuna = True ; n_trials = 50
     makemodel = True; loadmodel = not makemodel
 
-    # Must structure the data into an array format
-    # ol = 2
-    # upper_bound = 600
-
-    # train_data = split_image_into_data_packets(TRAINDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
-    # test_data = split_image_into_data_packets(TESTDATA, (width_shape, height_shape), upper_bound=upper_bound, overlap=ol)
-    #print(train_data.shape)
-
-
-
-
-
     # CONFIG
     config = dict()
     config['nb_filters']            = 2
