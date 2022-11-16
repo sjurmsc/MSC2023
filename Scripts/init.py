@@ -135,7 +135,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 50
+    use_optuna = True ; n_trials = 1
     makemodel = True; loadmodel = not makemodel
 
     # CONFIG
