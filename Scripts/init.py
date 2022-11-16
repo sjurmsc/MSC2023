@@ -173,7 +173,7 @@ if __name__ == '__main__':
     cpt_datasets =      list(config['cpt_data'])
 
     if len(ai_datasets):
-        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.2, test_size=0.9)
+        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.1, test_size=0.9)
         test_X, test_y = test_data
 
     # elif len(cpt_datasets):
@@ -193,7 +193,7 @@ if __name__ == '__main__':
             # Ints
             config_range['nb_filters']      = ('int', (2, 8))
             # config_range['batch_size']      = ('int', (20, 40))
-            config_range['epochs']          = ('int', (75, 100))
+            config_range['epochs']          = ('int', (2, 3) )#(75, 100))
 
             # Categoricals
             #config_range['padding']         = ('categorical', (['causal', 'same'],))
