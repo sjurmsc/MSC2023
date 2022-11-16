@@ -204,10 +204,10 @@ def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     # Moving window statistics
 
     X = gt_data
-    if len(X) == 2:
-        truth, X = X
-    elif len(X) == 1:
-        truth = X
+    # if len(X) == 2:
+    X, truth = X
+    # elif len(X) == 1:
+    #     truth = X
     truth = np.array(truth)
     samples = truth.shape[1] #pass # Amount of columns (to be rows)
     pred = model.predict(X)
