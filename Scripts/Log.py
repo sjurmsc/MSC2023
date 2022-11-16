@@ -208,6 +208,7 @@ def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     X, truth = X
     # elif len(X) == 1:
     #     truth = X
+    truth, _ = truth
     truth = np.array(truth)
     samples = truth.shape[1] #pass # Amount of columns (to be rows)
     pred = model.predict(X)
