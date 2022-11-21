@@ -3,7 +3,7 @@
 URL to assignment: https://www.overleaf.com/read/tzwckfrpfbvw
 
 Current best performing reconstruction module with score 0.0016155330231413245:
-![](../TEMP/ACP/27_combined_pred.jpg)
+![](./TEMP/ACP/27_combined_pred.jpg)
 ../TEMP/ACP/27_combined_pred.jpg
 
 ---
