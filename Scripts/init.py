@@ -97,8 +97,8 @@ class RunModels:
         p, pt = create_pred_image_from_1d(model, self.train_data)
         #prediction_histogram(pt[0], pt[1], bins=500)
 
-        if not os.path.isdir('./TEMP'): os.mkdir('./TEMP')
-        image_folder = './TEMP/{}'.format(groupname)
+        if not os.path.isdir('/TEMP'): os.mkdir('/TEMP')
+        image_folder = '/TEMP/{}'.format(groupname)
         if not os.path.isdir(image_folder): os.makedirs(image_folder, exist_ok=True)
         
         # Image with comparisons
@@ -191,7 +191,8 @@ if __name__ == '__main__':
             config_range['dropout_rate']    = ('float', (0.01, 0.1))
 
             # Ints
-            config_range['nb_filters']      = ('int', (2, 8))
+            # config_range['nb_filters']      = ('int', (2, 8))
+            config_range['nb_tcn_stacks']   = ('int', (1, 3))
             config_range['kernel_size']     = ('int', (4, 12))
             config_range['batch_size']      = ('int', (20, 40))
             config_range['epochs']          = ('int', (75, 100))
