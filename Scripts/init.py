@@ -15,6 +15,7 @@ import segyio
 from PIL import Image
 import numpy as np
 from keras.models import load_model
+from keras.utils.vis_utils import plot_model
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
@@ -84,6 +85,7 @@ class RunModels:
 
         if not os.path.isdir(model_loc): os.mkdir(model_loc)
         model.save(model_loc)
+        plot_model(model, to_file=model_loc+'/model.png', show_shapes=True, show_layer_names=True)
 
         # Evaluating the model
         X, Y = test_data
