@@ -478,7 +478,7 @@ def compiled_TCN(training_data, config, **kwargs):
 
     
     reg = Conv1D(1, kernel_size, padding=padding, activation='linear')(reg)
-    reg = Resizing(reg_output_shape, 1, name='regression_output')(reg)
+    reg = Resizing(None, reg_output_shape, name='regression_output')(reg)
 
     # Reconstruciton module
     rec = CNN(nb_filters=nb_filters,
