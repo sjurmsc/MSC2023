@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestRegressor
 from tensorflow import keras
 from keras import backend as K, Model, Input, optimizers, layers
 from keras.layers import Dense, Dropout, Conv1D, Conv2D, Layer, BatchNormalization, LayerNormalization
-from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda, Flatten, Resizing
+from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda, Flatten
 from tensorflow_addons.layers import WeightNormalization
 from numpy import array
 
@@ -473,12 +473,9 @@ def compiled_TCN(training_data, config, **kwargs):
     # reg = Flatten()(reg)
     # reg = Dense(y[0].shape[1])(reg)
     # reg = Activation('linear', name='regression_output')(reg)
-
-    reg_output_shape = y[0].shape[1]
-
     
     reg = Conv1D(1, kernel_size, padding=padding, activation='linear')(reg)
-    reg = Resizing(None, reg_output_shape, name='regression_output')(reg)
+    reg = Dense(y[0].shape[1], activation='linear', name='regression_output')(reg)
 
     # Reconstruciton module
     rec = CNN(nb_filters=nb_filters,
