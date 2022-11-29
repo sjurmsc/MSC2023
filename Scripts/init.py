@@ -78,6 +78,7 @@ class RunModels:
             suggest_func = sfunc[items[0]]
             self.config[key] = suggest_func(key, *items[1])
 
+
         model, History = compiled_TCN(self.train_data, self.config, callbacks=[self.tb_callback])
 
         # Saving the model
@@ -115,6 +116,7 @@ class RunModels:
             w_file.write(json.dumps(config, indent=2))
         save_training_progression(History.history, model_loc)
 
+        del model # Clear up the memory location for next model
         return reg_error + rec_error
 
 
@@ -158,7 +160,7 @@ if __name__ == '__main__':
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
 
-    config['nb_tcn_stacks']         = 1
+    config['nb_tcn_stacks']         = 3
     config['nb_reg_stacks']         = 3
     config['nb_rec_stacks']         = 3    
 
