@@ -496,6 +496,8 @@ def compiled_TCN(training_data, config, **kwargs):
 
     rec = Conv1D(1, kernel_size, padding=padding, activation='linear', name='reconstruction_output')(rec)
 
+    print(rec.shape)
+
     output_layer = [reg, rec] # Regression, reconstruction
 
     model = Model(inputs = input_layer, 
