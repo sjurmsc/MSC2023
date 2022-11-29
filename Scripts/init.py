@@ -99,8 +99,8 @@ class RunModels:
         p, pt = create_pred_image_from_1d(model, self.train_data)
         #prediction_histogram(pt[0], pt[1], bins=500)
 
-        if not os.path.isdir('/TEMP'): os.mkdir('/TEMP')
-        image_folder = '/TEMP/{}'.format(groupname)
+        if not os.path.isdir('./TEMP'): os.mkdir('./TEMP')
+        image_folder = './TEMP/{}'.format(groupname)
         if not os.path.isdir(image_folder): os.makedirs(image_folder, exist_ok=True)
         
         # Image with comparisons
