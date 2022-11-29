@@ -474,11 +474,11 @@ def compiled_TCN(training_data, config, **kwargs):
     # reg = Dense(y[0].shape[1])(reg)
     # reg = Activation('linear', name='regression_output')(reg)
 
-    dense_output_shape = X.shape[1]
+    reg_output_shape = y[0].shape[1]
 
     
     reg = Conv1D(1, kernel_size, padding=padding, activation='linear')(reg)
-    reg = Resizing(dense_output_shape, 1, name='regression_output')(reg)
+    reg = Resizing(reg_output_shape, 1, name='regression_output')(reg)
 
     # Reconstruciton module
     rec = CNN(nb_filters=nb_filters,
