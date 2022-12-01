@@ -220,7 +220,11 @@ if __name__ == '__main__':
 
             while config != None:
                 groupname, modelname = next(model_name_gen)
-                model, History = compiled_TCN(train_data, config)
+
+                tbdir = './_tb'
+                tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tbdir, histogram_freq=1)
+
+                model, History = compiled_TCN(train_data, config, callbacks = [tb_callback])
                 
                 model_loc = './Models/{}/{}'.format(groupname, modelname)
                 if not os.path.isdir(model_loc):
