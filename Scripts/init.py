@@ -149,11 +149,11 @@ if __name__ == '__main__':
     config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
-    config['dropout_rate']          = 0.04
+    config['dropout_rate']          = 0.03
     config['return_sequences']      = True
     config['activation']            = 'relu'
     config['convolution_type']      = 'Conv2D'
-    config['learn_rate']            = 0.01
+    config['learn_rate']            = 0.001
     config['kernel_initializer']    = 'he_normal'
 
     config['use_batch_norm']        = False
@@ -164,8 +164,8 @@ if __name__ == '__main__':
     config['nb_reg_stacks']         = 3
     config['nb_rec_stacks']         = 3    
 
-    config['batch_size']            = 20
-    config['epochs']                = 120
+    config['batch_size']            = 30
+    config['epochs']                = 200
 
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
