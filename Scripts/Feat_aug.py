@@ -4,7 +4,7 @@ Functions to be used for feature augmentation
 import segyio
 import json
 from numpy import array, row_stack, intersect1d, where, amax, resize
-from tensorflow.image
+from scipy.interpolate import interp1d
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from os import listdir
@@ -65,7 +65,8 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100), gr
             X_traces = segyio.collect(X_data.trace)[idx_X, :X_max_idx]
             y_traces = segyio.collect(y_data.trace)[idx_y, :y_max_idx]
 
-            y_traces = resize(y_traces, X_traces.shape)
+            y_interp = interp1d(z_y, y_traces, kind='linear', axis=1)
+            y_traces = y_interp(z_X)
 
             if not group_traces == 1:
                 num_traces = X_traces.shape[0]
