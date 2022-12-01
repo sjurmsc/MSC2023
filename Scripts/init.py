@@ -164,8 +164,8 @@ if __name__ == '__main__':
     config['nb_reg_stacks']         = 3
     config['nb_rec_stacks']         = 3    
 
-    config['batch_size']            = 12
-    config['epochs']                = 60
+    config['batch_size']            = 20
+    config['epochs']                = 120
 
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
