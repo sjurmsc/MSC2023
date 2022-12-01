@@ -3,7 +3,7 @@ Functions to be used for feature augmentation
 """
 import segyio
 import json
-from numpy import array, row_stack, intersect1d, where, amax, resize
+from numpy import array, row_stack, intersect1d, where, amax, amin
 from scipy.interpolate import interp1d
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
@@ -36,12 +36,12 @@ def get_traces(fp, mmap=True, zrange: tuple = (None,100), length: int = None):
     return traces, z
 
 
-def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100), group_traces: int = 1):
+def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), group_traces: int = 1):
     """
     Function to assist in maintaining cardinality of the dataset
     %%%%%%%%%%%%%%%% Can add overlap here
     """
-    assert not group_traces%2, 'Amount of traces must be odd to have a center trace'
+    assert group_traces%2, 'Amount of traces must be odd to have a center trace'
 
     with segyio.open(fp_X, ignore_geometry=True) as X_data:
         with segyio.open(fp_y, ignore_geometry=True) as y_data:
@@ -50,8 +50,12 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100), gr
             z_y = y_data.samples
 
             # getting index of max depth for truncation
-            X_max_idx = amax(where(z_X <= zrange[1]))
-            y_max_idx = amax(where(z_y <= zrange[1]))
+            X_max_idx = amax(where(z_X <= zrange[1])) + 1
+            y_max_idx = amax(where(z_y <= zrange[1])) + 1
+
+            # The acoustic impedance starts at depth 25m
+            X_min_idx = amin(where(z_X >= z_y[0]))
+
 
             if mmap: X_data.mmap(); y_data.mmap() # initiate mmap mode for large datasets
 
@@ -62,18 +66,18 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100), gr
             assert len(idx_X) == len(idx_y)
 
             # collect the data
-            X_traces = segyio.collect(X_data.trace)[idx_X, :X_max_idx]
+            X_traces = segyio.collect(X_data.trace)[idx_X, X_min_idx:X_max_idx]
             y_traces = segyio.collect(y_data.trace)[idx_y, :y_max_idx]
 
-            y_interp = interp1d(z_y, y_traces, kind='linear', axis=1)
-            y_traces = y_interp(z_X)
+            y_interp = interp1d(z_y[:y_max_idx], y_traces, kind='nearest', axis=1)
+            y_traces = array(y_interp(z_X[X_min_idx:X_max_idx]))
 
             if not group_traces == 1:
                 num_traces = X_traces.shape[0]
                 len_traces = X_traces.shape[1]
                 num_images = num_traces//group_traces; indices_truncated = num_images*group_traces
-                X_traces = X_traces[:indices_truncated].reshape((num_images, len_traces, group_traces))
-                y_traces = y_traces[:indices_truncated].reshape((num_images, len_traces, group_traces))
+                X_traces = X_traces[:indices_truncated].reshape((num_images, group_traces, len_traces))
+                y_traces = y_traces[:indices_truncated].reshape((num_images, group_traces, len_traces))
     return X_traces, y_traces, (z_X, z_y)
         
 

@@ -139,7 +139,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 50
+    use_optuna = False ; n_trials = 50
     makemodel = True; loadmodel = not makemodel
 
     # CONFIG
@@ -152,7 +152,7 @@ if __name__ == '__main__':
     config['dropout_rate']          = 0.04
     config['return_sequences']      = True
     config['activation']            = 'relu'
-    config['convolution_type']      = 'Conv1D'
+    config['convolution_type']      = 'Conv2D'
     config['learn_rate']            = 0.01
     config['kernel_initializer']    = 'he_normal'
 
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     cpt_datasets =      list(config['cpt_data'])
 
     if len(ai_datasets):
-        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=1, test_size=0.99)
+        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.2, test_size=0.99, group_traces=101)
         test_X, test_y = test_data
 
     # elif len(cpt_datasets):
@@ -212,7 +212,7 @@ if __name__ == '__main__':
 
         else:
             variable_config = dict()
-            variable_config['nb_filters'] = [1, 2]
+            variable_config['nb_filters'] = [2]
             variable_config['kernel_size'] = [8]
             config_iter = config_iterator(config, variable_config)
 
