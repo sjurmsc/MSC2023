@@ -474,7 +474,11 @@ def compiled_TCN(training_data, config, **kwargs):
     # reg = Dense(y[0].shape[1])(reg)
     # reg = Activation('linear', name='regression_output')(reg)
     
-    reg = Conv2D(1, kernel_size, padding=padding, activation='linear', name='regression_output')(reg)
+    c_func = Conv1D
+    if convolution_type == 'Conv2D': c_func = Conv2D # Not quite sure    
+
+    reg = c_func(1, kernel_size, padding=padding, activation='linear', name='regression_output')(reg)
+    
     # reg = Flatten()(reg)
     # reg = Dense(y[0].shape[1], activation='linear')(reg)
 
@@ -489,13 +493,12 @@ def compiled_TCN(training_data, config, **kwargs):
             name = 'Reconstruction_module'
             )(x)
 
-    # if convolution_type == 'Conv2D': dense_output_shape = X.shape[1]*X.shape[2] # Not quite sure
 
     # rec = Flatten()(rec)
     # rec = Dense(dense_output_shape)(rec)
     # rec = Activation('linear', name='reconstruction_output')(rec)
 
-    rec = Conv2D(1, kernel_size, padding=padding, activation='linear', name='reconstruction_output')(rec)
+    rec = c_func(1, kernel_size, padding=padding, activation='linear', name='reconstruction_output')(rec)
 
     print(rec.shape)
 
