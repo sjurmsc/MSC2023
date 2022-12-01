@@ -474,9 +474,9 @@ def compiled_TCN(training_data, config, **kwargs):
     # reg = Dense(y[0].shape[1])(reg)
     # reg = Activation('linear', name='regression_output')(reg)
     
-    reg = Conv1D(1, kernel_size, padding=padding, activation='linear')(reg)
+    reg = Conv1D(1, kernel_size, padding=padding, activation='linear', name='regression_output')(reg)
     # reg = Flatten()(reg)
-    # reg = Dense(y[0].shape[1], activation='linear', name='regression_output')(reg)
+    # reg = Dense(y[0].shape[1], activation='linear')(reg)
 
     # Reconstruciton module
     rec = CNN(nb_filters=nb_filters,
