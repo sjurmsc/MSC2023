@@ -145,7 +145,7 @@ def replace_md_image(filepath, score):
         writefile.writelines(lines)
 
     with open('.gitignore', 'a') as file:
-        file.write('\n!' + trunc_filepath[1:])
+        file.write('\n!' + trunc_filepath[3:])  # 3 at the start to skip ./
         
     fps = ['.gitignore', 'README.md', 'Models/_scores.json']
     message = 'Replacing Markdown Image'

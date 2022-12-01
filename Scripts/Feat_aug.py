@@ -3,7 +3,8 @@ Functions to be used for feature augmentation
 """
 import segyio
 import json
-from numpy import array, row_stack, intersect1d, where, amax
+from numpy import array, row_stack, intersect1d, where, amax, resize
+from scipy.interpolate import interp1d
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 from os import listdir
@@ -35,10 +36,13 @@ def get_traces(fp, mmap=True, zrange: tuple = (None,100), length: int = None):
     return traces, z
 
 
-def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100)):
+def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100), group_traces: int = 1):
     """
     Function to assist in maintaining cardinality of the dataset
+    %%%%%%%%%%%%%%%% Can add overlap here
     """
+    assert not group_traces%2, 'Amount of traces must be odd to have a center trace'
+
     with segyio.open(fp_X, ignore_geometry=True) as X_data:
         with segyio.open(fp_y, ignore_geometry=True) as y_data:
             # retrieving depth values for target and input data
@@ -60,6 +64,16 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (None, 100)):
             # collect the data
             X_traces = segyio.collect(X_data.trace)[idx_X, :X_max_idx]
             y_traces = segyio.collect(y_data.trace)[idx_y, :y_max_idx]
+
+            y_interp = interp1d(z_y, y_traces, kind='linear', axis=1)
+            y_traces = y_interp(z_X)
+
+            if not group_traces == 1:
+                num_traces = X_traces.shape[0]
+                len_traces = X_traces.shape[1]
+                num_images = num_traces//group_traces; indices_truncated = num_images*group_traces
+                X_traces = X_traces[:indices_truncated].reshape((num_images, len_traces, group_traces))
+                y_traces = y_traces[:indices_truncated].reshape((num_images, len_traces, group_traces))
     return X_traces, y_traces, (z_X, z_y)
         
 
@@ -88,7 +102,7 @@ def split_image_into_data_packets(traces, width_shape=7, dim=2, mode='cut_lower'
 def sgy_to_keras_dataset(X_data_label_list,
                          y_data_label_list,
                          test_size=0.2, 
-                         feature_dimension = 1,
+                         group_traces = 1,
                          zrange: tuple = (None, 100), 
                          reconstruction = True,
                          validation = False, 
@@ -107,14 +121,14 @@ def sgy_to_keras_dataset(X_data_label_list,
         x_dir = Path(data_dict[key])
         y_dir = Path(data_dict[y_data_label_list[i]])
         matched = match_files(x_dir, y_dir)
-        if fraction_data: matched = matched[:int(len(matched)*fraction_data)]
+        if fraction_data: matched = matched[:int(len(matched)*fraction_data)] # %%%%%%%%%%%%%%%%%%%%%quickfix
         m_len = len(matched)
         for i, (xm, ym) in enumerate(matched):
             # Giving feedback to how the collection is going
             sys.stdout.write('\rCollecting trace data into dataset {}/{}'.format(i+1, m_len))
             sys.stdout.flush()
 
-            x_traces, y_traces, z = get_matching_traces(xm, ym, zrange=zrange)
+            x_traces, y_traces, z = get_matching_traces(xm, ym, zrange=zrange, group_traces=group_traces)
 
             if not len(X):
                 X = array(x_traces)

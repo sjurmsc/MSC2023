@@ -177,14 +177,14 @@ if __name__ == '__main__':
     cpt_datasets =      list(config['cpt_data'])
 
     if len(ai_datasets):
-        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.2, test_size=0.9)
+        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=1, test_size=0.99)
         test_X, test_y = test_data
 
     # elif len(cpt_datasets):
     #     raise ValueError('This should not be populated yet')
 
     if makemodel:
-        model_name_gen = give_modelname()
+        model_name_gen = give_modelname()  # Initiate iterator to give model names
 
         if use_optuna:
             # First using a couple of demonstrative values
@@ -234,7 +234,7 @@ if __name__ == '__main__':
                 config = next(config_iter)
 
     if loadmodel:
-        groupname = 'ABA'
-        model = load_model('./Models/{}/0'.format(groupname))
+        mname = 'ABA/0'
+        model = load_model('./Models/{}'.format(mname))
         error = model.evaluate(test_X, test_y, batch_size = 1, verbose=0)
         print(error)
