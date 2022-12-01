@@ -149,11 +149,11 @@ if __name__ == '__main__':
     config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
-    config['dropout_rate']          = 0.04
+    config['dropout_rate']          = 0.03
     config['return_sequences']      = True
     config['activation']            = 'relu'
     config['convolution_type']      = 'Conv2D'
-    config['learn_rate']            = 0.01
+    config['learn_rate']            = 0.001
     config['kernel_initializer']    = 'he_normal'
 
     config['use_batch_norm']        = False
@@ -164,8 +164,8 @@ if __name__ == '__main__':
     config['nb_reg_stacks']         = 3
     config['nb_rec_stacks']         = 3    
 
-    config['batch_size']            = 12
-    config['epochs']                = 60
+    config['batch_size']            = 30
+    config['epochs']                = 200
 
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     cpt_datasets =      list(config['cpt_data'])
 
     if len(ai_datasets):
-        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.2, test_size=0.99, group_traces=101, normalize=False)
+        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.2, test_size=0.8, group_traces=101, normalize=False)
         test_X, test_y = test_data
 
     # elif len(cpt_datasets):
@@ -220,7 +220,11 @@ if __name__ == '__main__':
 
             while config != None:
                 groupname, modelname = next(model_name_gen)
-                model, History = compiled_TCN(train_data, config)
+
+                tbdir = './_tb'
+                tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tbdir, histogram_freq=1)
+
+                model, History = compiled_TCN(train_data, config, callbacks = [tb_callback])
                 
                 model_loc = './Models/{}/{}'.format(groupname, modelname)
                 if not os.path.isdir(model_loc):
