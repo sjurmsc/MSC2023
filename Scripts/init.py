@@ -139,7 +139,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = False ; n_trials = 50
+    use_optuna = True ; n_trials = 25
     makemodel = True; loadmodel = not makemodel
 
     # CONFIG
@@ -164,8 +164,8 @@ if __name__ == '__main__':
     config['nb_reg_stacks']         = 3
     config['nb_rec_stacks']         = 3    
 
-    config['batch_size']            = 30
-    config['epochs']                = 200
+    config['batch_size']            = 20
+    config['epochs']                = 100
 
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
@@ -177,7 +177,7 @@ if __name__ == '__main__':
     cpt_datasets =      list(config['cpt_data'])
 
     if len(ai_datasets):
-        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.2, test_size=0.8, group_traces=11, normalize=False)
+        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.2, test_size=0.8, group_traces=1, normalize=True)
         test_X, test_y = test_data
 
     # elif len(cpt_datasets):
