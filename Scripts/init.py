@@ -177,7 +177,7 @@ if __name__ == '__main__':
     cpt_datasets =      list(config['cpt_data'])
 
     if len(ai_datasets):
-        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.2, test_size=0.8, group_traces=101, normalize=False)
+        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.2, test_size=0.8, group_traces=11, normalize=False)
         test_X, test_y = test_data
 
     # elif len(cpt_datasets):
