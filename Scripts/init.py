@@ -175,7 +175,7 @@ if __name__ == '__main__':
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
     config['cpt_data']              = ['']
-    config['group_traces']          = 1
+    config['group_traces']          = 7
 
     # Retrieving the data
     seismic_datasets =  list(config['seismic_data'])
