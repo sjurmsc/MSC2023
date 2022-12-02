@@ -112,6 +112,7 @@ def sgy_to_keras_dataset(X_data_label_list,
                          validation = False, 
                          normalize = 'MinMaxScaler',
                          random_state=1,
+                         shuffle=True,
                          fraction_data=False):
     """
     random_state may be passed for recreating results
@@ -150,10 +151,11 @@ def sgy_to_keras_dataset(X_data_label_list,
 
     train_X, test_X, train_y, test_y = train_test_split(X, y, 
                                                         test_size=test_size, 
-                                                        random_state=random_state)  # dataset must be np.array
+                                                        random_state=random_state,
+                                                        shuffle=shuffle)  # dataset must be np.array
     
     if validation:
-        test_X, val_X, test_y, val_y = train_test_split(test_X, test_y, test_size=test_size, random_state=random_state)
+        test_X, val_X, test_y, val_y = train_test_split(test_X, test_y, test_size=test_size, random_state=random_state, shuffle=shuffle)
         if reconstruction:
             train_y = [train_y, train_X]
             test_y = [test_y, test_X]

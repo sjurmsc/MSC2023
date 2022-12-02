@@ -42,8 +42,9 @@ class RunModels:
         self.model_name_gen = give_modelname()
         self.train_data = train_data
         self.test_data = test_data
+        self.seis_testimage_fp = r"C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\2DUHRS_06_MIG_DEPTH\TNW_B02_5110_MIG_DPT.sgy"
+        self.ai_testimage_fp = r"C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\00_AI\TNW_B02_5110_MIG.Abs_Zp.sgy"
 
-        
         if len(self.train_data) == 2:
             traces, train_y = self.train_data
             if len(train_y) == 2:
@@ -97,7 +98,8 @@ class RunModels:
         seis_cmap = self.seis_cmap
         ai_cmap = self.target_cmap
         
-        p, pt = create_pred_image_from_1d(model, self.train_data)
+        seis_testimage, ai_testimage, _ = get_matching_traces(self.seis_testimage_fp, self.ai_testimage_fp, group_traces=self.config['group_traces'])
+        target_pred, recon_pred = create_pred_image(model,  [seis_testimage, ai_testimage])
         #prediction_histogram(pt[0], pt[1], bins=500)
 
         if not os.path.isdir('./TEMP'): os.mkdir('./TEMP')
@@ -105,9 +107,12 @@ class RunModels:
         if not os.path.isdir(image_folder): os.makedirs(image_folder, exist_ok=True)
         
         # Image with comparisons
-        p_name = image_folder + '/{}_combined_pred.jpg'.format(modelname)
-        im_p = ai_cmap(p)
-        img_p = Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
+        p_name = image_folder + '/{}_combined_target_pred.jpg'.format(modelname)
+        rec_p_name = image_folder + '/{}_combined_recon_pred.jpg'.format(modelname)
+        im_p = ai_cmap(target_pred)
+        im_rec_p = seis_cmap(recon_pred)
+        Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
+        Image.fromarray((im_rec_p[:, :, :3]*255).astype(np.uint8)).save(rec_p_name)
 
         if update_scores('{}/{}'.format(groupname, modelname), rec_error):
             replace_md_image(p_name, rec_error)
@@ -170,14 +175,16 @@ if __name__ == '__main__':
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
     config['cpt_data']              = ['']
+    config['group_traces']          = 1
 
     # Retrieving the data
     seismic_datasets =  list(config['seismic_data'])
     ai_datasets =       list(config['ai_data'])
     cpt_datasets =      list(config['cpt_data'])
+    group_traces =      config['group_traces']
 
     if len(ai_datasets):
-        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.2, test_size=0.8, group_traces=1, normalize=True)
+        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, ai_datasets, fraction_data=0.2, test_size=0.8, group_traces=group_traces, normalize=True)
         test_X, test_y = test_data
 
     # elif len(cpt_datasets):

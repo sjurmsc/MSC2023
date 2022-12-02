@@ -199,20 +199,26 @@ def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font 
     d.end_document()
 
 
-def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
+def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
     # Decide based on stats which section is the best predicting
     # Moving window statistics
 
-    X = gt_data
-    # if len(X) == 2:
-    X, truth = X
-    # elif len(X) == 1:
-    #     truth = X
-    truth, _ = truth
+    X, truth = gt_data
     truth = np.array(truth)
-    samples = truth.shape[1] #pass # Amount of columns (to be rows)
     pred = model.predict(X)
     if len(pred) == 2: pred, pred_recon = pred
+
+    if len(truth.shape) == 3:
+        num_images, num_traces, samples = truth.shape
+        width_of_image = num_images*num_traces
+        truth = np.reshape(truth, (width_of_image, samples))
+        X = np.reshape(X, (width_of_image, samples))
+        pred = np.reshape(pred, (width_of_image, samples))
+        pred_recon = np.reshape(pred_recon, (width_of_image, samples))
+
+    elif len(truth.shape) == 2:
+        num_traces, samples = truth.shape #pass # Amount of columns (to be rows)
+    
     
     traces = int(aspect_r*samples)  #the breadth of the image is the aspect_ratio*height
     
@@ -229,9 +235,11 @@ def create_pred_image_from_1d(model, gt_data, aspect_r=1.33333, mode='sbs'):
     s = slice(slce, slce+traces)
 
     pred_matrix = pred[s] ; gt_matrix = truth[s]
+    pred_recon_matrix = pred_recon[s] ; gt_recon_matrix = X[s]
 
-    p = np.row_stack((pred_matrix, gt_matrix))
-    return p.T, (pred_matrix.T, gt_matrix.T) # quickfix
+    target_pred_compare = np.row_stack((pred_matrix, gt_matrix))
+    recon_pred_compare = np.row_stack((pred_recon_matrix, gt_recon_matrix))
+    return target_pred_compare.T, recon_pred_compare# (pred_matrix.T, gt_matrix.T) # quickfix
 
 
 def save_training_progression(data, model_fp):
