@@ -239,7 +239,7 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
 
     target_pred_compare = np.row_stack((pred_matrix, gt_matrix))
     recon_pred_compare = np.row_stack((pred_recon_matrix, gt_recon_matrix))
-    return target_pred_compare.T, recon_pred_compare# (pred_matrix.T, gt_matrix.T) # quickfix
+    return target_pred_compare.T, recon_pred_compare.T# (pred_matrix.T, gt_matrix.T) # quickfix
 
 
 def save_training_progression(data, model_fp):

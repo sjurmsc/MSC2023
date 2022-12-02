@@ -42,8 +42,8 @@ class RunModels:
         self.model_name_gen = give_modelname()
         self.train_data = train_data
         self.test_data = test_data
-        self.seis_testimage_fp = r"../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/TNW_B02_5110_MIG_DPT.sgy"
-        self.ai_testimage_fp = r"../OneDrive - NGI/Documents/NTNU/MSC_DATA/00_AI/TNW_B02_5110_MIG.Abs_Zp.sgy"
+        self.seis_testimage_fp = "../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/TNW_B02_5110_MIG_DPT.sgy"
+        self.ai_testimage_fp = "../OneDrive - NGI/Documents/NTNU/MSC_DATA/00_AI/TNW_B02_5110_MIG.Abs_Zp.sgy"
 
         if len(self.train_data) == 2:
             traces, train_y = self.train_data
@@ -149,7 +149,7 @@ if __name__ == '__main__':
 
     # CONFIG
     config = dict()
-    config['nb_filters']            = 2
+    config['nb_filters']            = [2, 3, 5, 5, 6, 6, 8]
     config['kernel_size']           = 8 # JR used 5
     config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
@@ -157,7 +157,7 @@ if __name__ == '__main__':
     config['dropout_rate']          = 0.03
     config['return_sequences']      = True
     config['activation']            = 'relu'
-    config['convolution_type']      = 'Conv2D'
+    config['convolution_type']      = 'Conv1D'
     config['learn_rate']            = 0.001
     config['kernel_initializer']    = 'he_normal'
 
@@ -176,6 +176,8 @@ if __name__ == '__main__':
     config['ai_data']               = ['00_AI']
     config['cpt_data']              = ['']
     config['group_traces']          = 7
+
+    if config['group_traces']>1: config['convolution_type'] = 'Conv2D'
 
     # Retrieving the data
     seismic_datasets =  list(config['seismic_data'])
@@ -211,7 +213,7 @@ if __name__ == '__main__':
             config_range['nb_tcn_stacks']   = ('int', (1, 3))
             config_range['kernel_size']     = ('int', (4, 12))
             config_range['batch_size']      = ('int', (20, 40))
-            # config_range['epochs']          = ('int', (75, 100))
+            config_range['epochs']          = ('int', (75, 100))
 
             # Categoricals
             #config_range['padding']         = ('categorical', (['causal', 'same'],))
