@@ -149,7 +149,7 @@ if __name__ == '__main__':
 
     # CONFIG
     config = dict()
-    config['nb_filters']            = [2, 3, 5, 5, 6, 6, 8]
+    config['nb_filters']            = 2
     config['kernel_size']           = 8 # JR used 5
     config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
