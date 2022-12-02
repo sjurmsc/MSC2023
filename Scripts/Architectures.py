@@ -465,7 +465,7 @@ def compiled_TCN(training_data, config, **kwargs):
             nb_stacks=nb_reg_stacks,
             padding=padding,
             activation='relu',
-            convolution_type='Conv1D',
+            convolution_type=convolution_type,
             kernel_initializer=kernel_initializer,
             name = 'Regression_module'
             )(x)
