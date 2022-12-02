@@ -211,7 +211,7 @@ if __name__ == '__main__':
             config_range['nb_tcn_stacks']   = ('int', (1, 3))
             config_range['kernel_size']     = ('int', (4, 12))
             config_range['batch_size']      = ('int', (20, 40))
-            config_range['epochs']          = ('int', (75, 100))
+            # config_range['epochs']          = ('int', (75, 100))
 
             # Categoricals
             #config_range['padding']         = ('categorical', (['causal', 'same'],))
