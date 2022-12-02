@@ -105,10 +105,10 @@ class ResidualBlock(Layer):
                         pass # Already done above
                 
                 with K.name_scope('act_and_dropout_{}'.format(k)):
-                    if self.convolution_type.lower() == 'conv1d': d_func = SpatialDropout1D
-                    else: d_func = SpatialDropout2D
+                    if self.convolution_type.lower() == 'conv1d': d_func = SpatialDropout1D; dim=1
+                    else: d_func = SpatialDropout2D; dim=2
                     self._build_layer(Activation(self.activation, name='Act_{}_{}'.format(self.convolution_type, k)))
-                    self._build_layer(d_func(rate=self.dropout_rate, name='SDropout_{}'.format(k)))
+                    self._build_layer(d_func(rate=self.dropout_rate, name='SDropout{}D_{}'.format(dim, k)))
     
             if self.nb_filters != input_shape[-1]:
                 # 1x1 convolution mathes the shapes (channel dimension).
