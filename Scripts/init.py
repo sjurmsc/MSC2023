@@ -42,8 +42,8 @@ class RunModels:
         self.model_name_gen = give_modelname()
         self.train_data = train_data
         self.test_data = test_data
-        self.seis_testimage_fp = r"C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\2DUHRS_06_MIG_DEPTH\TNW_B02_5110_MIG_DPT.sgy"
-        self.ai_testimage_fp = r"C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\00_AI\TNW_B02_5110_MIG.Abs_Zp.sgy"
+        self.seis_testimage_fp = r"../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/TNW_B02_5110_MIG_DPT.sgy"
+        self.ai_testimage_fp = r"../OneDrive - NGI/Documents/NTNU/MSC_DATA/00_AI/TNW_B02_5110_MIG.Abs_Zp.sgy"
 
         if len(self.train_data) == 2:
             traces, train_y = self.train_data
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     config['nb_rec_stacks']         = 3    
 
     config['batch_size']            = 20
-    config['epochs']                = 100
+    config['epochs']                = 1
 
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
