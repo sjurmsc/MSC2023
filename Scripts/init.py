@@ -175,7 +175,7 @@ if __name__ == '__main__':
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
     config['cpt_data']              = ['']
-    config['group_traces']          = 9
+    config['group_traces']          = 7
 
     if config['group_traces']>1: config['convolution_type'] = 'Conv2D'
 
