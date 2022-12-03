@@ -175,7 +175,7 @@ if __name__ == '__main__':
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
     config['cpt_data']              = ['']
-    config['group_traces']          = 7
+    config['group_traces']          = 9
 
     if config['group_traces']>1: config['convolution_type'] = 'Conv2D'
 
@@ -209,11 +209,11 @@ if __name__ == '__main__':
             config_range['dropout_rate']    = ('float', (0.01, 0.1))
 
             # Ints
-            # config_range['nb_filters']      = ('int', (2, 8))
+            config_range['nb_filters']      = ('int', (2, 12))
             config_range['nb_tcn_stacks']   = ('int', (1, 3))
-            config_range['kernel_size']     = ('int', (4, 12))
-            config_range['batch_size']      = ('int', (20, 40))
-            config_range['epochs']          = ('int', (75, 100))
+            config_range['kernel_size']     = ('int', (6, 12))
+            config_range['batch_size']      = ('int', (20, 30))
+            config_range['epochs']          = ('int', (75, 150))
 
             # Categoricals
             #config_range['padding']         = ('categorical', (['causal', 'same'],))
