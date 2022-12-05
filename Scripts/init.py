@@ -149,8 +149,8 @@ if __name__ == '__main__':
 
     # CONFIG
     config = dict()
-    config['nb_filters']            = 3
-    config['kernel_size']           = (3, 9) # Height, width
+    config['nb_filters']            = 8
+    config['kernel_size']           = (5, 9) # Height, width
     config['dilations']             = [1, 2, 4, 8, 16, 32]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
@@ -176,7 +176,7 @@ if __name__ == '__main__':
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
     config['cpt_data']              = ['']
-    config['group_traces']          = 7
+    config['group_traces']          = 13
 
     if config['group_traces']>1: config['convolution_type'] = 'Conv2D'
     else: config['kernel_size'] = config['kernel_size'][1]
