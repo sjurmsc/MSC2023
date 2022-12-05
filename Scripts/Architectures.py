@@ -21,7 +21,7 @@ class ResidualBlock(Layer):
     def __init__(self,
                  dilation_rate: int,
                  nb_filters: int,
-                 kernel_size: int,
+                 kernel_size,
                  padding: str,
                  activation: str = 'relu',
                  convolution_type: str = 'Conv2D',
@@ -176,7 +176,7 @@ class TCN(Layer):
 
     def __init__(self,
                  nb_filters=64,
-                 kernel_size=3,
+                 kernel_size=(3, 9),
                  nb_stacks=1,
                  dilations=(1, 2, 4, 8, 16, 32),
                  padding='causal',
