@@ -154,6 +154,7 @@ if __name__ == '__main__':
     config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
+    config['dropout_type']          = 'spatial'
     config['dropout_rate']          = 0.03
     config['return_sequences']      = True
     config['activation']            = 'relu'
