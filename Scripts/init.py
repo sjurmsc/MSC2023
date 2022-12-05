@@ -149,11 +149,11 @@ if __name__ == '__main__':
 
     # CONFIG
     config = dict()
-    config['nb_filters']            = [3, 3, 5, 5, 5, 6]
+    config['nb_filters']            = 3
     config['kernel_size']           = (3, 9) # Height, width
     config['dilations']             = [1, 2, 4, 8, 16, 32]
     config['padding']               = 'same'
-    config['use_skip_connections']  = False
+    config['use_skip_connections']  = True
     config['dropout_type']          = 'normal'
     config['dropout_rate']          = 0.03
     config['return_sequences']      = True
