@@ -132,7 +132,7 @@ class ResidualBlock(Layer):
                 name = 'matching_conv1D'
                 with K.name_scope(name):
 
-                    self.shape_match_conv = Conv1D(
+                    self.shape_match_conv = c_func(
                         filters=self.nb_filters,
                         kernel_size=1,
                         padding='same',
