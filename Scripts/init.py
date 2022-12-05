@@ -167,8 +167,8 @@ if __name__ == '__main__':
     config['use_weight_norm']       = True
 
     config['nb_tcn_stacks']         = 2
-    config['nb_reg_stacks']         = 3
-    config['nb_rec_stacks']         = 3    
+    config['nb_reg_stacks']         = 2
+    config['nb_rec_stacks']         = 2    
 
     config['batch_size']            = 20
     config['epochs']                = 1
