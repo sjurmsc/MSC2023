@@ -10,6 +10,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from os import listdir
 from pathlib import Path
 import sys
+from _misc.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
 # Functions for loading data
 
@@ -69,8 +70,11 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), grou
             X_traces = segyio.collect(X_data.trace)[idx_X, X_min_idx:X_max_idx]
             y_traces = segyio.collect(y_data.trace)[idx_y, :y_max_idx]
 
-            y_interp = interp1d(z_y[:y_max_idx], y_traces, kind='nearest', axis=1)
-            y_traces = array(y_interp(z_X[X_min_idx:X_max_idx]))
+            # Using JR code to resample the acoustic impedance
+            y_refl = ai_to_reflectivity(y_traces)
+            y_interp = interp1d(z_y[:y_max_idx], y_refl, kind='nearest', axis=1)
+            y_interp_refl = array(y_interp(z_X[X_min_idx:X_max_idx]))
+            y_traces = reflectivity_to_ai(y_interp_refl)
 
             if not group_traces == 1:
                 num_traces = X_traces.shape[0]
