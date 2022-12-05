@@ -166,7 +166,7 @@ if __name__ == '__main__':
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
 
-    config['nb_tcn_stacks']         = 3
+    config['nb_tcn_stacks']         = 1
     config['nb_reg_stacks']         = 3
     config['nb_rec_stacks']         = 3    
 
@@ -189,8 +189,8 @@ if __name__ == '__main__':
     if len(ai_datasets):
         train_data, test_data = sgy_to_keras_dataset(seismic_datasets, 
                                                      ai_datasets, 
-                                                     fraction_data=0.2, 
-                                                     test_size=0.8, 
+                                                     fraction_data=0.01, 
+                                                     test_size=0.5, 
                                                      group_traces=group_traces, 
                                                      normalize=False)
         test_X, test_y = test_data
@@ -211,7 +211,7 @@ if __name__ == '__main__':
 
             # Ints
             config_range['nb_filters']      = ('int', (2, 12))
-            config_range['nb_tcn_stacks']   = ('int', (1, 3))
+            # config_range['nb_tcn_stacks']   = ('int', (1, 3))
             config_range['kernel_size']     = ('int', (6, 12))
             config_range['batch_size']      = ('int', (20, 30))
             config_range['epochs']          = ('int', (75, 150))
