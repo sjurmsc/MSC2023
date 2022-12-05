@@ -150,7 +150,7 @@ if __name__ == '__main__':
     # CONFIG
     config = dict()
     config['nb_filters']            = 2
-    config['kernel_size']           = (3, 5) # Height, width
+    config['kernel_size']           = (3, 9) # Height, width
     config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
@@ -166,7 +166,7 @@ if __name__ == '__main__':
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
 
-    config['nb_tcn_stacks']         = 1
+    config['nb_tcn_stacks']         = 2
     config['nb_reg_stacks']         = 3
     config['nb_rec_stacks']         = 3    
 
@@ -190,8 +190,8 @@ if __name__ == '__main__':
     if len(ai_datasets):
         train_data, test_data = sgy_to_keras_dataset(seismic_datasets, 
                                                      ai_datasets, 
-                                                     fraction_data=0.01, 
-                                                     test_size=0.5, 
+                                                     fraction_data=0.4, 
+                                                     test_size=0.9, 
                                                      group_traces=group_traces, 
                                                      normalize=False)
         test_X, test_y = test_data
