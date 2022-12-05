@@ -6,7 +6,7 @@ import json
 from numpy import array, row_stack, intersect1d, where, amax, amin
 from scipy.interpolate import interp1d
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from os import listdir
 from pathlib import Path
 import sys
@@ -146,6 +146,10 @@ def sgy_to_keras_dataset(X_data_label_list,
     # Normalization
     if normalize == 'MinMaxScaler':
         scaler = MinMaxScaler()
+        X_new = scaler.fit_transform(X, y)
+        X = X_new
+    elif normalize == 'StandardScaler':
+        scaler = StandardScaler()
         X_new = scaler.fit_transform(X, y)
         X = X_new
 
