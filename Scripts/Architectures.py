@@ -25,6 +25,7 @@ class ResidualBlock(Layer):
                  padding: str,
                  activation: str = 'relu',
                  convolution_type: str = 'Conv2D',
+                 dropout_type: str ='spatial',
                  dropout_rate: float = 0.,
                  kernel_initializer: str = 'he_normal',
                  use_batch_norm: bool = False,
@@ -34,12 +35,16 @@ class ResidualBlock(Layer):
         """
         docstring here %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         """
-        self.dilation_rate = dilation_rate
+        if convolution_type == 'Conv2D':
+            self.dilation_rate = (dilation_rate, 1)
+        else:
+            self.dilation_rate = dilation_rate
         self.nb_filters = nb_filters
         self.kernel_size = kernel_size
         self.padding = padding
         self.activation = activation
         self.convolution_type = convolution_type # My addition
+        self.dropout_type = dropout_type
         self.dropout_rate = dropout_rate
         self.use_batch_norm = use_batch_norm
         self.use_layer_norm = use_layer_norm
@@ -105,10 +110,22 @@ class ResidualBlock(Layer):
                         pass # Already done above
                 
                 with K.name_scope('act_and_dropout_{}'.format(k)):
-                    if self.convolution_type.lower() == 'conv1d': d_func = SpatialDropout1D; dim=1
-                    else: d_func = SpatialDropout2D; dim=2
+                    if self.convolution_type.lower() == 'conv1d':
+                        dim = 1
+                    elif self.convolution_type.lower() == 'conv2d':
+                        dim = 2
+                    if self.dropout_type == 'normal':
+                        d_func = Dropout
+                        dname = 'Dropout'
+                    if self.dropout_type == 'spatial':
+                        dname = 'SDropout'
+                        if dim == 1:
+                            d_func = SpatialDropout1D
+                        elif dim == 2:
+                            d_func = SpatialDropout2D
+
                     self._build_layer(Activation(self.activation, name='Act_{}_{}'.format(self.convolution_type, k)))
-                    self._build_layer(d_func(rate=self.dropout_rate, name='SDropout{}D_{}'.format(dim, k)))
+                    self._build_layer(d_func(rate=self.dropout_rate, name='{}{}D_{}'.format(dname, dim, k)))
     
             if self.nb_filters != input_shape[-1]:
                 # 1x1 convolution mathes the shapes (channel dimension).
@@ -164,6 +181,7 @@ class TCN(Layer):
                  dilations=(1, 2, 4, 8, 16, 32),
                  padding='causal',
                  use_skip_connections=True,
+                 dropout_type = 'spatial',
                  dropout_rate=0.0,
                  return_sequences=False,
                  activation='relu',
@@ -175,6 +193,7 @@ class TCN(Layer):
                  **kwargs):
         
         self.return_sequences = return_sequences
+        self.dropout_type = dropout_type
         self.dropout_rate = dropout_rate
         self.use_skip_connections = use_skip_connections
         self.dilations = dilations
@@ -307,6 +326,7 @@ class TCN(Layer):
         config['dilations'] = self.dilations
         config['padding'] = self.padding
         config['use_skip_connections'] = self.use_skip_connections
+        config['dropout_type'] = self.dropout_type
         config['dropout_rate'] = self.dropout_rate
         config['return_sequences'] = self.return_sequences
         config['activation'] = self.activation_name
@@ -421,6 +441,7 @@ def compiled_TCN(training_data, config, **kwargs):
     dilations               = config['dilations']
     padding                 = config['padding']
     use_skip_connections    = config['use_skip_connections']
+    dropout_type            = config['dropout_type']
     dropout_rate            = config['dropout_rate']
     return_sequences        = config['return_sequences']
     activation              = config['activation']
@@ -448,6 +469,7 @@ def compiled_TCN(training_data, config, **kwargs):
             dilations=dilations,
             padding=padding,
             use_skip_connections=use_skip_connections,
+            dropout_type = dropout_type,
             dropout_rate=dropout_rate,
             return_sequences=return_sequences,
             activation=activation,

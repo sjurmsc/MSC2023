@@ -144,8 +144,8 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 25
-    makemodel = True; loadmodel = not makemodel
+    use_optuna = False ; n_trials = 2
+    makemodel = False; loadmodel = not makemodel
 
     # CONFIG
     config = dict()
@@ -154,6 +154,7 @@ if __name__ == '__main__':
     config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
+    config['dropout_type']          = 'normal'
     config['dropout_rate']          = 0.03
     config['return_sequences']      = True
     config['activation']            = 'relu'
