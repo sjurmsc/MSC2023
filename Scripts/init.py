@@ -153,7 +153,7 @@ if __name__ == '__main__':
     config['kernel_size']           = (3, 9) # Height, width
     config['dilations']             = [1, 2, 4, 8, 16, 32]
     config['padding']               = 'same'
-    config['use_skip_connections']  = True
+    config['use_skip_connections']  = False
     config['dropout_type']          = 'normal'
     config['dropout_rate']          = 0.03
     config['return_sequences']      = True
