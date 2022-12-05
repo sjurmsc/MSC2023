@@ -244,13 +244,17 @@ class TCN(Layer):
     
         for s in range(self.nb_stacks):
             for i, d in enumerate(self.dilations):
-                res_block_filters = self.nb_filters[i] if isinstance(self.nb_filters, list) else self.nb_filters
+                if isinstance(self.nb_filters, list):
+                    res_block_filters = self.nb_filters[i] 
+                else:
+                    res_block_filters = self.nb_filters
                 self.residual_blocks.append(ResidualBlock(dilation_rate=d,
                                                           nb_filters=res_block_filters,
                                                           kernel_size=self.kernel_size,
                                                           padding=self.padding,
                                                           activation=self.activation_name,
                                                           convolution_type=self.convolution_type,
+                                                          dropout_type=self.dropout_type,
                                                           dropout_rate=self.dropout_rate,
                                                           use_batch_norm=self.use_batch_norm,
                                                           use_layer_norm=self.use_layer_norm,
