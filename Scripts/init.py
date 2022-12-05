@@ -149,8 +149,8 @@ if __name__ == '__main__':
 
     # CONFIG
     config = dict()
-    config['nb_filters']            = 8
-    config['kernel_size']           = (5, 9) # Height, width
+    config['nb_filters']            = 4
+    config['kernel_size']           = (3, 7) # Height, width
     config['dilations']             = [1, 2, 4, 8, 16, 32]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
