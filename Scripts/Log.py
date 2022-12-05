@@ -240,6 +240,8 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
     target_pred_compare = np.row_stack((pred_matrix, gt_matrix))
     recon_pred_compare = np.row_stack((pred_recon_matrix, gt_recon_matrix))
 
+    print('X_shape: {}, y_shape: {}'.format(recon_pred_compare.shape, target_pred_compare.shape))
+
     return target_pred_compare.T, recon_pred_compare.T
 
 
