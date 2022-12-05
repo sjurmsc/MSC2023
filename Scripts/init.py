@@ -179,6 +179,7 @@ if __name__ == '__main__':
     config['group_traces']          = 7
 
     if config['group_traces']>1: config['convolution_type'] = 'Conv2D'
+    else: config['kernel_size'] = config['kernel_size'][1]
 
     # Retrieving the data
     seismic_datasets =  list(config['seismic_data'])
@@ -212,7 +213,7 @@ if __name__ == '__main__':
             # Ints
             config_range['nb_filters']      = ('int', (2, 12))
             # config_range['nb_tcn_stacks']   = ('int', (1, 3))
-            config_range['kernel_size']     = ('int', (6, 12))
+            # config_range['kernel_size']     = ('int', (6, 12))
             config_range['batch_size']      = ('int', (20, 30))
             config_range['epochs']          = ('int', (75, 150))
 
