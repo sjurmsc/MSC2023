@@ -149,9 +149,9 @@ if __name__ == '__main__':
 
     # CONFIG
     config = dict()
-    config['nb_filters']            = 2
+    config['nb_filters']            = [3, 3, 5, 5, 5, 6]
     config['kernel_size']           = (3, 9) # Height, width
-    config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
+    config['dilations']             = [1, 2, 4, 8, 16, 32]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
     config['dropout_type']          = 'normal'
@@ -211,7 +211,7 @@ if __name__ == '__main__':
             config_range['dropout_rate']    = ('float', (0.01, 0.1))
 
             # Ints
-            config_range['nb_filters']      = ('int', (2, 12))
+            # config_range['nb_filters']      = ('int', (2, 12))
             # config_range['nb_tcn_stacks']   = ('int', (1, 3))
             # config_range['kernel_size']     = ('int', (6, 12))
             config_range['batch_size']      = ('int', (20, 30))
