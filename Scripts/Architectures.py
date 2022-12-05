@@ -35,7 +35,10 @@ class ResidualBlock(Layer):
         """
         docstring here %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         """
-        self.dilation_rate = dilation_rate
+        if convolution_type == 'Conv2D':
+            self.dilation_rate = (dilation_rate, 1)
+        else:
+            self.dilation_rate = dilation_rate
         self.nb_filters = nb_filters
         self.kernel_size = kernel_size
         self.padding = padding

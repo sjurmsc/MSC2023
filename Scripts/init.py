@@ -144,8 +144,8 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 2
-    makemodel = True; loadmodel = not makemodel
+    use_optuna = False ; n_trials = 2
+    makemodel = False; loadmodel = not makemodel
 
     # CONFIG
     config = dict()
