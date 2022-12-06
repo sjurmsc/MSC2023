@@ -220,8 +220,10 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
 
     elif len(truth.shape) == 2:
         num_traces, samples = truth.shape #pass # Amount of columns (to be rows)
+        print('reshaping predictions')
         pred = np.reshape(pred, truth.shape)
         pred_recon = np.reshape(pred_recon, X.shape)
+        print('end')
     
     traces = int(aspect_r*samples)  #the breadth of the image is the aspect_ratio*height
     
@@ -229,7 +231,7 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
         traces //= 2
 
     # Decide what slice is best, by loss (l2 error norm)
-  
+    print('creating norm list')
     norm_list = norm(pred-truth, 2, axis=0)
     print(type(norm_list))
     norm_arr = np.array(norm_list)
