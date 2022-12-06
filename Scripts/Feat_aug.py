@@ -51,8 +51,8 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), grou
             z_y = y_data.samples
 
             # getting index of max depth for truncation
-            X_max_idx = amax(where(z_X <= zrange[1])) + 1
-            y_max_idx = amax(where(z_y <= zrange[1])) + 1
+            X_max_idx = amax(where(z_X < zrange[1])) + 1
+            y_max_idx = amax(where(z_y < zrange[1])) + 1
 
             # The acoustic impedance starts at depth 25m
             X_min_idx = amin(where(z_X >= z_y[0]))
@@ -71,10 +71,11 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), grou
             y_traces = segyio.collect(y_data.trace)[idx_y, :y_max_idx]
 
             # Using JR code to resample the acoustic impedance
-            y_refl = ai_to_reflectivity(y_traces)
-            y_interp = interp1d(z_y[:y_max_idx], y_refl, kind='nearest', axis=1)
-            y_interp_refl = array(y_interp(z_X[X_min_idx:X_max_idx]))
-            y_traces = reflectivity_to_ai(y_interp_refl)
+ 
+            # y_refl = ai2refl(y_traces)
+            # y_interp = interp1d(z_y[:y_max_idx], y_refl, kind='nearest', axis=1)
+            # y_interp_refl = array(y_interp(z_X[X_min_idx:X_max_idx]))
+            # y_traces = reflectivity_to_ai(y_interp_refl)
 
             if not group_traces == 1:
                 num_traces = X_traces.shape[0]

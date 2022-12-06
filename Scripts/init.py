@@ -167,7 +167,7 @@ if __name__ == '__main__':
     config['use_weight_norm']       = True
 
     config['nb_tcn_stacks']         = 2
-    config['nb_reg_stacks']         = 2
+    config['nb_reg_stacks']         = 3
     config['nb_rec_stacks']         = 2    
 
     config['batch_size']            = 20
@@ -176,7 +176,7 @@ if __name__ == '__main__':
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
     config['cpt_data']              = ['']
-    config['group_traces']          = 7
+    config['group_traces']          = 1
 
     if config['group_traces']>1: config['convolution_type'] = 'Conv2D'
     else: config['kernel_size'] = config['kernel_size'][1]
