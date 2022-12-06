@@ -98,7 +98,7 @@ class RunModels:
         seis_cmap = self.seis_cmap
         ai_cmap = self.target_cmap
         
-        seis_testimage, ai_testimage, _ = get_matching_traces(self.seis_testimage_fp, self.ai_testimage_fp, group_traces=self.config['group_traces'], trunc=30)
+        seis_testimage, ai_testimage, _ = get_matching_traces(self.seis_testimage_fp, self.ai_testimage_fp, group_traces=self.config['group_traces'], trunc=80)
         target_pred, recon_pred = create_pred_image(model,  [seis_testimage, ai_testimage])
         #prediction_histogram(pt[0], pt[1], bins=500)
 
@@ -194,7 +194,7 @@ if __name__ == '__main__':
                                                      test_size=0.5, 
                                                      group_traces=group_traces, 
                                                      normalize=True,
-                                                     truncate_data=30)
+                                                     truncate_data=100)
         test_X, test_y = test_data
 
     # elif len(cpt_datasets):
