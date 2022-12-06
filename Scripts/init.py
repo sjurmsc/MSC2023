@@ -176,7 +176,7 @@ if __name__ == '__main__':
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
     config['cpt_data']              = ['']
-    config['group_traces']          = 3
+    config['group_traces']          = 1
 
     if config['group_traces']>1: config['convolution_type'] = 'Conv2D'
     else: config['kernel_size'] = config['kernel_size'][1]
@@ -193,7 +193,8 @@ if __name__ == '__main__':
                                                      fraction_data=0.01, 
                                                      test_size=0.5, 
                                                      group_traces=group_traces, 
-                                                     normalize=False)
+                                                     normalize=True,
+                                                     truncate_data=20)
         test_X, test_y = test_data
 
     # elif len(cpt_datasets):

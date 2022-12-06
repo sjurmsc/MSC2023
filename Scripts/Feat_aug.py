@@ -37,7 +37,7 @@ def get_traces(fp, mmap=True, zrange: tuple = (None,100), length: int = None):
     return traces, z
 
 
-def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), group_traces: int = 1):
+def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), group_traces: int = 1, trunc = False):
     """
     Function to assist in maintaining cardinality of the dataset
     %%%%%%%%%%%%%%%% Can add overlap here
@@ -72,20 +72,25 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), grou
 
             # Using JR code to resample the acoustic impedance
  
-            y_refl, slope = ai_to_reflectivity(y_traces)
-            y_interp = interp1d(z_y[:y_max_idx], y_refl, kind='nearest', axis=1)
-            y_interp_refl = array(y_interp(z_X[X_min_idx:X_max_idx]))
-            y_traces = reflectivity_to_ai(y_interp_refl, slope)
+            # y_refl, slope = ai_to_reflectivity(y_traces)
+            # y_interp = interp1d(z_y[:y_max_idx], y_refl, kind='nearest', axis=1)
+            # y_interp_refl = array(y_interp(z_X[X_min_idx:X_max_idx]))
+            # y_traces = reflectivity_to_ai(y_interp_refl, slope)
 
-            if not group_traces == 1:
-                num_traces = X_traces.shape[0]
-                len_traces = X_traces.shape[1]
-                num_images = num_traces//group_traces
-                indices_truncated = num_images*group_traces
-                discarded_images = num_traces-indices_truncated
-                l_indices = (discarded_images//2); r_indices = indices_truncated + l_indices + discarded_images%2
-                X_traces = X_traces[l_indices:r_indices].reshape((num_images, group_traces, len_traces))
-                y_traces = y_traces[l_indices:r_indices].reshape((num_images, group_traces, len_traces))
+    if not group_traces == 1:
+        num_traces = X_traces.shape[0]
+        len_traces = X_traces.shape[1]
+        num_images = num_traces//group_traces
+        indices_truncated = num_images*group_traces
+        discarded_images = num_traces-indices_truncated
+        l_indices = (discarded_images//2); r_indices = indices_truncated + l_indices + discarded_images%2
+        X_traces = X_traces[l_indices:r_indices].reshape((num_images, group_traces, len_traces))
+        y_traces = y_traces[l_indices:r_indices].reshape((num_images, group_traces, len_traces))
+    
+    if trunc:
+        X_traces = X_traces[trunc:-trunc]
+        y_traces = y_traces[trunc:-trunc]
+    
     return X_traces, y_traces, (z_X, z_y)
         
 
@@ -121,7 +126,8 @@ def sgy_to_keras_dataset(X_data_label_list,
                          normalize = 'MinMaxScaler',
                          random_state=1,
                          shuffle=True,
-                         fraction_data=False):
+                         fraction_data=False,
+                         truncate_data=False):
     """
     random_state may be passed for recreating results
     """
@@ -141,7 +147,7 @@ def sgy_to_keras_dataset(X_data_label_list,
             sys.stdout.write('\rCollecting trace data into dataset {}/{}'.format(i+1, m_len))
             sys.stdout.flush()
 
-            x_traces, y_traces, z = get_matching_traces(xm, ym, zrange=zrange, group_traces=group_traces)
+            x_traces, y_traces, z = get_matching_traces(xm, ym, zrange=zrange, group_traces=group_traces, trunc=truncate_data)
 
             if not len(X):
                 X = array(x_traces)
