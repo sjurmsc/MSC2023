@@ -20,3 +20,6 @@ _tb/*
 !TEMP/ACP/17_combined_pred.jpg
 !TEMP/ACP/21_combined_pred.jpg
 !TEMP/ACP/27_combined_pred.jpg
+!TEMP/AET/1_combined_recon_pred.jpg
+!TEMP/AEU/0_combined_target_pred.jpg
+!TEMP/AEU/0_combined_recon_pred.jpg
