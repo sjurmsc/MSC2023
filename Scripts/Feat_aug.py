@@ -190,6 +190,7 @@ def match_files(X_folder_loc, y_folder_loc, file_extension='.sgy'):
 
     file_pairs = []
     for i, fname in enumerate(X_dir):
+        if 'infill' in fname: continue
         prefix = fname.name[:find_nth(fname.name, '_', 3)]
         j_list = []
         for j, yfile in enumerate(y_dir):
