@@ -202,7 +202,6 @@ def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font 
 def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
     # Decide based on stats which section is the best predicting
     # Moving window statistics
-    print('starting to create image')
     X, truth = gt_data
     truth = np.array(truth)
     pred = model.predict(X)
@@ -211,7 +210,6 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
         
 
     if len(truth.shape) == 3:
-        print('shape is 3')
         num_images, num_traces, samples = truth.shape
         width_of_image = num_images*num_traces
         truth = np.reshape(truth, (width_of_image, samples))
@@ -221,10 +219,8 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
 
     elif len(truth.shape) == 2:
         num_traces, samples = truth.shape #pass # Amount of columns (to be rows)
-        print('reshaping predictions')
         pred = np.reshape(pred, truth.shape)
         pred_recon = np.reshape(pred_recon, X.shape)
-        print('end')
     
     traces = int(aspect_r*samples)  #the breadth of the image is the aspect_ratio*height
     
@@ -232,9 +228,7 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
         traces //= 2
 
     # Decide what slice is best, by loss (l2 error norm)
-    print('creating norm list')
     norm_list = norm(pred-truth, 2, axis=0)
-    print(type(norm_list))
     norm_arr = np.array(norm_list)
     moving_window_mean = list(np.convolve(norm_arr, np.ones(traces), mode='valid'))
 
@@ -246,8 +240,6 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
 
     target_pred_compare = np.row_stack((pred_matrix, gt_matrix))
     recon_pred_compare = np.row_stack((pred_recon_matrix, gt_recon_matrix))
-
-    print('X_shape: {}, y_shape: {}'.format(recon_pred_compare.shape, target_pred_compare.shape))
 
     return target_pred_compare.T, recon_pred_compare.T
 
