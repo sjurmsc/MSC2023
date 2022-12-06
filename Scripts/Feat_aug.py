@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from os import listdir
 from pathlib import Path
 import sys
-#from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
+from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
 # Functions for loading data
 
@@ -72,17 +72,20 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), grou
 
             # Using JR code to resample the acoustic impedance
  
-            # y_refl = ai2refl(y_traces)
-            # y_interp = interp1d(z_y[:y_max_idx], y_refl, kind='nearest', axis=1)
-            # y_interp_refl = array(y_interp(z_X[X_min_idx:X_max_idx]))
-            # y_traces = reflectivity_to_ai(y_interp_refl)
+            y_refl, slope = ai_to_reflectivity(y_traces)
+            y_interp = interp1d(z_y[:y_max_idx], y_refl, kind='nearest', axis=1)
+            y_interp_refl = array(y_interp(z_X[X_min_idx:X_max_idx]))
+            y_traces = reflectivity_to_ai(y_interp_refl, slope)
 
             if not group_traces == 1:
                 num_traces = X_traces.shape[0]
                 len_traces = X_traces.shape[1]
-                num_images = num_traces//group_traces; indices_truncated = num_images*group_traces
-                X_traces = X_traces[:indices_truncated].reshape((num_images, group_traces, len_traces))
-                y_traces = y_traces[:indices_truncated].reshape((num_images, group_traces, len_traces))
+                num_images = num_traces//group_traces
+                indices_truncated = num_images*group_traces
+                discarded_images = num_traces-indices_truncated
+                l_indices = (discarded_images//2); r_indices = indices_truncated + l_indices + discarded_images%2
+                X_traces = X_traces[l_indices:r_indices].reshape((num_images, group_traces, len_traces))
+                y_traces = y_traces[l_indices:r_indices].reshape((num_images, group_traces, len_traces))
     return X_traces, y_traces, (z_X, z_y)
         
 
