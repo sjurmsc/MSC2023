@@ -487,7 +487,6 @@ def compiled_TCN(training_data, config, **kwargs):
 
     # Regression module
     reg_ksize = y[0].shape[-1]/(2*nb_reg_stacks) + 1  # for 1d preserving the shape of the data
-    print(reg_ksize)
     reg_ksize = int(reg_ksize)
     reg = CNN(nb_filters=nb_filters,
             kernel_size=reg_ksize,
@@ -529,7 +528,7 @@ def compiled_TCN(training_data, config, **kwargs):
 
     rec = c_func(1, kernel_size, padding=padding, activation='linear', name='reconstruction_output')(rec)
 
-    print(rec.shape)
+    print(reg.shape)
 
     output_layer = [reg, rec] # Regression, reconstruction
 
