@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from os import listdir
 from pathlib import Path
 import sys
-from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
+#from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
 # Functions for loading data
 

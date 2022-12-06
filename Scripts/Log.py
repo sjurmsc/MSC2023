@@ -206,7 +206,9 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
     X, truth = gt_data
     truth = np.array(truth)
     pred = model.predict(X)
-    if len(pred) == 2: pred, pred_recon = pred
+    if len(pred) == 2: 
+        pred, pred_recon = pred
+        
 
     if len(truth.shape) == 3:
         num_images, num_traces, samples = truth.shape
@@ -218,7 +220,8 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
 
     elif len(truth.shape) == 2:
         num_traces, samples = truth.shape #pass # Amount of columns (to be rows)
-    
+        pred = np.reshape(pred, truth.shape)
+        pred_recon = np.reshape(pred_recon, X.shape)
     
     traces = int(aspect_r*samples)  #the breadth of the image is the aspect_ratio*height
     
