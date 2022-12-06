@@ -491,7 +491,7 @@ def compiled_TCN(training_data, config, **kwargs):
     reg = CNN(nb_filters=nb_filters,
             kernel_size=reg_ksize,
             nb_stacks=nb_reg_stacks,
-            padding=padding,
+            padding='valid',
             activation='relu',
             convolution_type=convolution_type,
             kernel_initializer=kernel_initializer,
