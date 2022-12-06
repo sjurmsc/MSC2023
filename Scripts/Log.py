@@ -202,7 +202,7 @@ def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font 
 def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
     # Decide based on stats which section is the best predicting
     # Moving window statistics
-
+    print('starting to create image')
     X, truth = gt_data
     truth = np.array(truth)
     pred = model.predict(X)
@@ -211,6 +211,7 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
         
 
     if len(truth.shape) == 3:
+        print('shape is 3')
         num_images, num_traces, samples = truth.shape
         width_of_image = num_images*num_traces
         truth = np.reshape(truth, (width_of_image, samples))
