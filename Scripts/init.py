@@ -144,7 +144,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 10
+    use_optuna = True ; n_trials = 40
     makemodel = True; loadmodel = not makemodel
 
     # CONFIG
@@ -216,7 +216,7 @@ if __name__ == '__main__':
             # config_range['nb_tcn_stacks']   = ('int', (1, 3))
             # config_range['kernel_size']     = ('int', (6, 12))
             config_range['batch_size']      = ('int', (20, 30))
-            config_range['epochs']          = ('int', (1, 10))
+            config_range['epochs']          = ('int', (90, 150))
 
             # Categoricals
             #config_range['padding']         = ('categorical', (['causal', 'same'],))
