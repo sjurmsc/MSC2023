@@ -229,8 +229,9 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
         traces //= 2
 
     # Decide what slice is best, by loss (l2 error norm)
-    difference_matrix = pred-truth
-    norm_list = [norm(i, 2) for i in difference_matrix]
+  
+    norm_list = norm(pred-truth, 2, axis=0)
+    print(type(norm_list))
     norm_arr = np.array(norm_list)
     moving_window_mean = list(np.convolve(norm_arr, np.ones(traces), mode='valid'))
 
