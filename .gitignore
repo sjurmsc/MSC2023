@@ -7,6 +7,7 @@ Models/A*
 TEMP/seismic_images
 TEMP/*/*.jpg
 _tb/*
+start_model_run.bat
 !TEMP/AAO/1_combined_pred.jpg
 !TEMP/ABW/0_combined_pred.jpg
 !TEMP/ACC/9_combined_pred.jpg
