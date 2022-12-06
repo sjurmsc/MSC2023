@@ -190,14 +190,12 @@ def match_files(X_folder_loc, y_folder_loc, file_extension='.sgy'):
 
     file_pairs = []
     for i, fname in enumerate(X_dir):
-        if ('Infill' in fname.name): continue
-        prefix = fname.name[:find_nth(fname.name, '_', 3)]
+        X_name = fname.name[:fname.name.find('_MIG_DPT.sgy')]
         j_list = []
         for j, yfile in enumerate(y_dir):
-            y_str = str(yfile)
-            if ('Infill' in y_str): continue
-            if prefix in y_str:
-                file_pairs.append((str(fname), y_str))
+            y_name = yfile.name[:yfile.name.find('_MIG.Abs_Zp.sgy')]
+            if X_name == y_name:
+                file_pairs.append((str(fname), str(yfile)))
                 j_list.append(j)
         [y_dir.pop(j) for j in j_list]
     return file_pairs
@@ -255,4 +253,7 @@ def format_input_output(dataset):
 
 if __name__ == '__main__':
 
-    sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'], fraction_data=0.05, group_traces=3, normalize='StandardScaler')
+    d_dict = load_data_dict()
+    m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
+    print(array(m_files))
+    # sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'], fraction_data=0.05, group_traces=3, normalize='StandardScaler')
