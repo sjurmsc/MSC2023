@@ -92,7 +92,7 @@ class RunModels:
         # Evaluating the model
         X, Y = test_data
         print('Starting model evaluation')
-        error = model.evaluate(X, Y, batch_size = 1, verbose=2)
+        error = model.evaluate(X, Y, batch_size = 1, verbose=2, steps=20)
         print('Done with model evaluation')
         tot_error, reg_error, rec_error = error
 
