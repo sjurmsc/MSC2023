@@ -175,7 +175,7 @@ def create_ai_error_image(e, seismic_array, image_normalize=True, filename = Fal
         seismic_image = Image.fromarray(plt.cm.gray(np.array(seismic_array), alpha=seismic_alpha)*255, mode='RGBA')
 
     cmap = lambda x: plt.cm.Reds(alpha_norm(x), alpha=(np.ones_like(x)-alpha_norm(x)))*255
-    scaled_e = Image.fromarray(cmap(e).astype(np.uint8), mode='RGBA').resize(seismic_array.shape)
+    scaled_e = Image.fromarray(cmap(e).astype(np.uint8), mode='RGBA').resize(seismic_image.size)
 
     error_image = Image.new('RGBA', scaled_e.size)
     error_image = Image.alpha_composite(error_image, seismic_image)
@@ -292,13 +292,9 @@ def repo_push(fps, message):
 
 # Only used for testing the code
 if __name__ == '__main__':
-    # k_obj = object()
-    # k_obj._control = {'test' : [1, 2, 3]}
-    # log_it(k_obj)
-    # replace_md_image('Models/07-09-2022_14.12.12/coming_soon.jpg')
-    # a = np.random.randint(1, 10, size=(10, 10))
-    # b = np.random.random((10, 10))
+    pass
+    # a = np.random.randint(1, 10, size=(20, 10))
+    # b = np.random.random((20, 10))
 
     # e = create_ai_error_image(b, a, filename = 'test.png')
     # print(e)
-    pass
