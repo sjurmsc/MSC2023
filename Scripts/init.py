@@ -188,14 +188,14 @@ if __name__ == '__main__':
     group_traces =      config['group_traces']
 
     if len(ai_datasets):
-        train_data, test_data = sgy_to_keras_dataset(seismic_datasets, 
-                                                     ai_datasets, 
-                                                     fraction_data=0.06, 
-                                                     test_size=0.8, 
-                                                     group_traces=group_traces, 
-                                                     X_normalize='StandardScaler',
-                                                     y_normalize='MinMaxScaler',
-                                                     truncate_data=100)
+        train_data, test_data, scalers = sgy_to_keras_dataset(seismic_datasets, 
+                                                              ai_datasets, 
+                                                              fraction_data=0.06, 
+                                                              test_size=0.8, 
+                                                              group_traces=group_traces, 
+                                                              X_normalize='StandardScaler',
+                                                              y_normalize='MinMaxScaler',
+                                                              truncate_data=100)
         test_X, test_y = test_data
 
     # elif len(cpt_datasets):
