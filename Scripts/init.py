@@ -81,21 +81,20 @@ class RunModels:
             suggest_func = sfunc[items[0]]
             self.config[key] = suggest_func(key, *items[1])
 
-
         model, History = compiled_TCN(self.train_data, self.config, callbacks=[self.tb_callback])
 
         # Saving the model
         model_loc = './Models/{}/{}'.format(groupname, modelname)
 
         if not os.path.isdir(model_loc): os.mkdir(model_loc)
+
         model.save(model_loc)
         plot_model(model, to_file=model_loc+'/model.png', show_shapes=True, show_layer_names=True)
 
         # Evaluating the model
         X, Y = test_data
-        print('Starting model evaluation')
-        error = model.evaluate(X, Y, batch_size = 1, verbose=2, steps=20)
-        print('Done with model evaluation')
+
+        error = model.evaluate(X, Y, batch_size = 20, verbose=2, steps=40)
         tot_error, reg_error, rec_error = error
 
         
@@ -176,7 +175,7 @@ if __name__ == '__main__':
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
 
-    config['nb_tcn_stacks']         = 5
+    config['nb_tcn_stacks']         = 3
     config['nb_reg_stacks']         = 5
     config['nb_rec_stacks']         = 3    
 

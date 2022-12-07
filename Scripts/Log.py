@@ -170,9 +170,9 @@ def create_ai_error_image(e, seismic_array, image_normalize=True, filename = Fal
     seismic_alpha = np.ones_like(seismic_array)-norm(seismic_array)
 
     if image_normalize:
-        seismic_image = Image.fromarray(plt.cm.gray(norm(seismic_array), alpha=seismic_alpha)*255, mode='RGBA')
+        seismic_image = Image.fromarray((plt.cm.gray(norm(seismic_array), alpha=seismic_alpha)*255).astype(np.uint8), mode='RGBA')
     else:
-        seismic_image = Image.fromarray(plt.cm.gray(np.array(seismic_array), alpha=seismic_alpha)*255, mode='RGBA')
+        seismic_image = Image.fromarray((plt.cm.gray(np.array(seismic_array), alpha=seismic_alpha)*255).astype(np.uint8), mode='RGBA')
 
     cmap = lambda x: plt.cm.Reds(alpha_norm(x), alpha=(np.ones_like(x)-alpha_norm(x)))*255
     scaled_e = Image.fromarray(cmap(e).astype(np.uint8), mode='RGBA').resize(seismic_image.size)
