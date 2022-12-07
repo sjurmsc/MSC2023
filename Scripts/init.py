@@ -166,9 +166,9 @@ if __name__ == '__main__':
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
 
-    config['nb_tcn_stacks']         = 2
+    config['nb_tcn_stacks']         = 3
     config['nb_reg_stacks']         = 5
-    config['nb_rec_stacks']         = 2    
+    config['nb_rec_stacks']         = 3    
 
     config['batch_size']            = 20
     config['epochs']                = 1
@@ -190,8 +190,8 @@ if __name__ == '__main__':
     if len(ai_datasets):
         train_data, test_data = sgy_to_keras_dataset(seismic_datasets, 
                                                      ai_datasets, 
-                                                     fraction_data=0.05, 
-                                                     test_size=0.7, 
+                                                     fraction_data=1, 
+                                                     test_size=0.8, 
                                                      group_traces=group_traces, 
                                                      normalize=True,
                                                      truncate_data=100)
