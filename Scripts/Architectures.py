@@ -526,7 +526,7 @@ def compiled_TCN(training_data, config, **kwargs):
     # rec = Dense(dense_output_shape)(rec)
     # rec = Activation('linear', name='reconstruction_output')(rec)
 
-    rec = c_func(1, kernel_size, padding=padding, activation='linear', name='reconstruction_output')(rec)
+    rec = c_func(1, kernel_size, padding=padding, activation='tanh', name='reconstruction_output')(rec)
 
     print(reg.shape)
 
