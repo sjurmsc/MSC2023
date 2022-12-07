@@ -15,7 +15,10 @@ from git import Repo
 from matplotlib.pyplot import hist
 import numpy as np
 from numpy.linalg import norm
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, Colormap
+import matplotlib.pyplot as plt
+
+
 
 
 def gname(old_name):
@@ -152,28 +155,34 @@ def replace_md_image(filepath, score):
     repo_push(fps, message)
 
 
-def create_ai_error_image(e, seismic_image, image_normalize=True, filename = False):
+def create_ai_error_image(e, seismic_array, image_normalize=True, filename = False):
     """
     e: prediction error
     This function presumes that the depth of e and the seismic image is the same
     seismic image is presumed to be raw data
     """
-    seismic_image = np.array(seismic_image)
-    e = np.array(e)
-    for i in range(3):
-        e = np.row_stack(e, np.zeros_like(e))
+    seismic_array = np.array(seismic_array)
+    e = np.array(e, dtype=float)
+
+    alpha_norm = Normalize(np.min(e, axis=None), np.max(e, axis=None))
     
-    scaled_e = Image.fromarray(e, mode='RGBA').resize(seismic_image.shape)
+    norm = Normalize(np.min(seismic_array, axis=None), np.max(seismic_array, axis=None))
+    seismic_alpha = np.ones_like(seismic_array)-norm(seismic_array)
 
     if image_normalize:
-        norm = Normalize(np.min(seismic_image, axis=None), np.max(seismic_image, axis=None))
-        seismic_image = Image.fromarray(norm(seismic_image), mode='RGBA')
+        seismic_image = Image.fromarray(plt.cm.gray(norm(seismic_array), alpha=seismic_alpha)*255, mode='RGBA')
+    else:
+        seismic_image = Image.fromarray(plt.cm.gray(np.array(seismic_array), alpha=seismic_alpha)*255, mode='RGBA')
 
-    error_image = seismic_image.alpha_composite(scaled_e)
+    cmap = lambda x: plt.cm.Reds(alpha_norm(x), alpha=(np.ones_like(x)-alpha_norm(x)))*255
+    scaled_e = Image.fromarray(cmap(e).astype(np.uint8), mode='RGBA').resize(seismic_array.shape)
+
+    error_image = Image.new('RGBA', scaled_e.size)
+    error_image = Image.alpha_composite(error_image, seismic_image)
+    error_image = Image.alpha_composite(error_image, scaled_e)
 
     if filename:
-        error_image.astype(np.uint8).save(filename)
-
+        error_image.save(filename)
     return error_image
 
 
@@ -286,4 +295,9 @@ if __name__ == '__main__':
     # k_obj._control = {'test' : [1, 2, 3]}
     # log_it(k_obj)
     # replace_md_image('Models/07-09-2022_14.12.12/coming_soon.jpg')
-    print('Hello World!')
+    # a = np.random.randint(1, 10, size=(10, 10))
+    # b = np.random.random((10, 10))
+
+    # e = create_ai_error_image(b, a, filename = 'test.png')
+    # print(e)
+    pass
