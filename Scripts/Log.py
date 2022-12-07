@@ -161,8 +161,8 @@ def create_ai_error_image(e, seismic_array, image_normalize=True, filename = Fal
     This function presumes that the depth of e and the seismic image is the same
     seismic image is presumed to be raw data
     """
-    seismic_array = np.array(seismic_array)
-    e = np.array(e, dtype=float)
+    seismic_array = np.array(seismic_array).T
+    e = np.array(e, dtype=float).T
 
     alpha_norm = Normalize(np.min(e, axis=None), np.max(e, axis=None))
     
@@ -242,6 +242,7 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
         traces //= 2
 
     # Decide what slice is best, by loss (l2 error norm)
+    target_pred_diff = pred-truth
     norm_list = norm(pred-truth, 2, axis=0)
     norm_arr = np.array(norm_list)
     moving_window_mean = list(np.convolve(norm_arr, np.ones(traces), mode='valid'))
@@ -255,7 +256,7 @@ def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
     target_pred_compare = np.row_stack((pred_matrix, gt_matrix))
     recon_pred_compare = np.row_stack((pred_recon_matrix, gt_recon_matrix))
 
-    return target_pred_compare.T, recon_pred_compare.T
+    return target_pred_compare.T, recon_pred_compare.T, target_pred_diff
 
 
 def save_training_progression(data, model_fp):

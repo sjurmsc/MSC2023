@@ -24,14 +24,25 @@ def reflectivity_to_ai(refl,slope=None,basevalue=1500):
     Reflectivity to Acoustic Impedance
     Can take a slope profile into account for linear trend in the layers
     '''
+    # refl = np.array(refl)
+    # if len(refl.shape) == 1:
+    #     refl = refl.reshape((1, *refl.shape))
+    
     if slope is None:
-        slope=np.zeros(len(refl))
+        slope=np.zeros_like(refl)
         
-    ai=np.ones(np.shape(refl))*basevalue
+    ai=np.ones_like(refl)*basevalue
+
+    # for j in refl.shape[]
+
     for i in range(len(refl)-1):
         ai[i+1]=(1+refl[i+1])/(1-refl[i+1])*ai[i]
         ai[i+1]=ai[i+1]+slope[i+1]
-        
+    
+    # ones = np.ones_like(refl[:, 1:])
+
+    # ai[:, 1:] = (ones + refl[:, 1:])/(ones-refl[:, 1:])*ai[:, :-1] + slope[:, 1:]
+
     return ai
 
 
@@ -121,5 +132,11 @@ def resample_seis(tover,seis_over,t):
     return seis_model
 
 
+if __name__ == '__main__':
+    refl = [[0, 0, 1, 0, 0, 0, 1, 0, 1],
+            [0, 0, 0, 1, 0, 0, 1, 0, 1]]
+    refl = [0, 0, 1, 0, 0, 0, 1, 0, 1]
+    r = reflectivity_to_ai(refl)
+    print(r)
 
 
