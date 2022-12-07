@@ -148,7 +148,7 @@ def sgy_to_keras_dataset(X_data_label_list,
             sys.stdout.flush()
 
             try: x_traces, y_traces, z = get_matching_traces(xm, ym, zrange=zrange, group_traces=group_traces, trunc=truncate_data)
-            except: print('\nCould not load file {}\n'.format(xm))
+            except: print('\nCould not load file {}\n'.format(xm)); continue
 
             if not len(X):
                 X = array(x_traces)
