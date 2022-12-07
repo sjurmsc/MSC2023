@@ -352,6 +352,8 @@ class CNN(Layer):
                 activation='relu',
                 convolution_type = 'Conv2D',
                 kernel_initializer='he_normal',
+                dropout_rate = 0.001,
+                use_dropout = False,
                 use_batch_norm=False,
                 use_layer_norm=False,
                 use_weight_norm=False,
@@ -364,6 +366,9 @@ class CNN(Layer):
         self.activation = activation
         self.convolution_type = convolution_type
         self.kernel_initializer = kernel_initializer
+        self.dropout_rate = dropout_rate
+        self.use_dropout = use_dropout
+
 
         # Not sure if needed..
         self.use_batch_norm = use_batch_norm

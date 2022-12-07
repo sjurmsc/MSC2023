@@ -193,7 +193,8 @@ if __name__ == '__main__':
                                                      fraction_data=0.06, 
                                                      test_size=0.8, 
                                                      group_traces=group_traces, 
-                                                     normalize=True,
+                                                     X_normalize='StandardScaler',
+                                                     y_normalize='MinMaxScaler',
                                                      truncate_data=100)
         test_X, test_y = test_data
 

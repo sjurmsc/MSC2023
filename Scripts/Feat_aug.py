@@ -123,7 +123,8 @@ def sgy_to_keras_dataset(X_data_label_list,
                          zrange: tuple = (None, 100), 
                          reconstruction = True,
                          validation = False, 
-                         normalize = 'MinMaxScaler',
+                         X_normalize = 'StandardScaler',
+                         y_normalize = 'MinMaxScaler',
                          random_state=1,
                          shuffle=True,
                          fraction_data=False,
@@ -158,15 +159,22 @@ def sgy_to_keras_dataset(X_data_label_list,
                 y = row_stack((y, y_traces))
     sys.stdout.write('\n'); sys.stdout.flush()
     
+    X_scaler = None
+    y_scaler = None
     # Normalization
-    if normalize == 'MinMaxScaler':
-        scaler = MinMaxScaler()
-        X_new = scaler.fit_transform(X, y)
+    if X_normalize == 'MinMaxScaler':
+        X_scaler = MinMaxScaler()
+        X_new = X_scaler.fit_transform(X, y)
         X = X_new
-    elif normalize == 'StandardScaler':
+    elif X_normalize == 'StandardScaler':
         scaler = StandardScaler()
         X_new = scaler.fit_transform(X, y)
         X = X_new
+    if y_normalize == 'MinMaxScaler':
+        y_scaler = MinMaxScaler()
+        y_new = scaler.fit_transform(y)
+        y = y_new
+
 
     train_X, test_X, train_y, test_y = train_test_split(X, y, 
                                                         test_size=test_size, 
@@ -184,7 +192,7 @@ def sgy_to_keras_dataset(X_data_label_list,
     if reconstruction:
         train_y = [train_y, train_X]
         test_y = [test_y, test_X]
-    return (train_X, train_y), (test_X, test_y)
+    return (train_X, train_y), (test_X, test_y), (X_scaler, y_scaler)
 
 
 def collect_sgy_data_in_dataset():
