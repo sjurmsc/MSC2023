@@ -43,7 +43,7 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), grou
     %%%%%%%%%%%%%%%% Can add overlap here
     """
     assert group_traces%2, 'Amount of traces must be odd to have a center trace'
-
+    print('Loading {}'.format(fp_X))
     with segyio.open(fp_X, ignore_geometry=True) as X_data:
         with segyio.open(fp_y, ignore_geometry=True) as y_data:
             # retrieving depth values for target and input data
