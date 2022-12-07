@@ -100,6 +100,7 @@ class RunModels:
         
         seis_testimage, ai_testimage, _ = get_matching_traces(self.seis_testimage_fp, self.ai_testimage_fp, group_traces=self.config['group_traces'], trunc=80)
         target_pred, recon_pred = create_pred_image(model,  [seis_testimage, ai_testimage])
+        create_ai_error_image(target_pred-ai_testimage, seis_testimage, filename=model_loc+'/error_image.png')
         #prediction_histogram(pt[0], pt[1], bins=500)
 
         if not os.path.isdir('./TEMP'): os.mkdir('./TEMP')

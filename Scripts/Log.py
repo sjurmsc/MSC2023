@@ -152,7 +152,7 @@ def replace_md_image(filepath, score):
     repo_push(fps, message)
 
 
-def create_ai_error_image(e, seismic_image, image_normalize=True):
+def create_ai_error_image(e, seismic_image, image_normalize=True, filename = False):
     """
     e: prediction error
     This function presumes that the depth of e and the seismic image is the same
@@ -160,6 +160,8 @@ def create_ai_error_image(e, seismic_image, image_normalize=True):
     """
     seismic_image = np.array(seismic_image)
     e = np.array(e)
+    for i in range(3):
+        e = np.row_stack(e, np.zeros_like(e))
     
     scaled_e = Image.fromarray(e, mode='RGBA').resize(seismic_image.shape)
 
@@ -168,6 +170,9 @@ def create_ai_error_image(e, seismic_image, image_normalize=True):
         seismic_image = Image.fromarray(norm(seismic_image), mode='RGBA')
 
     error_image = seismic_image.alpha_composite(scaled_e)
+
+    if filename:
+        error_image.astype(np.uint8).save(filename)
 
     return error_image
 
