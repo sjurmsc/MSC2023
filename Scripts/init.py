@@ -233,7 +233,7 @@ if __name__ == '__main__':
             #config_range['padding']         = ('categorical', (['causal', 'same'],))
 
 
-            R = RunModels(train_data, test_data, config, config_range)
+            R = RunModels(train_data, test_data, config, config_range, scalers=scalers)
             study = optuna.create_study()
             study.optimize(R.objective, n_trials=n_trials)
 
