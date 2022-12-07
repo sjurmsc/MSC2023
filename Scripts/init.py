@@ -36,7 +36,7 @@ class RunModels:
     """
     Takes settings and runs a model based on it
     """
-    def __init__(self, train_data, test_data, config, config_range=None):
+    def __init__(self, train_data, test_data, config, config_range=None, scalers=False):
         self.config = config
         self.config_range = config_range
         self.model_name_gen = give_modelname()
@@ -44,6 +44,8 @@ class RunModels:
         self.test_data = test_data
         self.seis_testimage_fp = "../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/TNW_B02_5110_MIG_DPT.sgy"
         self.ai_testimage_fp = "../OneDrive - NGI/Documents/NTNU/MSC_DATA/00_AI/TNW_B02_5110_MIG.Abs_Zp.sgy"
+        if scalers:
+            self.X_scaler, self.y_scaler = scalers
 
         if len(self.train_data) == 2:
             traces, train_y = self.train_data
@@ -104,6 +106,8 @@ class RunModels:
         # Have to get the traces here, because groupings may change
         seis_testimage, ai_testimage, _ = get_matching_traces(self.seis_testimage_fp, self.ai_testimage_fp, group_traces=self.config['group_traces'], trunc=80)
         
+        seis_testimage = self.X_scaler(seis_testimage); ai_testimage = self.y_scaler(ai_testimage)
+
         target_pred, recon_pred, target_pred_diff = create_pred_image(model,  [seis_testimage, ai_testimage])
         create_ai_error_image((target_pred_diff)**2, seis_testimage, filename=model_loc+'/error_image.png')
         #prediction_histogram(pt[0], pt[1], bins=500)
