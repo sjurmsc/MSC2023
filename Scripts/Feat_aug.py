@@ -43,7 +43,7 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), grou
     %%%%%%%%%%%%%%%% Can add overlap here
     """
     assert group_traces%2, 'Amount of traces must be odd to have a center trace'
-    print('Loading {}'.format(fp_X))
+
     with segyio.open(fp_X, ignore_geometry=True) as X_data:
         with segyio.open(fp_y, ignore_geometry=True) as y_data:
             # retrieving depth values for target and input data
@@ -147,7 +147,8 @@ def sgy_to_keras_dataset(X_data_label_list,
             sys.stdout.write('\rCollecting trace data into dataset {}/{}'.format(i+1, m_len))
             sys.stdout.flush()
 
-            x_traces, y_traces, z = get_matching_traces(xm, ym, zrange=zrange, group_traces=group_traces, trunc=truncate_data)
+            try: x_traces, y_traces, z = get_matching_traces(xm, ym, zrange=zrange, group_traces=group_traces, trunc=truncate_data)
+            except: 'Could not load file {}'.format(xm)
 
             if not len(X):
                 X = array(x_traces)
