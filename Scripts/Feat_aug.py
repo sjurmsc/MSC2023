@@ -288,7 +288,8 @@ def find_duplicates(m_files):
         names.append(name)
     return dupes
 
-if __name__ == '__main__':
+
+def box_plots_for_dupelicates():
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -316,6 +317,43 @@ if __name__ == '__main__':
         plt.xticks(rotation=10)
         plt.savefig('Data/dupelicates/{}.png'.format(name))
 
+
+def img_plots_for_dupelicates():
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import Normalize
+
+    d_dict = load_data_dict()
+    m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
+    lines = []
+    dupe_names = []
+    dupe_labels = []
+    dupe = find_duplicates(m_files=m_files)
+    for key, val in dupe.items():
+        trc = []
+        lbls = []
+        for file in val:
+            trace, _ = get_traces(file, zrange=(25, 100))
+            trc.append(trace.T)
+            lbls.append(file[62:-12])
+        lines.append(trc)
+        dupe_names.append(key)
+        dupe_labels.append(lbls)
+    
+    for name, labels, collection in zip(dupe_names, dupe_labels, lines):
+        plt.clf()
+        fig, ax = plt.subplots(len(labels))
+        fig.tight_layout(h_pad=1)
+        for i, im in enumerate(collection):
+            norm = Normalize(-2, 2)
+            ax[i].imshow(im, cmap = 'seismic', norm=norm)
+            ax[i].set_title(label=labels[i], fontsize=10)
+            ax[i].set_xticks([])
+            ax[i].set_yticks([])
+        plt.savefig('Data/dupelicates/Image_{}.png'.format(name))
+
+
+if __name__ == '__main__':
+    pass
     # plt.boxplot(lines)
     # plt.show()
     # sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'], fraction_data=0.05, group_traces=3, normalize='StandardScaler')
