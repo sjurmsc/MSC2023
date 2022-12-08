@@ -19,7 +19,7 @@ def get_data_loc():
     return json.loads(d_filepath)
 
 
-def get_traces(fp, mmap=True, zrange: tuple = (None,100), length: int = None):
+def get_traces(fp, mmap=True, zrange: tuple = (None,100)):
     """
     This function should conserve some information about the domain (time or depth) of
     the data.
@@ -29,9 +29,6 @@ def get_traces(fp, mmap=True, zrange: tuple = (None,100), length: int = None):
         if mmap:
             seis_data.mmap()  # Only to be used if the file size is small compared to available memory
         traces = segyio.collect(seis_data.trace)
-    # if zrange[0] != None:
-    #     pass
-        #zmin = z[]
     
     traces, z = traces[:, z<zrange[1]], z[z<zrange[1]]
     return traces, z
@@ -87,33 +84,11 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), grou
         X_traces = X_traces[l_indices:r_indices].reshape((num_images, group_traces, len_traces))
         y_traces = y_traces[l_indices:r_indices].reshape((num_images, group_traces, len_traces))
     
-    if trunc:
+    if trunc:  # Done as a quick way to remove bad data, as it is most often at the ends
         X_traces = X_traces[trunc:-trunc]
         y_traces = y_traces[trunc:-trunc]
     
     return X_traces, y_traces, (z_X, z_y)
-        
-
-
-def split_image_into_data_packets(traces, width_shape=7, dim=2, mode='cut_lower', upper_bound=0, overlap=0):
-    """
-    Only Func i need before starting to train models
-
-    overlap: The amount of traces that can overlap between the images
-    """
-    
-    assert overlap < width_shape, 'Overlap cannot excede the with of the seismic image'
-    
-    tracescount = traces.shape[0]
-    delta = width_shape-overlap
-
-    X = []
-    idx = [0, width_shape]
-    while idx[1] < tracescount:
-        X.append(traces[idx[0]:idx[1], :])
-        idx[0] += delta ; idx[1] += delta
-    
-    return array(X)
 
 
 def sgy_to_keras_dataset(X_data_label_list,
@@ -195,9 +170,6 @@ def sgy_to_keras_dataset(X_data_label_list,
     return (train_X, train_y), (test_X, test_y), (X_scaler, y_scaler)
 
 
-def collect_sgy_data_in_dataset():
-    pass
-
 def match_files(X_folder_loc, y_folder_loc, file_extension='.sgy'):
     """
     Matches the features from two seperate traces by filename
@@ -265,9 +237,6 @@ def find_nth(haystack, needle, n : int):
         return haystack.find(needle)
     return loc
 
-def format_input_output(dataset):
-    regression_data, seismic_data = dataset
-    X = seismic_data; Y = dataset
 
 def find_duplicates(m_files):
     dupes = dict()
