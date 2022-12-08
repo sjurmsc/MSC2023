@@ -274,6 +274,10 @@ def prediction_histogram(pred, true, **kwargs):
     return hist((pred, true), **kwargs)
 
 
+def prediction_crossplot():
+    pass
+
+
 def repo_push(fps, message):
     """
     Automatically pushes selected files to repo

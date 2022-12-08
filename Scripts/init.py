@@ -160,7 +160,7 @@ if __name__ == '__main__':
     config = dict()
     config['nb_filters']            = 8
     config['kernel_size']           = (3, 8) # Height, width
-    config['dilations']             = [1, 2, 4, 8, 16, 32]
+    config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
     config['dropout_type']          = 'normal'

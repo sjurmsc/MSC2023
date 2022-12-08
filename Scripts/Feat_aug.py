@@ -320,7 +320,7 @@ def img_plots_for_dupelicates():
             ax[i].set_yticks([])
         plt.savefig('Data/dupelicates/Image_{}.png'.format(name))
 
-
+# Only used for testing the code
 if __name__ == '__main__':
     pass
     # plt.boxplot(lines)
