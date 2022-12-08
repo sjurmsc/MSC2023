@@ -269,9 +269,53 @@ def format_input_output(dataset):
     regression_data, seismic_data = dataset
     X = seismic_data; Y = dataset
 
+def find_duplicates(m_files):
+    dupes = dict()
+    names = []
+    for i, (X_m, y_m) in enumerate(m_files):
+
+        name = X_m[62:-12]
+        name_list = name.split('_')
+        for n in names:
+            n_list = n.split('_')
+            if (len(name_list)>3) and (len(n_list)>3):
+                if n_list[:3] == name_list[:3]:
+                    key = '_'.join(n_list[:3])
+                    if not (key in dupes.keys()):
+                        dupes[key] = [X_m[:62] + '_'.join(n_list) + X_m[-12:], X_m]
+                    else:
+                        dupes[key].append(X_m)
+        names.append(name)
+    return dupes
+
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
+    import numpy as np
 
     d_dict = load_data_dict()
     m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
-    print(array(m_files))
+    lines = []
+    dupe_names = []
+    dupe_labels = []
+    dupe = find_duplicates(m_files=m_files)
+    for key, val in dupe.items():
+        trc = []
+        lbls = []
+        for file in val:
+            trace, _ = get_traces(file, zrange=(25, 100))
+            trc.append(trace.flatten())
+            lbls.append(file[62:-12])
+        lines.append(trc)
+        dupe_names.append(key)
+        dupe_labels.append(lbls)
+    
+    for name, labels, collection in zip(dupe_names, dupe_labels, lines):
+        plt.clf()
+        plt.boxplot(collection, labels=labels)
+        plt.title(name)
+        plt.xticks(rotation=10)
+        plt.savefig('Data/dupelicates/{}.png'.format(name))
+
+    # plt.boxplot(lines)
+    # plt.show()
     # sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'], fraction_data=0.05, group_traces=3, normalize='StandardScaler')
