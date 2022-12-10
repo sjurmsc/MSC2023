@@ -12,6 +12,7 @@ from keras.layers import Dense, Dropout, Conv1D, Conv2D, Layer, BatchNormalizati
 from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda, Flatten
 from tensorflow_addons.layers import WeightNormalization
 from numpy import array
+from keras.utils.vis_utils import plot_model
 
 
 class ResidualBlock(Layer):
@@ -317,6 +318,7 @@ class TCN(Layer):
                 self.output_slice_index = K.shape(self.layers_outputs[-1])[1] // 2
             x = self.slicer_layer(x)
             self.layers_outputs.append(x)
+        plot_model(x, to_file='TCN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
         return x
     def get_config(self):
         """
@@ -416,6 +418,7 @@ class CNN(Layer):
             except TypeError: # also backwards compatibiltiy
                 x = conv_block(K.cast(x, 'float32'), training=training)
                 self.layers_outputs.append(x)
+        plot_model(x, to_file='CNN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
         return x
 
     def get_config(self):
@@ -497,7 +500,7 @@ def compiled_TCN(training_data, config, **kwargs):
             kernel_size=reg_ksize,
             nb_stacks=nb_reg_stacks,
             padding='valid',
-            activation='relu',
+            activation='tanh',
             convolution_type=convolution_type,
             kernel_initializer=kernel_initializer,
             name = 'Regression_module'
@@ -532,8 +535,6 @@ def compiled_TCN(training_data, config, **kwargs):
     # rec = Activation('linear', name='reconstruction_output')(rec)
 
     rec = c_func(1, kernel_size, padding=padding, activation='tanh', name='reconstruction_output')(rec)
-
-    print(reg.shape)
 
     output_layer = [reg, rec] # Regression, reconstruction
 

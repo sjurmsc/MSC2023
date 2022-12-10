@@ -60,7 +60,7 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), grou
             # get information about what traces are overlapping
             nums_X = segyio.collect(X_data.attributes(segyio.TraceField.CDP))
             nums_y = segyio.collect(y_data.attributes(segyio.TraceField.CDP))
-            _, idx_X, idx_y = intersect1d(nums_X, nums_y, return_indices=True)
+            CDP, idx_X, idx_y = intersect1d(nums_X, nums_y, return_indices=True)
             assert len(idx_X) == len(idx_y)
 
             # collect the data
@@ -200,6 +200,34 @@ def pair_well_and_seismic():
     pass
 
 
+class CPT_TRACE:
+
+    def __init__(self, name, coords, trace, z):
+        self.name = name
+        self.lon = coords[0]
+        self.lat = coords[1]
+        self.trace = trace
+        self.z = z
+    
+    def closest_seismic(self, seis_coords, seis_CDP):
+        """
+        Given a input of a list of seismic coordinates on the form seis_coords[0, :] = longitudes, seis_coords[1, :] = latitudes
+        this function returns the value which is closest to the trace in space
+
+        The function does not consider coordinate transformations and assumes that the given coords are in the same
+        coordinate system.
+        """
+        seis_coords = np.array(seis_coords)
+        seis_CDP = np.array(seis_CDP)
+        assert len(seis_coords[0])==len(seis_CDP)
+        d = np.sqrt((self.lon-seis_coords[0, :])**2+(self.lat-seis_coords[1, :])**2)
+
+        return seis_CDP[:, np.where(d==np.min(d))]
+
+
+
+
+
 def load_data_dict():
     data_json = './Data/data.json'
     with open(data_json, 'r') as readfile:
@@ -320,9 +348,60 @@ def img_plots_for_dupelicates():
             ax[i].set_yticks([])
         plt.savefig('Data/dupelicates/Image_{}.png'.format(name))
 
+
+def negative_ai_values():
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from random import randint
+    d_dict = load_data_dict()
+    m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
+    low_val = 0
+    # y_below_zero = []
+    t_b_z = []
+    for file, i in m_files:
+        # _, z = get_traces(file, zrange=(25, 100))
+        traces, z_ai = get_traces(i, zrange=(25, 100))
+        t = traces[np.where(np.any((traces<low_val), axis=1)), :]
+        t_b_z+=list(t[0])
+        # y_below_zero.append(t_b_z)
+    # plt.hist(y_below_zero)
+    print(np.shape(t_b_z))
+    r = randint(0, len(t_b_z))
+    plt.plot(t_b_z[r], z_ai)
+    print('Minimum on the plot is: {}'.format(np.min(t_b_z[r])))
+    print('Total minimum is {}'.format(np.min(t_b_z)))
+    plt.show()
+
 # Only used for testing the code
 if __name__ == '__main__':
-    pass
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from random import randint
+    d_dict = load_data_dict()
+    m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
+    z_high = []
+    y_below_zero = []
+    t_b_z = []
+    for file, i in m_files:
+        # _, z = get_traces(file, zrange=(25, 100))
+        traces, z_ai = get_traces(i, zrange=(25, 100))
+        # r = randint(0, len(traces))
+        # plt.plot(traces[r], z_ai[::-1])
+        # flat_t = traces.flatten()
+        t = traces[np.where(np.any((traces<-10000), axis=1)), :]
+        # print(np.shape(t))
+        t_b_z+=list(t[0])
+        
+        #y_below_zero.append(list(t_b_z))
+
+    # plt.hist(y_below_zero)
+    print(np.shape(t_b_z))
+    r = randint(0, len(t_b_z))
+    plt.plot(t_b_z[r], z_ai)
+    print('Minimum on the plot is: {}'.format(np.min(t_b_z[r])))
+    print('Total minimum is {}'.format(np.min(t_b_z)))
+    plt.show()
+
     # plt.boxplot(lines)
     # plt.show()
     # sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'], fraction_data=0.05, group_traces=3, normalize='StandardScaler')
