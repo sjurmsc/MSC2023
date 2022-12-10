@@ -318,7 +318,6 @@ class TCN(Layer):
                 self.output_slice_index = K.shape(self.layers_outputs[-1])[1] // 2
             x = self.slicer_layer(x)
             self.layers_outputs.append(x)
-        plot_model(x, to_file='TCN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
         return x
     def get_config(self):
         """
@@ -418,7 +417,6 @@ class CNN(Layer):
             except TypeError: # also backwards compatibiltiy
                 x = conv_block(K.cast(x, 'float32'), training=training)
                 self.layers_outputs.append(x)
-        plot_model(x, to_file='CNN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
         return x
 
     def get_config(self):
@@ -492,6 +490,7 @@ def compiled_TCN(training_data, config, **kwargs):
             use_weight_norm=use_weight_norm,
             name='Feature_recognition_module'
     )(input_layer)
+    plot_model(x, to_file='TCN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
 
     # Regression module
     reg_ksize = y[0].shape[-1]/(nb_reg_stacks) + 1  # for 1d preserving the shape of the data
@@ -505,7 +504,7 @@ def compiled_TCN(training_data, config, **kwargs):
             kernel_initializer=kernel_initializer,
             name = 'Regression_module'
             )(x)
-
+    plot_model(reg, to_file='regCNN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
     # reg = Flatten()(reg)
     # reg = Dense(y[0].shape[1])(reg)
     # reg = Activation('linear', name='regression_output')(reg)
@@ -528,7 +527,7 @@ def compiled_TCN(training_data, config, **kwargs):
             kernel_initializer=kernel_initializer,
             name = 'Reconstruction_module'
             )(x)
-
+    plot_model(rec, to_file='recCNN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
 
     # rec = Flatten()(rec)
     # rec = Dense(dense_output_shape)(rec)
