@@ -539,13 +539,13 @@ def compiled_TCN(training_data, config, **kwargs):
 
     model = Model(inputs = input_layer, 
                   outputs = output_layer)
-    model.compile(keras.optimizers.Adam(lr=lr, clipnorm=1.), loss={'regression_output' : 'mean_squared_error',
-                                                                   'reconstruction_output' : 'mean_squared_error'})
+    model.compile(keras.optimizers.Adam(learn_rate=lr, clipnorm=1.), loss={'regression_output' : 'mean_squared_error',
+                                                                           'reconstruction_output' : 'mean_squared_error'})
     
-    plot_model(x, to_file='TCN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
-    plot_model(reg, to_file='regCNN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
-    plot_model(rec, to_file='recCNN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
-    
+    # plot_model(x, to_file='TCN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
+    # plot_model(reg, to_file='regCNN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
+    # plot_model(rec, to_file='recCNN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
+
     print(model.summary())
 
     History = model.fit(x=X, y=y, batch_size=batch_size, epochs=epochs, **kwargs)
