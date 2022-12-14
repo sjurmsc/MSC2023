@@ -610,6 +610,7 @@ class multi_task_GAN(Model):
     def train_step(self, batch_data):
         real_X, real_y = batch_data
         batch_size = tf.shape(real_X)[0]
+        real_y, _ = real_y
         #real_X = tf.reshape(real_X, (*real_X.shape, 1))
         #real_y = tf.reshape(real_y, (*real_y.shape, 1))
 
