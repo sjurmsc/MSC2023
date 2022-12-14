@@ -96,6 +96,7 @@ class RunModels:
         X, Y = test_data
 
         error = model.evaluate(X, Y, batch_size = 20, verbose=2, steps=40)
+        print(error)
         tot_error, reg_error, rec_error = error
 
         
