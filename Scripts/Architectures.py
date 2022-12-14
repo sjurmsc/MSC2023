@@ -541,8 +541,8 @@ def compiled_TCN(training_data, config, use_adversaries=False, **kwargs):
         discriminator_loss = keras.losses.BinaryCrossentropy()
 
         generator_optimizer = keras.optimizers.Adam(lr=lr, clipnorm=1.)
-        seis_disc_optimizer = keras.optimizers.Adam(lr=lr, clipnorm=1.)
-        ai_disc_optimizer   = keras.optimizers.Adam(lr=lr, clipnorm=1.)
+        seis_disc_optimizer = keras.optimizers.Adam(lr=lr/2, clipnorm=1.)
+        ai_disc_optimizer   = keras.optimizers.Adam(lr=lr/2, clipnorm=1.)
 
         model.compile(g_optimizer=generator_optimizer, 
                     d_optimizers=[ai_disc_optimizer, seis_disc_optimizer], 
@@ -577,12 +577,13 @@ def weight_share_loss(y_true, y_pred):
     total_loss = reg_loss + recon_loss
     return total_loss
 
-def discriminator(Input_shape, depth, conv_dim=1, name='discriminator'):
+def discriminator(Input_shape, depth, conv_dim=1, dropout = 0.2, name='discriminator'):
     input_layer = Input(Input_shape)
     x = input_layer
     for _ in range(depth):
         x = Conv1D(1, kernel_size=4, padding='valid')(x)
         x = layers.BatchNormalization(scale=False)(x)
+        x = Dropout(rate = dropout)(x)
         x = layers.LeakyReLU()(x)
     x = layers.Flatten()(x)
     output_score = Dense(1, activation='sigmoid')(x)
