@@ -608,7 +608,7 @@ class multi_task_GAN(Model):
         self.d_loss         = d_loss
     
     def train_step(self, batch_data):
-        batch_size = tf.shape(batch_data)[1]
+        batch_size = tf.shape(batch_data[1])[0]
         real_X, real_y = batch_data
         real_X = tf.reshape(real_X, (*real_X.shape, 1))
         real_y = tf.reshape(real_y, (*real_y.shape, 1))
