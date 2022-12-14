@@ -89,13 +89,13 @@ class RunModels:
 
         if not os.path.isdir(model_loc): os.mkdir(model_loc)
 
-        model.save(model_loc)
-        plot_model(model, to_file=model_loc+'/model.png', show_shapes=True, show_layer_names=True, expand_nested=True, show_layer_activations=True)
+        model.generator.save(model_loc)
+        plot_model(model.generator, to_file=model_loc+'/model.png', show_shapes=True, show_layer_names=True, expand_nested=True, show_layer_activations=True)
 
         # Evaluating the model
         X, Y = test_data
 
-        error = model.evaluate(X, Y, batch_size = 20, verbose=2, steps=40)
+        error = model.generator.evaluate(X, Y, batch_size = 20, verbose=2, steps=40)
         tot_error, reg_error, rec_error = error
 
         
@@ -108,7 +108,7 @@ class RunModels:
         
         seis_testimage = self.X_scaler.transform(seis_testimage); ai_testimage = self.y_scaler.transform(ai_testimage)
 
-        target_pred, recon_pred, target_pred_diff = create_pred_image(model,  [seis_testimage, ai_testimage])
+        target_pred, recon_pred, target_pred_diff = create_pred_image(model.generator,  [seis_testimage, ai_testimage])
         create_ai_error_image((target_pred_diff)**2, seis_testimage, filename=model_loc+'/error_image.png')
         #prediction_histogram(pt[0], pt[1], bins=500)
 
@@ -132,7 +132,7 @@ class RunModels:
         save_training_progression(History.history, model_loc)
 
         del model # Clear up the memory location for next model
-        return reg_error + rec_error
+        return tot_error
 
 
 class config_iterator:
@@ -228,7 +228,7 @@ if __name__ == '__main__':
             # config_range['nb_tcn_stacks']   = ('int', (1, 3))
             # config_range['kernel_size']     = ('int', (6, 12))
             config_range['batch_size']      = ('int', (20, 30))
-            config_range['epochs']          = ('int', (90, 150))
+            # config_range['epochs']          = ('int', (90, 150))
 
             # Categoricals
             #config_range['padding']         = ('categorical', (['causal', 'same'],))
