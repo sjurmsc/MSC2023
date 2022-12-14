@@ -96,7 +96,6 @@ class RunModels:
         X, Y = test_data
 
         error = model.evaluate(X, Y, batch_size = 20, verbose=2, steps=40)
-        print(error)
         tot_error = error
 
         
@@ -160,7 +159,7 @@ if __name__ == '__main__':
 
     # CONFIG
     config = dict()
-    config['nb_filters']            = 8
+    config['nb_filters']            = 4
     config['kernel_size']           = (3, 8) # Height, width
     config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
     config['padding']               = 'same'
