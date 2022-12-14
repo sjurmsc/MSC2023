@@ -175,6 +175,7 @@ if __name__ == '__main__':
     config['use_batch_norm']        = False
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
+    config['use_adversaries']       = True
 
     config['nb_tcn_stacks']         = 3
     config['nb_reg_stacks']         = 5
@@ -233,7 +234,7 @@ if __name__ == '__main__':
             #config_range['padding']         = ('categorical', (['causal', 'same'],))
 
 
-            R = RunModels(train_data, test_data, config, config_range, scalers=scalers)
+            R = RunModels(train_data, test_data, config, use_adversaries = config['use_adversaries'], config_range=config_range, scalers=scalers)
             study = optuna.create_study()
             study.optimize(R.objective, n_trials=n_trials)
 
