@@ -651,7 +651,7 @@ class multi_task_GAN(Model):
             misleading_y_truth   = tf.zeros((batch_size, 1))
 
             # Generator loss
-            g_loss = self.g_loss([real_y, real_X], [fake_y, fake_X])
+            g_loss = self.g_loss(real_y, fake_y) + self.g_loss(real_X, fake_X)
             dX_loss = self.d_loss(misleading_X_truth, X_predictions)
             dy_loss = self.d_loss(misleading_y_truth, y_predictions)
             gen_loss = g_loss + dX_loss + dy_loss
