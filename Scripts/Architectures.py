@@ -434,7 +434,7 @@ class CNN(Layer):
         return config
 
 
-def compiled_TCN(training_data, config, **kwargs):
+def compiled_TCN(training_data, config, use_adversaries=False, **kwargs):
     """
     @ Author: Sjur [in progress]
     Three temporal blocks as feature extractions
@@ -505,18 +505,11 @@ def compiled_TCN(training_data, config, **kwargs):
             name = 'Regression_module'
             )(x)
 
-    # reg = Flatten()(reg)
-    # reg = Dense(y[0].shape[1])(reg)
-    # reg = Activation('linear', name='regression_output')(reg)
-    
     c_func = Conv1D
     if convolution_type == 'Conv2D': c_func = Conv2D # Not quite sure    
 
     reg = c_func(1, kernel_size, padding=padding, activation='linear', name='regression_output')(reg)
     
-    # reg = Flatten()(reg)
-    # reg = Dense(y[0].shape[1], activation='linear')(reg)
-
     # Reconstruciton module
     rec = CNN(nb_filters=nb_filters,
             kernel_size=kernel_size,
@@ -529,24 +522,36 @@ def compiled_TCN(training_data, config, **kwargs):
             )(x)
 
 
-    # rec = Flatten()(rec)
-    # rec = Dense(dense_output_shape)(rec)
-    # rec = Activation('linear', name='reconstruction_output')(rec)
-
     rec = c_func(1, kernel_size, padding=padding, activation='tanh', name='reconstruction_output')(rec)
 
     output_layer = [reg, rec] # Regression, reconstruction
 
     model = Model(inputs = input_layer, 
                   outputs = output_layer)
-    model.compile(keras.optimizers.Adam(learn_rate=lr, clipnorm=1.), loss={'regression_output' : 'mean_squared_error',
-                                                                           'reconstruction_output' : 'mean_squared_error'})
     
-    # plot_model(x, to_file='TCN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
-    # plot_model(reg, to_file='regCNN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
-    # plot_model(rec, to_file='recCNN.png', show_shapes=True, expand_nested=True, show_layer_activations=True, show_layer_names=True)
+    if use_adversaries:
+        gen_model = model
+        seis_disc_model = discriminator(output_layer[1].shape[1:], 3, name='seismic_discriminator')
+        ai_disc_model = discriminator(output_layer[0].shape[1:], 3, name='ai_discriminator')
 
-    print(model.summary())
+
+        model = multi_task_GAN([ai_disc_model, seis_disc_model], gen_model)
+
+        generator_loss = keras.losses.MeanSquaredError()
+        discriminator_loss = keras.losses.BinaryCrossentropy()
+
+        generator_optimizer = keras.optimizers.Adam(lr=lr, clipnorm=1.)
+        seis_disc_optimizer = keras.optimizers.Adam(lr=lr, clipnorm=1.)
+        ai_disc_optimizer   = keras.optimizers.Adam(lr=lr, clipnorm=1.)
+
+        model.compile(g_optimizer=generator_optimizer, 
+                    d_optimizers=[ai_disc_optimizer, seis_disc_optimizer], 
+                    g_loss=generator_loss, 
+                    d_loss=discriminator_loss)
+    else:
+        model.compile(keras.optimizers.Adam(learn_rate=lr, clipnorm=1.), loss={'regression_output' : 'mean_squared_error',
+                                                                           'reconstruction_output' : 'mean_squared_error'})
+        model.summary()
 
     History = model.fit(x=X, y=y, batch_size=batch_size, epochs=epochs, **kwargs)
     
@@ -572,4 +577,97 @@ def weight_share_loss(y_true, y_pred):
     total_loss = reg_loss + recon_loss
     return total_loss
 
+def discriminator(Input_shape, depth, conv_dim=1, name='discriminator'):
+    input_layer = Input(Input_shape)
+    x = input_layer
+    for _ in range(depth):
+        x = Conv1D(1, kernel_size=4, padding='valid')(x)
+        x = layers.BatchNormalization(scale=False)(x)
+        x = layers.LeakyReLU()(x)
+    x = layers.Flatten()(x)
+    output_score = Dense(1, activation='sigmoid')(x)
+    return Model(input_layer, output_score, name=name)
 
+
+class multi_task_GAN(Model):
+
+    def __init__(self, discriminators, generator):
+        """
+        """
+        super(multi_task_GAN, self).__init__()
+        self.seismic_discriminator  = discriminators[1]
+        self.ai_discriminator       = discriminators[0]
+        self.generator              = generator
+
+    def compile(self, g_optimizer, d_optimizers, g_loss, d_loss, **kwargs):
+        super(multi_task_GAN, self).compile(**kwargs)
+        self.g_optimizer    = g_optimizer
+        self.d_X_optimizer  = d_optimizers[1]
+        self.d_y_optimizer  = d_optimizers[0]
+        self.g_loss         = g_loss
+        self.d_loss         = d_loss
+    
+    def train_step(self, batch_data):
+        batch_size = tf.shape(batch_data)[1]
+        real_X, real_y = batch_data
+        real_X = tf.reshape(real_X, (*real_X.shape, 1))
+        real_y = tf.reshape(real_y, (*real_y.shape, 1))
+
+        with tf.GradientTape(persistent=True) as tape:
+            fake_y, fake_X = self.generator(real_X, training=True)
+            disc_real_X = self.seismic_discriminator(real_X, training=True)
+            disc_fake_X = self.seismic_discriminator(fake_X, training=True)
+            disc_real_y = self.ai_discriminator(real_y, training=True)
+            disc_fake_y = self.ai_discriminator(fake_y, training=True)
+
+            X_predictions = tf.concat([disc_fake_X, disc_real_X], axis=0)
+            X_truth       = tf.concat([tf.ones((batch_size, 1)), tf.zeros((batch_size, 1))], axis=0)
+            y_predictions = tf.concat([disc_fake_y, disc_real_y], axis=0)
+            y_truth       = tf.concat([tf.ones((batch_size, 1)), tf.zeros((batch_size, 1))], axis=0)
+            # Discriminator loss
+            disc_X_loss = self.d_loss(X_truth, X_predictions)
+            disc_y_loss = self.d_loss(y_truth, y_predictions)
+        
+        # Get discriminator gradients
+        disc_X_grads = tape.gradient(disc_X_loss, self.seismic_discriminator.trainable_variables)
+        disc_y_grads = tape.gradient(disc_y_loss, self.ai_discriminator.trainable_variables)
+
+        # Apply those gradients
+        self.d_X_optimizer.apply_gradients(
+            zip(disc_X_grads, self.seismic_discriminator.trainable_variables)
+        )
+        self.d_y_optimizer.apply_gradients(
+            zip(disc_y_grads, self.ai_discriminator.trainable_variables)
+        )
+
+
+        with tf.GradientTape(persistent=True) as tape:
+            fake_y, fake_X = self.generator(real_X)
+            X_predictions = self.seismic_discriminator(fake_X)
+            y_predictions = self.ai_discriminator(fake_y)
+
+            misleading_X_truth   = tf.zeros((batch_size, 1))
+            misleading_y_truth   = tf.zeros((batch_size, 1))
+
+            # Generator loss
+            g_loss = self.g_loss([real_y, real_X], [fake_y, fake_X])
+            dX_loss = self.d_loss(misleading_X_truth, X_predictions)
+            dy_loss = self.d_loss(misleading_y_truth, y_predictions)
+            gen_loss = g_loss + dX_loss + dy_loss
+
+        # Get the gradients
+        gen_grads = tape.gradient(gen_loss, self.generator.trainable_variables)
+
+        # Update the weights
+        self.g_optimizer.apply_gradients(
+            zip(gen_grads, self.generator.trainable_variables)
+        )
+
+        return {
+                'generator_loss'   : gen_loss,
+                'discriminator_X_loss': disc_X_loss,
+                'discriminator_y_loss': disc_y_loss
+                }
+    
+    def call(self, input):
+        return self.generator(input)
