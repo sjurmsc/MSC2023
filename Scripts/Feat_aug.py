@@ -146,7 +146,7 @@ def sgy_to_keras_dataset(X_data_label_list,
         X_new = X_scaler.fit_transform(X, y)
         X = X_new
     if y_normalize == 'MinMaxScaler':
-        y_scaler = MinMaxScaler().fit(y.flatten())
+        y_scaler = MinMaxScaler().fit(y.reshape(-1, 1))
         y_new = y_scaler.transform(y)
         y = y_new
 
