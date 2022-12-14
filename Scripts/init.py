@@ -97,7 +97,7 @@ class RunModels:
 
         error = model.evaluate(X, Y, batch_size = 20, verbose=2, steps=40)
         print(error)
-        tot_error, reg_error, rec_error = error
+        tot_error = error
 
         
         # Image colormaps
@@ -125,8 +125,8 @@ class RunModels:
         Image.fromarray((im_p[:, :, :3]*255).astype(np.uint8)).save(p_name)
         Image.fromarray((im_rec_p[:, :, :3]*255).astype(np.uint8)).save(rec_p_name)
 
-        if update_scores('{}/{}'.format(groupname, modelname), rec_error):
-            replace_md_image(p_name, rec_error)
+        # if update_scores('{}/{}'.format(groupname, modelname), rec_error):
+        #     replace_md_image(p_name, rec_error)
 
         with open(model_loc + '/' + 'config.json', 'w') as w_file:
             w_file.write(json.dumps(config, indent=2))

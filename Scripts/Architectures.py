@@ -577,7 +577,7 @@ def weight_share_loss(y_true, y_pred):
     total_loss = reg_loss + recon_loss
     return total_loss
 
-def discriminator(Input_shape, depth, conv_dim=1, dropout = 0.2, name='discriminator'):
+def discriminator(Input_shape, depth, conv_dim=1, dropout = 0.1, name='discriminator'):
     input_layer = Input(Input_shape)
     x = input_layer
     for _ in range(depth):
@@ -592,13 +592,14 @@ def discriminator(Input_shape, depth, conv_dim=1, dropout = 0.2, name='discrimin
 
 class multi_task_GAN(Model):
 
-    def __init__(self, discriminators, generator):
+    def __init__(self, discriminators, generator, alpha=1):
         """
         """
         super(multi_task_GAN, self).__init__()
         self.seismic_discriminator  = discriminators[1]
         self.ai_discriminator       = discriminators[0]
         self.generator              = generator
+        self.alpha                  = alpha
 
     def compile(self, g_optimizer, d_optimizers, g_loss, d_loss, **kwargs):
         super(multi_task_GAN, self).compile(**kwargs)
@@ -655,7 +656,7 @@ class multi_task_GAN(Model):
             g_loss = self.g_loss(real_y, fake_y) + self.g_loss(real_X, fake_X)
             dX_loss = self.d_loss(misleading_X_truth, X_predictions)
             dy_loss = self.d_loss(misleading_y_truth, y_predictions)
-            gen_loss = g_loss + dX_loss + dy_loss
+            gen_loss = g_loss + self.alpha*(dX_loss + dy_loss)
 
         # Get the gradients
         gen_grads = tape.gradient(gen_loss, self.generator.trainable_variables)
