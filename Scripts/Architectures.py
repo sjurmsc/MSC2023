@@ -538,6 +538,7 @@ def compiled_TCN(training_data, config, **kwargs):
                       d_optimizer=discriminator_optimizer, 
                       g_loss=generator_loss, 
                       d_loss=discriminator_loss)
+        model.summary()
     else:
         model = Model(inputs = input_layer, 
                   outputs = output_layer)
@@ -569,11 +570,16 @@ def weight_share_loss(y_true, y_pred):
     total_loss = reg_loss + recon_loss
     return total_loss
 
-def discriminator(Input_shape, depth, conv_dim=1, dropout = 0.1, name='discriminator'):
+def discriminator(Input_shape, 
+                  depth = 4, 
+                  convolution_func=Conv1D, 
+                  dropout = 0.1, 
+                  name='discriminator'):
+
     input_layer = Input(Input_shape)
     x = input_layer
     for _ in range(depth):
-        x = Conv1D(1, kernel_size=4, padding='valid')(x)
+        x = convolution_func(1, kernel_size=4, padding='valid')(x)
         x = layers.BatchNormalization(scale=False)(x)
         x = Dropout(rate = dropout)(x)
         x = layers.LeakyReLU()(x)
