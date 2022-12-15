@@ -177,6 +177,9 @@ if __name__ == '__main__':
     config['use_layer_norm']        = False
     config['use_weight_norm']       = True
     config['use_adversaries']       = True
+    if config['use_adversaries']:
+        config['alpha']     = 0.8
+        config['beta']      = 0.2
 
     config['nb_tcn_stacks']         = 3
     config['nb_reg_stacks']         = 5

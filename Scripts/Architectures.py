@@ -536,7 +536,10 @@ def compiled_TCN(training_data, config, **kwargs):
         ai_disc_model = discriminator(output_layer[0].shape[1:], 3, name='ai_discriminator')
 
 
-        model = multi_task_GAN([ai_disc_model, seis_disc_model], [ai_gen_model, seis_gen_model], beta=0)
+        model = multi_task_GAN([ai_disc_model, seis_disc_model],
+                               [ai_gen_model, seis_gen_model], 
+                               alpha=config['alpha'],
+                               beta=config['beta'])
 
         generator_loss = keras.losses.MeanSquaredError()
         discriminator_loss = keras.losses.BinaryCrossentropy()
@@ -620,13 +623,15 @@ class multi_task_GAN(Model):
         real_y, _ = real_y
         #real_X = tf.reshape(real_X, (*real_X.shape, 1))
         #real_y = tf.reshape(real_y, (*real_y.shape, 1))
+        real_y_1 = real_y*(1+ .005*tf.random.uniform(real_y.shape))
+        real_y_2 = real_y*(1+ .005*tf.random.uniform(real_y.shape))
 
         with tf.GradientTape(persistent=True) as tape:
             fake_X = self.seismic_generator(real_X, training=True)
             fake_y = self.ai_generator(real_X, training=True)
             disc_real_X = self.seismic_discriminator(real_X, training=True)
             disc_fake_X = self.seismic_discriminator(fake_X, training=True)
-            disc_real_y = self.ai_discriminator(real_y, training=True)
+            disc_real_y = self.ai_discriminator(real_y_1, training=True)
             disc_fake_y = self.ai_discriminator(fake_y, training=True)
 
             X_predictions = tf.concat([disc_fake_X, disc_real_X], axis=0)
@@ -665,7 +670,7 @@ class multi_task_GAN(Model):
 
             # Generator loss
             gX_loss = self.g_loss(real_X, fake_X)
-            gy_loss = self.g_loss(real_y, fake_y)
+            gy_loss = self.g_loss(real_y_2, fake_y)
             dX_loss = self.d_loss(misleading_X_truth, X_predictions)
             dy_loss = self.d_loss(misleading_y_truth, y_predictions)
             gen_X_loss = self.alpha*(dX_loss) + self.beta*(gX_loss)
