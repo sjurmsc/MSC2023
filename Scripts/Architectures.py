@@ -492,7 +492,7 @@ def compiled_TCN(training_data, config, **kwargs):
             kernel_size=reg_ksize,
             nb_stacks=nb_reg_stacks,
             padding='valid',
-            activation=LeakyReLU(),
+            activation=activation,
             convolution_func=convolution_func,
             kernel_initializer=kernel_initializer,
             name = 'Regression_module'
@@ -601,6 +601,14 @@ class multi_task_GAN(Model):
         self.d_optimizer  = d_optimizer
         self.g_loss         = g_loss
         self.d_loss         = d_loss
+        self.gen_X_metric  = keras.metrics.Mean(name='gen_X_loss')
+        self.gen_y_metric  = keras.metrics.Mean(name='gen_y_loss')
+        self.disc_X_accuracy = keras.metrics.Accuracy()
+        self.disc_y_accuracy = keras.metrics.Accuracy()
+
+    @property
+    def metrics(self):
+        return [(self.gen_X_metric + self.gen_y_metric), [self.disc_X_accuracy, self.disc_y_accuracy]]
     
     def train_step(self, batch_data):
         real_X, real_y = batch_data
@@ -627,6 +635,8 @@ class multi_task_GAN(Model):
             # y_truth += 0.05 * tf.random.uniform(tf.shape(y_truth), minval=0)
 
             # Discriminator loss
+            self.disc_X_accuracy.update_state(X_truth, X_predictions)
+            self.disc_y_accuracy.update_state(y_truth, y_predictions)
             disc_X_loss = self.d_loss(X_truth, X_predictions)
             disc_y_loss = self.d_loss(y_truth, y_predictions)
         

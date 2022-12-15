@@ -96,7 +96,6 @@ class RunModels:
 
         error = model.evaluate(X, Y, batch_size = 20, verbose=2, steps=40)
         tot_error = error
-
         
         # Image colormaps
         seis_cmap = self.seis_cmap
@@ -105,6 +104,7 @@ class RunModels:
         # Have to get the traces here, because groupings may change
         seis_testimage, ai_testimage, _ = get_matching_traces(self.seis_testimage_fp, self.ai_testimage_fp, group_traces=self.config['group_traces'], trunc=80)
         
+        # Scale the test images
         old_X_shp = seis_testimage.shape; old_y_shp = ai_testimage.shape
         seis_testimage = self.X_scaler.transform(seis_testimage.reshape(-1, 1)); ai_testimage = self.y_scaler.transform(ai_testimage.reshape(-1, 1))
         seis_testimage = seis_testimage.reshape(old_X_shp); ai_testimage = ai_testimage.reshape(old_y_shp)
@@ -128,8 +128,7 @@ class RunModels:
         # if update_scores('{}/{}'.format(groupname, modelname), rec_error):
         #     replace_md_image(p_name, rec_error)
 
-        with open(model_loc + '/' + 'config.json', 'w') as w_file:
-            w_file.write(json.dumps(config, indent=2))
+        save_config(model_loc, config)
         save_training_progression(History.history, model_loc)
 
         del model # Clear up the memory location for next model
@@ -263,8 +262,8 @@ if __name__ == '__main__':
                 if not os.path.isdir(model_loc):
                     os.mkdir(model_loc)
                 model.save(model_loc)
-                with open(model_loc + '/' + 'config.json', 'w') as w_file:
-                    w_file.write(json.dumps(config))
+
+                save_config(model_loc)
 
                 save_training_progression(History.history, model_loc)
 

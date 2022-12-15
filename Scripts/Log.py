@@ -268,6 +268,13 @@ def save_training_progression(data, model_fp):
     np.savez(model_fp + '/' + filename, data)
 
 
+def save_config(model_loc, config):
+    with open(model_loc + '/' + 'config.json', 'w') as w_file:
+        dummy_config = config
+        if isinstance(config['activation'], object):
+            dummy_config['activation'] = config['activation'].__name__
+        w_file.write(json.dumps(dummy_config, indent=2))
+
 def prediction_histogram(pred, true, **kwargs):
     pred = np.array(pred) ; true = np.array(true)
     pred = pred.flatten() ; true = true.flatten()
