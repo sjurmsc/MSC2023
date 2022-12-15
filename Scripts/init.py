@@ -88,8 +88,8 @@ class RunModels:
 
         if not os.path.isdir(model_loc): os.mkdir(model_loc)
 
-        model.generator.save(model_loc)
-        plot_model(model.generator, to_file=model_loc+'/model.png', show_shapes=True, show_layer_names=True, expand_nested=True, show_layer_activations=True)
+        #model.generator.save(model_loc)
+        #plot_model(model.generator, to_file=model_loc+'/model.png', show_shapes=True, show_layer_names=True, expand_nested=True, show_layer_activations=True)
 
         # Evaluating the model
         X, Y = test_data
@@ -105,13 +105,13 @@ class RunModels:
         # Have to get the traces here, because groupings may change
         seis_testimage, ai_testimage, _ = get_matching_traces(self.seis_testimage_fp, self.ai_testimage_fp, group_traces=self.config['group_traces'], trunc=80)
         
-        old_shp = ai_testimage.shape
-        seis_testimage = self.X_scaler.transform(seis_testimage); ai_testimage = self.y_scaler.transform(ai_testimage.reshape(-1, 1))
+        old_X_shp = seis_testimage.shape; old_y_shp = ai_testimage.shape
+        seis_testimage = self.X_scaler.transform(seis_testimage.reshape(-1, 1)); ai_testimage = self.y_scaler.transform(ai_testimage.reshape(-1, 1))
+        seis_testimage = seis_testimage.reshape(old_X_shp); ai_testimage = ai_testimage.reshape(old_y_shp)
 
-        ai_testimage = ai_testimage.reshape(old_shp)
-        target_pred, recon_pred, target_pred_diff = create_pred_image(model.generator,  [seis_testimage, ai_testimage])
-        create_ai_error_image((target_pred_diff)**2, seis_testimage, filename=model_loc+'/error_image.png')
-        #prediction_histogram(pt[0], pt[1], bins=500)
+        target_pred, recon_pred, target_pred_diff = create_pred_image(model,  [seis_testimage, ai_testimage])
+        #create_ai_error_image((target_pred_diff)**2, seis_testimage, filename=model_loc+'/error_image.png')
+
 
         if not os.path.isdir('./TEMP'): os.mkdir('./TEMP')
         image_folder = './TEMP/{}'.format(groupname)
