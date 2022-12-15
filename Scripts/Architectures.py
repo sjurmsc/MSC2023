@@ -84,7 +84,7 @@ class ResidualBlock(Layer):
             self.res_output_shape = input_shape
 
             for k in range(2):
-                name = f'{self.convolution_type.lower()}_{k}'
+                name = f'{self.convolution_func.__name__}_{k}'
                 with K.name_scope(name):
                     conv = self.convolution_func(
                                                  filters=self.nb_filters,
