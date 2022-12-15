@@ -538,7 +538,7 @@ def compiled_TCN(training_data, config, **kwargs):
                       d_optimizer=discriminator_optimizer, 
                       g_loss=generator_loss, 
                       d_loss=discriminator_loss)
-        model.summary()
+        # model.summary()
     else:
         model = Model(inputs = input_layer, 
                   outputs = output_layer)
