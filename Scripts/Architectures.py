@@ -25,7 +25,7 @@ class ResidualBlock(Layer):
                  kernel_size,
                  padding: str,
                  activation: str = 'relu',
-                 convolution_type: str = 'Conv2D',
+                 convolution_func: str = Conv2D,
                  dropout_type: str ='spatial',
                  dropout_rate: float = 0.,
                  kernel_initializer: str = 'he_normal',
@@ -36,15 +36,17 @@ class ResidualBlock(Layer):
         """
         docstring here %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         """
-        if convolution_type == 'Conv2D':
+        if convolution_func == Conv2D:
+            self.dim = 2
             self.dilation_rate = (1, dilation_rate) # Height, width
         else:
             self.dilation_rate = dilation_rate
+            self.dim = 1
         self.nb_filters = nb_filters
         self.kernel_size = kernel_size
         self.padding = padding
         self.activation = activation
-        self.convolution_type = convolution_type # My addition
+        self.convolution_func = convolution_func # My addition
         self.dropout_type = dropout_type
         self.dropout_rate = dropout_rate
         self.use_batch_norm = use_batch_norm
@@ -76,8 +78,6 @@ class ResidualBlock(Layer):
         self.res_output_shape = self.layers[-1].compute_output_shape(self.res_output_shape) # Not sure if compute output shape does anything here
 
     def build(self, input_shape):
-        if self.convolution_type.lower() == 'conv1d': c_func = Conv1D
-        else: c_func = Conv2D
 
         with K.name_scope(self.name):
             self.layers = []
@@ -86,13 +86,13 @@ class ResidualBlock(Layer):
             for k in range(2):
                 name = f'{self.convolution_type.lower()}_{k}'
                 with K.name_scope(name):
-                    conv = c_func(
-                        filters=self.nb_filters,
-                        kernel_size=self.kernel_size,
-                        dilation_rate=self.dilation_rate,
-                        padding=self.padding,
-                        name=name,
-                        kernel_initializer=self.kernel_initializer
+                    conv = self.convolution_func(
+                                                 filters=self.nb_filters,
+                                                 kernel_size=self.kernel_size,
+                                                 dilation_rate=self.dilation_rate,
+                                                 padding=self.padding,
+                                                 name=name,
+                                                 kernel_initializer=self.kernel_initializer
                     )
                     if self.use_weight_norm:
                         from tensorflow_addons.layers import WeightNormalization
@@ -111,29 +111,25 @@ class ResidualBlock(Layer):
                         pass # Already done above
                 
                 with K.name_scope('act_and_dropout_{}'.format(k)):
-                    if self.convolution_type.lower() == 'conv1d':
-                        dim = 1
-                    elif self.convolution_type.lower() == 'conv2d':
-                        dim = 2
                     if self.dropout_type == 'normal':
                         d_func = Dropout
                         dname = 'Dropout'
                     if self.dropout_type == 'spatial':
                         dname = 'SDropout'
-                        if dim == 1:
+                        if self.dim == 1:
                             d_func = SpatialDropout1D
-                        elif dim == 2:
+                        elif self.dim == 2:
                             d_func = SpatialDropout2D
 
-                    self._build_layer(Activation(self.activation, name='Act_{}_{}'.format(self.convolution_type, k)))
-                    self._build_layer(d_func(rate=self.dropout_rate, name='{}{}D_{}'.format(dname, dim, k)))
+                    self._build_layer(Activation(self.activation, name='Act_{}_{}'.format(self.convolution_func.__name__, k)))
+                    self._build_layer(d_func(rate=self.dropout_rate, name='{}{}D_{}'.format(dname, self.dim, k)))
     
             if self.nb_filters != input_shape[-1]:
                 # 1x1 convolution mathes the shapes (channel dimension).
-                name = 'matching_conv1D'
+                name = 'matching_conv'
                 with K.name_scope(name):
 
-                    self.shape_match_conv = c_func(
+                    self.shape_match_conv = self.convolution_func(
                         filters=self.nb_filters,
                         kernel_size=1,
                         padding='same',
@@ -186,7 +182,7 @@ class TCN(Layer):
                  dropout_rate=0.0,
                  return_sequences=False,
                  activation='relu',
-                 convolution_type = 'Conv2D',
+                 convolution_func = Conv2D,
                  kernel_initializer='he_normal',
                  use_batch_norm=False,
                  use_layer_norm=False,
@@ -202,7 +198,7 @@ class TCN(Layer):
         self.kernel_size = kernel_size
         self.nb_filters = nb_filters
         self.activation_name = activation
-        self.convolution_type = convolution_type
+        self.convolution_func = convolution_func
         self.padding = padding
         self.kernel_initializer = kernel_initializer
         self.use_batch_norm = use_batch_norm
@@ -254,7 +250,7 @@ class TCN(Layer):
                                                           kernel_size=self.kernel_size,
                                                           padding=self.padding,
                                                           activation=self.activation_name,
-                                                          convolution_type=self.convolution_type,
+                                                          convolution_func=self.convolution_func,
                                                           dropout_type=self.dropout_type,
                                                           dropout_rate=self.dropout_rate,
                                                           use_batch_norm=self.use_batch_norm,
@@ -335,7 +331,7 @@ class TCN(Layer):
         config['dropout_rate'] = self.dropout_rate
         config['return_sequences'] = self.return_sequences
         config['activation'] = self.activation_name
-        config['convolution_type'] = self.convolution_type # May need another name
+        config['convolution_func'] = self.convolution_func
         config['use_batch_norm'] = self.use_batch_norm
         config['use_layer_norm'] = self.use_layer_norm
         config['use_weight_norm'] = self.use_weight_norm
@@ -351,7 +347,7 @@ class CNN(Layer):
                 nb_stacks=3,
                 padding='same',
                 activation='relu',
-                convolution_type = 'Conv2D',
+                convolution_func = Conv2D,
                 kernel_initializer='he_normal',
                 dropout_rate = 0.001,
                 use_dropout = False,
@@ -365,7 +361,7 @@ class CNN(Layer):
         self.nb_stacks = nb_stacks
         self.padding = padding
         self.activation = activation
-        self.convolution_type = convolution_type
+        self.convolution_func = convolution_func
         self.kernel_initializer = kernel_initializer
         self.dropout_rate = dropout_rate
         self.use_dropout = use_dropout
@@ -380,10 +376,6 @@ class CNN(Layer):
         self.layers_outputs = []
         self.build_output_shape = None
 
-        self.conv_func = Conv2D
-        if convolution_type == 'Conv1D':
-            self.conv_func = Conv1D
-
         super(CNN, self).__init__(**kwargs)
 
         
@@ -397,12 +389,12 @@ class CNN(Layer):
         for k in range(self.nb_stacks):
             for i, f in enumerate([self.nb_filters]):
                 conv_filters = self.nb_filters[i] if isinstance(self.nb_filters, list) else self.nb_filters
-                self.conv_blocks.append(self.conv_func(filters=conv_filters, 
-                                                    kernel_size=self.kernel_size,
-                                                    padding = self.padding,
-                                                    activation=self.activation,
-                                                    kernel_initializer=self.kernel_initializer,
-                                                    name='convolution_layer_{}'.format(len(self.conv_blocks))))
+                self.conv_blocks.append(self.convolution_func(filters=conv_filters, 
+                                                              kernel_size=self.kernel_size,
+                                                              padding = self.padding,
+                                                              activation=self.activation,
+                                                              kernel_initializer=self.kernel_initializer,
+                                                              name='convolution_layer_{}'.format(len(self.conv_blocks))))
         
         for layer in self.conv_blocks:
             self.__setattr__(layer.name, layer)
@@ -426,7 +418,7 @@ class CNN(Layer):
         config['nb_stacks'] = self.nb_stacks
         config['padding'] = self.padding
         config['activation'] = self.activation
-        config['convolution_type'] = self.convolution_type
+        config['convolution_func'] = self.convolution_func
         config['kernel_initializer'] = self.kernel_initializer
         config['use_batch_norm'] = self.use_batch_norm
         config['use_layer_norm'] = self.use_layer_norm
@@ -455,7 +447,7 @@ def compiled_TCN(training_data, config, **kwargs):
     dropout_rate            = config['dropout_rate']
     return_sequences        = config['return_sequences']
     activation              = config['activation']
-    convolution_type        = config['convolution_type']
+    convolution_func        = config['convolution_func']
     lr                      = config['learn_rate']
     kernel_initializer      = config['kernel_initializer']
     use_batch_norm          = config['use_batch_norm']
@@ -484,7 +476,7 @@ def compiled_TCN(training_data, config, **kwargs):
             dropout_rate=dropout_rate,
             return_sequences=return_sequences,
             activation=activation,
-            convolution_type=convolution_type,
+            convolution_func=convolution_func,
             kernel_initializer=kernel_initializer,
             use_batch_norm=use_batch_norm,
             use_layer_norm=use_layer_norm,
@@ -501,15 +493,12 @@ def compiled_TCN(training_data, config, **kwargs):
             nb_stacks=nb_reg_stacks,
             padding='valid',
             activation=LeakyReLU(),
-            convolution_type=convolution_type,
+            convolution_func=convolution_func,
             kernel_initializer=kernel_initializer,
             name = 'Regression_module'
-            )(x)
+            )(x)   
 
-    c_func = Conv1D
-    if convolution_type == 'Conv2D': c_func = Conv2D # Not quite sure    
-
-    reg = c_func(1, kernel_size, padding=padding, activation='linear', name='regression_output')(reg)
+    reg = convolution_func(1, kernel_size, padding=padding, activation='linear', name='regression_output')(reg)
     
     # Reconstruciton module
     rec = CNN(nb_filters=nb_filters,
@@ -523,12 +512,10 @@ def compiled_TCN(training_data, config, **kwargs):
             )(x)
 
 
-    rec = c_func(1, kernel_size, padding=padding, activation='tanh', name='reconstruction_output')(rec)
+    rec = convolution_func(1, kernel_size, padding=padding, activation='linear', name='reconstruction_output')(rec)
 
     output_layer = [reg, rec] # Regression, reconstruction
 
-    
-    
     if use_adversaries:
         seis_gen_model = Model(inputs=input_layer, outputs=rec)
         ai_gen_model   = Model(inputs=input_layer, outputs=reg)
@@ -545,8 +532,8 @@ def compiled_TCN(training_data, config, **kwargs):
         discriminator_loss = keras.losses.BinaryCrossentropy()
 
         generator_optimizer = keras.optimizers.Adam(lr=lr, clipnorm=1.)
-        seis_disc_optimizer = keras.optimizers.Adam(lr=lr/2, clipnorm=1.)
-        ai_disc_optimizer   = keras.optimizers.Adam(lr=lr/2, clipnorm=1.)
+        seis_disc_optimizer = keras.optimizers.Adam(lr=lr*0.1, clipnorm=1.)
+        ai_disc_optimizer   = keras.optimizers.Adam(lr=lr*0.1, clipnorm=1.)
 
         model.compile(g_optimizer=generator_optimizer, 
                     d_optimizers=[ai_disc_optimizer, seis_disc_optimizer], 

@@ -161,15 +161,15 @@ if __name__ == '__main__':
     # CONFIG
     config = dict()
     config['nb_filters']            = 8
-    config['kernel_size']           = (3, 8) # Height, width
-    config['dilations']             = [1, 2, 4, 8, 16, 32, 64]
+    config['kernel_size']           = (3, 9) # Height, width
+    config['dilations']             = [1, 2, 4, 8, 16, 32]
     config['padding']               = 'same'
     config['use_skip_connections']  = True
     config['dropout_type']          = 'normal'
     config['dropout_rate']          = 0.03
     config['return_sequences']      = True
-    config['activation']            = 'relu'
-    config['convolution_type']      = 'Conv1D'
+    config['activation']            = LeakyReLU()
+    config['convolution_func']      = Conv1D()
     config['learn_rate']            = 0.001
     config['kernel_initializer']    = 'he_normal'
 
@@ -193,7 +193,7 @@ if __name__ == '__main__':
     config['cpt_data']              = ['']
     config['group_traces']          = 1
 
-    if config['group_traces']>1: config['convolution_type'] = 'Conv2D'
+    if config['group_traces']>1: config['convolution_func'] = Conv2D
     else: config['kernel_size'] = config['kernel_size'][1]
 
     # Retrieving the data
