@@ -155,7 +155,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 20
+    use_optuna = True ; n_trials = 1
     makemodel = True; loadmodel = not makemodel
 
     # CONFIG
@@ -183,7 +183,7 @@ if __name__ == '__main__':
     config['nb_rec_stacks']         = 3    
 
     config['batch_size']            = 20
-    config['epochs']                = 1
+    config['epochs']                = 2
 
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
@@ -229,7 +229,7 @@ if __name__ == '__main__':
             # config_range['nb_tcn_stacks']   = ('int', (1, 3))
             # config_range['kernel_size']     = ('int', (6, 12))
             config_range['batch_size']      = ('int', (20, 30))
-            config_range['epochs']          = ('int', (40, 60))
+            # config_range['epochs']          = ('int', (40, 60))
 
             # Categoricals
             #config_range['padding']         = ('categorical', (['causal', 'same'],))
