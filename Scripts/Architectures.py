@@ -536,7 +536,7 @@ def compiled_TCN(training_data, config, **kwargs):
         ai_disc_model = discriminator(output_layer[0].shape[1:], 3, name='ai_discriminator')
 
 
-        model = multi_task_GAN([ai_disc_model, seis_disc_model], [ai_gen_model, seis_gen_model], beta=0.01)
+        model = multi_task_GAN([ai_disc_model, seis_disc_model], [ai_gen_model, seis_gen_model], beta=0)
 
         generator_loss = keras.losses.MeanSquaredError()
         discriminator_loss = keras.losses.BinaryCrossentropy()

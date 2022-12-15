@@ -202,7 +202,7 @@ if __name__ == '__main__':
     if len(ai_datasets):
         train_data, test_data, scalers = sgy_to_keras_dataset(seismic_datasets, 
                                                               ai_datasets, 
-                                                              fraction_data=0.06, 
+                                                              fraction_data=0.4, 
                                                               test_size=0.8, 
                                                               group_traces=group_traces, 
                                                               X_normalize='StandardScaler',
