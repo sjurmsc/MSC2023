@@ -169,7 +169,7 @@ if __name__ == '__main__':
     config['dropout_rate']          = 0.03
     config['return_sequences']      = True
     config['activation']            = LeakyReLU()
-    config['convolution_func']      = Conv1D()
+    config['convolution_func']      = Conv1D
     config['learn_rate']            = 0.001
     config['kernel_initializer']    = 'he_normal'
 
