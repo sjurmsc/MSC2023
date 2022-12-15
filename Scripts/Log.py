@@ -272,8 +272,8 @@ def save_config(model_loc, config):
     with open(model_loc + '/' + 'config.json', 'w') as w_file:
         dummy_config = config
         if not isinstance(config['activation'], str):
-            dummy_config['activation'] = config['activation'].name
-        dummy_config['convolusion_func'] = config['convolution_func'].__name__
+            dummy_config['activation'] = str(config['activation'].name)
+        dummy_config['convolusion_func'] = str(config['convolution_func'].__name__)
         w_file.write(json.dumps(dummy_config, indent=2))
 
 def prediction_histogram(pred, true, **kwargs):
