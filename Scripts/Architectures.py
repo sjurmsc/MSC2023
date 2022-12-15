@@ -448,7 +448,7 @@ def compiled_TCN(training_data, config, **kwargs):
     return_sequences        = config['return_sequences']
     activation              = config['activation']
     convolution_func        = config['convolution_func']
-    lr                      = config['learn_rate']
+    learning_rate           = config['learn_rate']
     kernel_initializer      = config['kernel_initializer']
     use_batch_norm          = config['use_batch_norm']
     use_layer_norm          = config['use_layer_norm']
@@ -531,18 +531,17 @@ def compiled_TCN(training_data, config, **kwargs):
         generator_loss = keras.losses.MeanSquaredError()
         discriminator_loss = keras.losses.BinaryCrossentropy()
 
-        generator_optimizer = keras.optimizers.Adam(lr=lr, clipnorm=1.)
-        seis_disc_optimizer = keras.optimizers.Adam(lr=lr*0.1, clipnorm=1.)
-        ai_disc_optimizer   = keras.optimizers.Adam(lr=lr*0.1, clipnorm=1.)
+        generator_optimizer = keras.optimizers.Adam(learning_rate=learning_rate, clipnorm=1.)
+        discriminator_optimizer = keras.optimizers.Adam(learning_rate=learning_rate*0.1, clipnorm=1.) # Discriminators learn more slowly
 
         model.compile(g_optimizer=generator_optimizer, 
-                    d_optimizers=[ai_disc_optimizer, seis_disc_optimizer], 
-                    g_loss=generator_loss, 
-                    d_loss=discriminator_loss)
+                      d_optimizer=discriminator_optimizer, 
+                      g_loss=generator_loss, 
+                      d_loss=discriminator_loss)
     else:
         model = Model(inputs = input_layer, 
                   outputs = output_layer)
-        model.compile(keras.optimizers.Adam(learn_rate=lr, clipnorm=1.), loss={'regression_output' : 'mean_squared_error',
+        model.compile(keras.optimizers.Adam(learning_rate=learning_rate, clipnorm=1.), loss={'regression_output' : 'mean_squared_error',
                                                                            'reconstruction_output' : 'mean_squared_error'})
         model.summary()
 
@@ -596,11 +595,10 @@ class multi_task_GAN(Model):
         self.alpha                  = alpha
         self.beta                   = beta
 
-    def compile(self, g_optimizer, d_optimizers, g_loss, d_loss, **kwargs):
+    def compile(self, g_optimizer, d_optimizer, g_loss, d_loss, **kwargs):
         super(multi_task_GAN, self).compile(**kwargs)
         self.g_optimizer    = g_optimizer
-        self.d_X_optimizer  = d_optimizers[1]
-        self.d_y_optimizer  = d_optimizers[0]
+        self.d_optimizer  = d_optimizer
         self.g_loss         = g_loss
         self.d_loss         = d_loss
     
@@ -637,10 +635,10 @@ class multi_task_GAN(Model):
         disc_y_grads = tape.gradient(disc_y_loss, self.ai_discriminator.trainable_variables)
 
         # Apply those gradients
-        self.d_X_optimizer.apply_gradients(
+        self.d_optimizer.apply_gradients(
             zip(disc_X_grads, self.seismic_discriminator.trainable_variables)
         )
-        self.d_y_optimizer.apply_gradients(
+        self.d_optimizer.apply_gradients(
             zip(disc_y_grads, self.ai_discriminator.trainable_variables)
         )
 
