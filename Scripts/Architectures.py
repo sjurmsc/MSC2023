@@ -536,7 +536,7 @@ def compiled_TCN(training_data, config, **kwargs):
         ai_disc_model = discriminator(output_layer[0].shape[1:], 3, name='ai_discriminator')
 
 
-        model = multi_task_GAN([ai_disc_model, seis_disc_model], [ai_gen_model, seis_gen_model])
+        model = multi_task_GAN([ai_disc_model, seis_disc_model], [ai_gen_model, seis_gen_model], beta=0.001)
 
         generator_loss = keras.losses.MeanSquaredError()
         discriminator_loss = keras.losses.BinaryCrossentropy()
@@ -595,7 +595,7 @@ def discriminator(Input_shape, depth, conv_dim=1, dropout = 0.1, name='discrimin
 
 class multi_task_GAN(Model):
 
-    def __init__(self, discriminators, generators, alpha=1):
+    def __init__(self, discriminators, generators, alpha=1, beta=1):
         """
         """
         super(multi_task_GAN, self).__init__()
@@ -604,6 +604,7 @@ class multi_task_GAN(Model):
         self.seismic_generator      = generators[1]
         self.ai_generator           = generators[0]
         self.alpha                  = alpha
+        self.beta                   = beta
 
     def compile(self, g_optimizer, d_optimizers, g_loss, d_loss, **kwargs):
         super(multi_task_GAN, self).compile(**kwargs)
@@ -663,8 +664,8 @@ class multi_task_GAN(Model):
             gX_loss = self.g_loss(real_X, fake_X)
             dX_loss = self.d_loss(misleading_X_truth, X_predictions)
             dy_loss = self.d_loss(misleading_y_truth, y_predictions)
-            gen_X_loss = gX_loss + self.alpha*(dX_loss)
-            gen_y_loss = gy_loss + self.alpha*(dy_loss)
+            gen_X_loss = self.alpha*(dX_loss) + self.beta*(gX_loss)
+            gen_y_loss = self.alpha*(dy_loss) + self.beta*(gy_loss)
 
         # Get the gradients
         gen_X_grads = tape.gradient(gen_X_loss, self.seismic_generator.trainable_variables)
