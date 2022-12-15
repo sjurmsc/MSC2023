@@ -506,7 +506,7 @@ def compiled_TCN(training_data, config, **kwargs):
             nb_stacks=nb_rec_stacks,
             padding=padding,
             activation=activation,
-            convolution_type=convolution_type,
+            convolution_func=convolution_func,
             kernel_initializer=kernel_initializer,
             name = 'Reconstruction_module'
             )(x)
