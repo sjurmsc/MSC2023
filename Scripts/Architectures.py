@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestRegressor
 from tensorflow import keras
 from keras import backend as K, Model, Input, optimizers, layers
 from keras.layers import Dense, Dropout, Conv1D, Conv2D, Layer, BatchNormalization, LayerNormalization
-from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda, Flatten
+from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda, Flatten, LeakyReLU
 from tensorflow_addons.layers import WeightNormalization
 from numpy import array
 from keras.utils.vis_utils import plot_model
@@ -500,7 +500,7 @@ def compiled_TCN(training_data, config, **kwargs):
             kernel_size=reg_ksize,
             nb_stacks=nb_reg_stacks,
             padding='valid',
-            activation='tanh',
+            activation=LeakyReLU(),
             convolution_type=convolution_type,
             kernel_initializer=kernel_initializer,
             name = 'Regression_module'
@@ -623,8 +623,9 @@ class multi_task_GAN(Model):
         real_y, _ = real_y
         #real_X = tf.reshape(real_X, (*real_X.shape, 1))
         #real_y = tf.reshape(real_y, (*real_y.shape, 1))
-        real_y_1 = real_y*(tf.ones(tf.shape(real_y))+ .005*tf.random.uniform(tf.shape(real_y)))
-        real_y_2 = real_y*(tf.ones(tf.shape(real_y))+ .005*tf.random.uniform(tf.shape(real_y)))
+
+        real_y_1 = real_y*(tf.ones_like(real_y) + .005*tf.random.uniform(tf.shape(real_y)))
+        real_y_2 = real_y*(tf.ones_like(real_y) + .005*tf.random.uniform(tf.shape(real_y)))
 
         with tf.GradientTape(persistent=True) as tape:
             fake_X = self.seismic_generator(real_X, training=True)

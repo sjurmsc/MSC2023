@@ -178,8 +178,8 @@ if __name__ == '__main__':
     config['use_weight_norm']       = True
     config['use_adversaries']       = True
     if config['use_adversaries']:
-        config['alpha']     = 0.8
-        config['beta']      = 0.2
+        config['alpha']     = 0.6
+        config['beta']      = 0.4
 
     config['nb_tcn_stacks']         = 3
     config['nb_reg_stacks']         = 5
@@ -205,12 +205,12 @@ if __name__ == '__main__':
     if len(ai_datasets):
         train_data, test_data, scalers = sgy_to_keras_dataset(seismic_datasets, 
                                                               ai_datasets, 
-                                                              fraction_data=0.4, 
+                                                              fraction_data=0.2, 
                                                               test_size=0.8, 
                                                               group_traces=group_traces, 
                                                               X_normalize='StandardScaler',
                                                               y_normalize='MinMaxScaler',
-                                                              truncate_data=100)
+                                                              truncate_data=80)
         test_X, test_y = test_data
 
     # elif len(cpt_datasets):
