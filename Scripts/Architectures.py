@@ -621,6 +621,7 @@ class multi_task_GAN(Model):
         real_X, real_y = batch_data
         batch_size = tf.shape(real_X)[0]
         real_y, _ = real_y
+
         real_y_1 = real_y*(tf.ones_like(real_y) + .005*tf.random.uniform(tf.shape(real_y)))
         real_y_2 = real_y*(tf.ones_like(real_y) + .005*tf.random.uniform(tf.shape(real_y)))
 
