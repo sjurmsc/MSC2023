@@ -536,7 +536,7 @@ def compiled_TCN(training_data, config, **kwargs):
         ai_disc_model = discriminator(output_layer[0].shape[1:], 3, name='ai_discriminator')
 
 
-        model = multi_task_GAN([ai_disc_model, seis_disc_model], [ai_gen_model, seis_gen_model], beta=0.001)
+        model = multi_task_GAN([ai_disc_model, seis_disc_model], [ai_gen_model, seis_gen_model], beta=0.01)
 
         generator_loss = keras.losses.MeanSquaredError()
         discriminator_loss = keras.losses.BinaryCrossentropy()
@@ -634,8 +634,8 @@ class multi_task_GAN(Model):
             y_predictions = tf.concat([disc_fake_y, disc_real_y], axis=0)
             y_truth       = tf.concat([tf.ones((batch_size, 1)), tf.zeros((batch_size, 1))], axis=0)
 
-            X_truth += 0.05 * tf.random.uniform(tf.shape(X_truth), minval=0)
-            y_truth += 0.05 * tf.random.uniform(tf.shape(y_truth), minval=0)
+            # X_truth += 0.05 * tf.random.uniform(tf.shape(X_truth), minval=0)
+            # y_truth += 0.05 * tf.random.uniform(tf.shape(y_truth), minval=0)
 
             # Discriminator loss
             disc_X_loss = self.d_loss(X_truth, X_predictions)
@@ -664,8 +664,8 @@ class multi_task_GAN(Model):
             misleading_y_truth   = tf.zeros((batch_size, 1))
 
             # Generator loss
-            gy_loss = self.g_loss(real_y, fake_y)
             gX_loss = self.g_loss(real_X, fake_X)
+            gy_loss = self.g_loss(real_y, fake_y)
             dX_loss = self.d_loss(misleading_X_truth, X_predictions)
             dy_loss = self.d_loss(misleading_y_truth, y_predictions)
             gen_X_loss = self.alpha*(dX_loss) + self.beta*(gX_loss)
