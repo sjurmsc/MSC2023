@@ -159,7 +159,7 @@ if __name__ == '__main__':
 
     # CONFIG
     config = dict()
-    config['nb_filters']            = 8
+    config['nb_filters']            = 12
     config['kernel_size']           = (3, 9) # Height, width
     config['dilations']             = [1, 2, 4, 8, 16, 32]
     config['padding']               = 'same'
@@ -231,7 +231,7 @@ if __name__ == '__main__':
             # config_range['nb_tcn_stacks']   = ('int', (1, 3))
             # config_range['kernel_size']     = ('int', (6, 12))
             config_range['batch_size']      = ('int', (20, 30))
-            # config_range['epochs']          = ('int', (40, 60))
+            config_range['epochs']          = ('int', (40, 60))
 
             # Categoricals
             #config_range['padding']         = ('categorical', (['causal', 'same'],))

@@ -673,11 +673,8 @@ class multi_task_GAN(Model):
             gy_loss = self.g_loss(real_y_2, fake_y)
             dX_loss = self.d_loss(misleading_X_truth, X_predictions)
             dy_loss = self.d_loss(misleading_y_truth, y_predictions)
-            print(tf.shape(dX_loss))
-            print(tf.shape(gX_loss))
             gen_X_loss = self.alpha*(dX_loss) + self.beta*(gX_loss)
             gen_y_loss = self.alpha*(dy_loss) + self.beta*(gy_loss)
-            print(tf.shape(gen_X_loss))
 
         # Get the gradients
         gen_X_grads = tape.gradient(gen_X_loss, self.seismic_generator.trainable_variables)
