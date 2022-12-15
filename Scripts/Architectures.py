@@ -608,7 +608,7 @@ class multi_task_GAN(Model):
 
     @property
     def metrics(self):
-        return [(self.gen_X_metric + self.gen_y_metric), [self.disc_X_accuracy, self.disc_y_accuracy]]
+        return [self.gen_X_metric, self.gen_y_metric, self.disc_X_accuracy, self.disc_y_accuracy]
     
     def train_step(self, batch_data):
         real_X, real_y = batch_data
