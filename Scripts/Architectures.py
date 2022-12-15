@@ -623,8 +623,8 @@ class multi_task_GAN(Model):
         real_y, _ = real_y
         #real_X = tf.reshape(real_X, (*real_X.shape, 1))
         #real_y = tf.reshape(real_y, (*real_y.shape, 1))
-        real_y_1 = real_y*(1+ .005*tf.random.uniform(real_y.shape))
-        real_y_2 = real_y*(1+ .005*tf.random.uniform(real_y.shape))
+        real_y_1 = real_y*(tf.ones(tf.shape(real_y))+ .005*tf.random.uniform(tf.shape(real_y)))
+        real_y_2 = real_y*(tf.ones(tf.shape(real_y))+ .005*tf.random.uniform(tf.shape(real_y)))
 
         with tf.GradientTape(persistent=True) as tape:
             fake_X = self.seismic_generator(real_X, training=True)
