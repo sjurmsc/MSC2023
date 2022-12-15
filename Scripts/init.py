@@ -185,7 +185,7 @@ if __name__ == '__main__':
     config['nb_rec_stacks']         = 3    
 
     config['batch_size']            = 20
-    config['epochs']                = 4
+    config['epochs']                = 1
 
     config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
     config['ai_data']               = ['00_AI']
@@ -204,7 +204,7 @@ if __name__ == '__main__':
     if len(ai_datasets):
         train_data, test_data, scalers = sgy_to_keras_dataset(seismic_datasets, 
                                                               ai_datasets, 
-                                                              fraction_data=0.2, 
+                                                              fraction_data=0.01, 
                                                               test_size=0.8, 
                                                               group_traces=group_traces, 
                                                               X_normalize='StandardScaler',
