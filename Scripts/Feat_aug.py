@@ -139,17 +139,16 @@ def sgy_to_keras_dataset(X_data_label_list,
     # Normalization
     if X_normalize == 'MinMaxScaler':
         X_scaler = MinMaxScaler()
-        X_new = X_scaler.fit_transform(X, y)
-        X = X_new
+        X_new = X_scaler.fit_transform(X.reshape(-1, 1))
+        X = X_new.reshape(X.shape)
     elif X_normalize == 'StandardScaler':
         X_scaler = StandardScaler()
-        X_new = X_scaler.fit_transform(X, y)
-        X = X_new
+        X_new = X_scaler.fit_transform(X.reshape(-1, 1))
+        X = X_new.reshape(X.shape)
     if y_normalize == 'MinMaxScaler':
-        old_shp = y.shape
         y_scaler = MinMaxScaler()
         y_new = y_scaler.fit_transform(y.reshape(-1, 1))
-        y = y_new.reshape(old_shp)
+        y = y_new.reshape(y.shape)
 
 
     train_X, test_X, train_y, test_y = train_test_split(X, y, 

@@ -527,16 +527,16 @@ def compiled_TCN(training_data, config, **kwargs):
 
     output_layer = [reg, rec] # Regression, reconstruction
 
-    model = Model(inputs = input_layer, 
-                  outputs = output_layer)
+    
     
     if use_adversaries:
-        gen_model = model
+        seis_gen_model = Model(inputs=input_layer, outputs=rec)
+        ai_gen_model   = Model(inputs=input_layer, outputs=reg)
         seis_disc_model = discriminator(output_layer[1].shape[1:], 3, name='seismic_discriminator')
         ai_disc_model = discriminator(output_layer[0].shape[1:], 3, name='ai_discriminator')
 
 
-        model = multi_task_GAN([ai_disc_model, seis_disc_model], gen_model)
+        model = multi_task_GAN([ai_disc_model, seis_disc_model], [ai_gen_model, seis_gen_model])
 
         generator_loss = keras.losses.MeanSquaredError()
         discriminator_loss = keras.losses.BinaryCrossentropy()
@@ -550,6 +550,8 @@ def compiled_TCN(training_data, config, **kwargs):
                     g_loss=generator_loss, 
                     d_loss=discriminator_loss)
     else:
+        model = Model(inputs = input_layer, 
+                  outputs = output_layer)
         model.compile(keras.optimizers.Adam(learn_rate=lr, clipnorm=1.), loss={'regression_output' : 'mean_squared_error',
                                                                            'reconstruction_output' : 'mean_squared_error'})
         model.summary()
