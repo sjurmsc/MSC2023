@@ -634,8 +634,8 @@ class multi_task_GAN(Model):
             y_predictions = tf.concat([disc_fake_y, disc_real_y], axis=0)
             y_truth       = tf.concat([tf.ones((batch_size, 1)), tf.zeros((batch_size, 1))], axis=0)
 
-            X_truth += 0.05 * tf.random.uniform(tf.shape(X_truth))
-            y_truth += 0.05 * tf.random.uniform(tf.shape(y_truth))
+            X_truth += 0.05 * tf.random.uniform(tf.shape(X_truth), minval=0)
+            y_truth += 0.05 * tf.random.uniform(tf.shape(y_truth), minval=0)
 
             # Discriminator loss
             disc_X_loss = self.d_loss(X_truth, X_predictions)
