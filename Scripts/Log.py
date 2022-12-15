@@ -271,8 +271,8 @@ def save_training_progression(data, model_fp):
 def save_config(model_loc, config):
     with open(model_loc + '/' + 'config.json', 'w') as w_file:
         dummy_config = config
-        if isinstance(config['activation'], object):
-            dummy_config['activation'] = config['activation'].__name__
+        if not isinstance(config['activation'], str):
+            dummy_config['activation'] = config['activation'].name
         w_file.write(json.dumps(dummy_config, indent=2))
 
 def prediction_histogram(pred, true, **kwargs):
