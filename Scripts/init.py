@@ -39,7 +39,6 @@ class RunModels:
     def __init__(self, train_data, test_data, config, use_adversaries=False, config_range=None, scalers=False):
         self.config = config
         self.config_range = config_range
-        self.use_adversaries = use_adversaries
         self.model_name_gen = give_modelname()
         self.train_data = train_data
         self.test_data = test_data
@@ -82,7 +81,7 @@ class RunModels:
             suggest_func = sfunc[items[0]]
             self.config[key] = suggest_func(key, *items[1])
 
-        model, History = compiled_TCN(self.train_data, self.config, use_adversaries=self.use_adversaries, callbacks=[self.tb_callback])
+        model, History = compiled_TCN(self.train_data, self.config, callbacks=[self.tb_callback])
 
         # Saving the model
         model_loc = './Models/{}/{}'.format(groupname, modelname)
@@ -255,7 +254,7 @@ if __name__ == '__main__':
                 tbdir = './_tb'
                 tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tbdir, histogram_freq=1)
 
-                model, History = compiled_TCN(train_data, config, use_adversaries=True, callbacks = [tb_callback])
+                model, History = compiled_TCN(train_data, config, callbacks = [tb_callback])
                 
                 model_loc = './Models/{}/{}'.format(groupname, modelname)
                 if not os.path.isdir(model_loc):

@@ -434,7 +434,7 @@ class CNN(Layer):
         return config
 
 
-def compiled_TCN(training_data, config, use_adversaries=False, **kwargs):
+def compiled_TCN(training_data, config, **kwargs):
     """
     @ Author: Sjur [in progress]
     Three temporal blocks as feature extractions
@@ -461,6 +461,7 @@ def compiled_TCN(training_data, config, use_adversaries=False, **kwargs):
     use_batch_norm          = config['use_batch_norm']
     use_layer_norm          = config['use_layer_norm']
     use_weight_norm         = config['use_weight_norm']
+    use_adversaries         = config['use_adversaries']
 
     batch_size              = config['batch_size']
     epochs                  = config['epochs']
