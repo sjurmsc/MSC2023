@@ -34,25 +34,36 @@ class ResidualBlock(Layer):
                  use_weight_norm: bool = False,
                  **kwargs): # Any initializers for the Layer class
         """
-        docstring here %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        Creates a residual block for use in a TCN
         """
+        # Checking whether dilations are a power of two
+        assert (self.dilation_rate != 0) & ((self.dilation_rate & (self.dilation_rate - 1)) == 0), \
+               'Dilations must be powers of 2'
+
         if convolution_func == Conv2D:
             self.dim = 2
+
+            # Dilations only occur in depth; See Mustafa et al. 2021
             self.dilation_rate = (1, dilation_rate) # Height, width
         else:
-            self.dilation_rate = dilation_rate
             self.dim = 1
+            self.dilation_rate = dilation_rate
+
         self.nb_filters = nb_filters
         self.kernel_size = kernel_size
+        self.kernel_initializer = kernel_initializer
+
         self.padding = padding
         self.activation = activation
-        self.convolution_func = convolution_func # My addition
-        self.dropout_type = dropout_type
+        self.convolution_func = convolution_func # function for use in convolution layers
+        self.dropout_type = dropout_type # Can be 'normal' or 'spatial'; decides what type of dropout layer is applied
         self.dropout_rate = dropout_rate
+
         self.use_batch_norm = use_batch_norm
         self.use_layer_norm = use_layer_norm
         self.use_weight_norm = use_weight_norm
-        self.kernel_initializer = kernel_initializer
+
+        # Variables to be filled
         self.layers = []
         self.shape_match_conv = None
         self.res_output_shape = None
@@ -75,17 +86,22 @@ class ResidualBlock(Layer):
         """
         self.layers.append(layer)
         self.layers[-1].build(self.res_output_shape)
+
+        # This looks suspicious
         self.res_output_shape = self.layers[-1].compute_output_shape(self.res_output_shape) # Not sure if compute output shape does anything here
 
     def build(self, input_shape):
 
-        with K.name_scope(self.name):
+        with K.name_scope(self.name): # Gets the name from **kwargs
+            
             self.layers = []
             self.res_output_shape = input_shape
 
             for k in range(2):
                 name = f'{self.convolution_func.__name__}_{k}'
                 with K.name_scope(name):
+
+                    # Check out inputs here
                     conv = self.convolution_func(
                                                  filters=self.nb_filters,
                                                  kernel_size=self.kernel_size,
@@ -96,6 +112,7 @@ class ResidualBlock(Layer):
                     )
                     if self.use_weight_norm:
                         from tensorflow_addons.layers import WeightNormalization
+
                         # WeightNormalization API is different than other Normalizations; requires wrapping
                         with K.name_scope('norm_{}'.format(k)):
                             conv = WeightNormalization(conv)
@@ -134,7 +151,7 @@ class ResidualBlock(Layer):
                         kernel_size=1,
                         padding='same',
                         name=name,
-                        kernel_initializer=self.kernel_initializer
+                        kernel_initializer=self.kernel_initializer # Why initialize this kernel with the same initializer?
                     )
             else:
                 name = 'matching_identity'
@@ -144,6 +161,7 @@ class ResidualBlock(Layer):
                 self.shape_match_conv.build(input_shape)
                 self.res_output_shape = self.shape_match_conv.compute_output_shape(input_shape)
             
+            # Names of these layers should be investigated
             self._build_layer(Activation(self.activation, name='Act_Conv_Blocks'))
             self.final_activation = Activation(self.activation, name='Act_Res_Block')
             self.final_activation.build(self.res_output_shape) # According to philipperemy this probably is not be necessary
@@ -152,7 +170,7 @@ class ResidualBlock(Layer):
             for layer in self.layers:
                 self.__setattr__(layer.name, layer)
             self.__setattr__(self.shape_match_conv.name, self.shape_match_conv)
-            self.__setattr__(self.final_activation.name, self.final_activation)
+            self.__setattr__(self.final_activation.name, self.final_activation) # I think this fixes the name issue
 
             super(ResidualBlock, self).build(input_shape) # This to make sure self.built is set to True
 
@@ -196,14 +214,16 @@ class TCN(Layer):
         self.dilations = dilations
         self.nb_stacks = nb_stacks
         self.kernel_size = kernel_size
+        self.kernel_initializer = kernel_initializer
         self.nb_filters = nb_filters
         self.activation_name = activation
         self.convolution_func = convolution_func
         self.padding = padding
-        self.kernel_initializer = kernel_initializer
+
         self.use_batch_norm = use_batch_norm
         self.use_layer_norm = use_layer_norm
         self.use_weight_norm = use_weight_norm
+
         self.skip_connections = []
         self.residual_blocks = []
         self.layers_outputs = []
@@ -216,14 +236,13 @@ class TCN(Layer):
             raise ValueError('Only one normalization can be specified at once.')
         
         if isinstance(self.nb_filters, list):
-            assert len(self.nb_filters) == len(self.dilations)
+            assert len(self.nb_filters) == len(self.dilations) # Change of filter amount coincide with padding
             if len(set(self.nb_filters)) > 1 and self.use_skip_connections:
                 raise ValueError('Skip connections are not compatible'
                                  'with a list of filters, unless they are all equal.')
         if padding != 'causal' and padding != 'same':
             raise ValueError('Only \'causal\' or \'same\' padding are compatible for this layer.')
         
-        # Initialize parent class (..which is Layer?)
         super(TCN, self).__init__(**kwargs)
     
     @property
@@ -232,6 +251,7 @@ class TCN(Layer):
 
     def build(self, input_shape):
 
+        # Makes sure the i/o dims of each block are the same
         self.build_output_shape = input_shape
 
         self.residual_blocks = []
@@ -484,6 +504,7 @@ def compiled_TCN(training_data, config, **kwargs):
             name='Feature_recognition_module'
     )(input_layer)
     
+    print('receptive field is: {}'.format(x.receptive_field()))
 
     # Regression module
     reg_ksize = y[0].shape[-1]/(nb_reg_stacks) + 1  # for 1d preserving the shape of the data

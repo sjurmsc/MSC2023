@@ -102,6 +102,7 @@ def sgy_to_keras_dataset(X_data_label_list,
                          y_normalize = 'MinMaxScaler',
                          random_state=1,
                          shuffle=True,
+                         min_y = 0.,
                          fraction_data=False,
                          truncate_data=False):
     """
@@ -134,6 +135,8 @@ def sgy_to_keras_dataset(X_data_label_list,
                 y = row_stack((y, y_traces))
     sys.stdout.write('\n'); sys.stdout.flush()
     
+    y[np.where(y<min_y)] = min_y
+
     X_scaler = None
     y_scaler = None
     # Normalization
