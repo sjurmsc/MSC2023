@@ -74,8 +74,8 @@ def ai_to_reflectivity(ai,win=7,threshold=8e-4):
     #     if ind[iii+1]-ind[iii]>1:
     #         slope[ind[iii]+1:ind[iii+1]] = ai[ind[iii]+1]-ai[ind[iii]]
     return refl,slope
-  
-    
+
+
 def oversample_refl(t,refl,slope,dtnew):
     dt=t[1]-t[0]
     tnew=np.arange(t[0],t[-1]+dtnew,dtnew) 

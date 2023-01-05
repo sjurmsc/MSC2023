@@ -37,7 +37,7 @@ class ResidualBlock(Layer):
         Creates a residual block for use in a TCN
         """
         # Checking whether dilations are a power of two
-        assert (self.dilation_rate != 0) & ((self.dilation_rate & (self.dilation_rate - 1)) == 0), \
+        assert (dilation_rate != 0) & ((dilation_rate & (dilation_rate - 1)) == 0), \
                'Dilations must be powers of 2'
 
         if convolution_func == Conv2D:

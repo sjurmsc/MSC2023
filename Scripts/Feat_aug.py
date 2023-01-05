@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from os import listdir
 from pathlib import Path
 import sys
-from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
+# from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
 # Functions for loading data
 
@@ -135,7 +135,7 @@ def sgy_to_keras_dataset(X_data_label_list,
                 y = row_stack((y, y_traces))
     sys.stdout.write('\n'); sys.stdout.flush()
     
-    y[np.where(y<min_y)] = min_y
+    y[where(y<min_y)] = min_y
 
     X_scaler = None
     y_scaler = None
@@ -407,4 +407,4 @@ if __name__ == '__main__':
 
     # plt.boxplot(lines)
     # plt.show()
-    # sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'], fraction_data=0.05, group_traces=3, normalize='StandardScaler')
+    sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'], fraction_data=0.05, group_traces=3, normalize='StandardScaler')
