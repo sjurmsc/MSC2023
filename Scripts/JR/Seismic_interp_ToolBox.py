@@ -45,14 +45,15 @@ def reflectivity_to_ai(refl,slope=None,basevalue=1500):
 
     return ai
 
-
+from math import isclose
 def ai_to_reflectivity(ai,win=7,threshold=8e-4):
     '''
     Acoustic Impedance to Reflectivity
     '''    
     # compute reflectivity coeff
-    refl=np.zeros(np.shape(ai))
+    refl=np.zeros_like(ai)
     for i in range(len(ai)-1):
+        if isclose((ai[i+1]+ai[i]), 0): continue
         R=(ai[i+1]-ai[i])/(ai[i+1]+ai[i])
         refl[i+1]=R
       
@@ -130,6 +131,36 @@ def resample_seis(tover,seis_over,t):
     f=interp1d(tover,seis_over,kind='linear')
     seis_model=f(t)
     return seis_model
+
+import matplotlib.pyplot as plt
+from numpy import arange, amax
+
+def plot_refl_to_wave(wave, refl, n):
+    w_len = len(wave)
+    r_len = len(refl)
+
+    match_factor = w_len//r_len
+    refl = refl/amax(refl)*amax(wave)
+    x = arange(0, w_len)
+    plt.title('Trace #' + str(n))
+    plt.plot(x, wave, label='Wave')
+    plt.plot(x[::match_factor], refl, label='Reflectivity')
+    plt.legend()
+    plt.show()
+
+from matplotlib.colors import Normalize
+
+def plot_dataset(seismic, ai):
+    seis_norm = Normalize(-10, 25)
+    #ai_norm = Normalize(0, 1)
+
+    fig = plt.figure()
+    plt.imshow(seismic.T, cmap='gray', norm=seis_norm)
+    plt.imshow(ai.T, cmap='plasma', alpha=0.4, aspect='auto')
+
+    plt.show()
+
+    
 
 
 if __name__ == '__main__':
