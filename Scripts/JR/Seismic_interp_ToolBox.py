@@ -77,6 +77,18 @@ def ai_to_reflectivity(ai,win=7,threshold=8e-4):
     return refl,slope
 
 
+def _ai_to_reflectivity(ai):
+    '''
+    Acoustic Impedance to Reflectivity
+    '''
+    ai = np.array(ai)
+    if len(ai.shape) == 1: ai.reshape((1, *ai.shape))
+    refl = (ai[:, 1:]-ai[:, :-1])/(ai[:, 1:]+ai[:, :-1])
+    refl = np.pad(refl, (1, 0), mode='constant')
+    
+    return refl
+
+
 def oversample_refl(t,refl,slope,dtnew):
     dt=t[1]-t[0]
     tnew=np.arange(t[0],t[-1]+dtnew,dtnew) 
@@ -160,14 +172,69 @@ def plot_dataset(seismic, ai):
 
     plt.show()
 
+from scipy.interpolate import interp1d
+
+def depth_to_time(ai, z, v, t0 = 0., dt=1e-3, mode='ceil'):
+    """
+    time units: seconds
+    """
+    assert np.shape(ai) == np.shape(v)
+
+    if mode == 'ceil':
+        v = v[:, :-1]
+    elif mode == 'floor':
+        v = v[:, 1:]
     
+    dz = np.diff(z)
+    dt_matrix = 1/v * dz.T
+
+    t = np.zeros_like(ai)
+    t[:, 0] = np.ones_like(t[:, 0])*t0
+
+    for i in range(dt_matrix.shape[1]):
+        t[:, i+1] = t[:, i] + dt_matrix[:, i]
+    
+    t_end = np.amin(t[:, -1])
+    n_samples = (t_end - t0)/dt
+    new_t = np.linspace(t0, t_end, z.shape[0])
+    ai_t = np.zeros_like(ai)
+    for i in range(ai.shape[0]):
+        f = interp1d(t[i], ai[i])
+        ai_t[i, :] = f(new_t)
+    
+    return ai_t
+
+import segyio
+def get_traces(fp, mmap=True, zrange: tuple = (None,100)):
+    """
+    This function should conserve some information about the domain (time or depth) of
+    the data.
+    """
+    with segyio.open(fp, ignore_geometry=True) as seis_data:
+        z = seis_data.samples
+        if mmap:
+            seis_data.mmap()  # Only to be used if the file size is small compared to available memory
+        traces = segyio.collect(seis_data.trace)
+    
+    traces, z = traces[:, z<zrange[1]], z[z<zrange[1]]
+    return traces, z
 
 
 if __name__ == '__main__':
-    refl = [[0, 0, 1, 0, 0, 0, 1, 0, 1],
-            [0, 0, 0, 1, 0, 0, 1, 0, 1]]
-    refl = [0, 0, 1, 0, 0, 0, 1, 0, 1]
-    r = reflectivity_to_ai(refl)
-    print(r)
+    import matplotlib.pyplot as plt
+    SEAM_fpath = r'C:/Users/SjB/Marmousi/Marmousi_testing/SEAM_data/'
+    rho_file_fp = SEAM_fpath + 'SEAM_Den_Elastic_N23900.sgy'
+    v_file_fp = SEAM_fpath + 'SEAM_Vp_Elastic_N23900.sgy'
+    rho, z = get_traces(rho_file_fp, zrange=(None, 10_000))
+    v, _ = get_traces(v_file_fp, zrange=(None, 10_000))
+    ai_depth = rho*v
+    ai_time = depth_to_time(ai_depth, z, v)
+
+    refl = _ai_to_reflectivity(ai_time)
+
+    plt.imshow(ai_time.T, cmap='Spectral')
+    plt.title('SEAM synthetic data in time')
+
+    plt.show()
 
 
