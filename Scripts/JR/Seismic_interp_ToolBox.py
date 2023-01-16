@@ -194,15 +194,15 @@ def depth_to_time(ai, z, v, t0 = 0., dt=1e-3, mode='ceil'):
     for i in range(dt_matrix.shape[1]):
         t[:, i+1] = t[:, i] + dt_matrix[:, i]
     
-    t_end = np.amin(t[:, -1])
+    t_end = np.amin(t[:, -1]).astype(int)
     n_samples = (t_end - t0)/dt
-    new_t = np.linspace(t0, t_end, z.shape[0])
-    ai_t = np.zeros_like(ai)
+    new_t = np.linspace(t0, t_end, n_samples.astype(int))
+    ai_t = np.zeros((np.shape(ai)[0], n_samples.astype(int)))
     for i in range(ai.shape[0]):
         f = interp1d(t[i], ai[i])
         ai_t[i, :] = f(new_t)
     
-    return ai_t
+    return ai_t, dt
 
 import segyio
 def get_traces(fp, mmap=True, zrange: tuple = (None,100)):
@@ -228,12 +228,30 @@ if __name__ == '__main__':
     rho, z = get_traces(rho_file_fp, zrange=(None, 10_000))
     v, _ = get_traces(v_file_fp, zrange=(None, 10_000))
     ai_depth = rho*v
-    ai_time = depth_to_time(ai_depth, z, v)
+    ai_time, dt = depth_to_time(ai_depth, z, v)
 
     refl = _ai_to_reflectivity(ai_time)
 
-    plt.imshow(ai_time.T, cmap='Spectral')
-    plt.title('SEAM synthetic data in time')
+    # resample wavelet
+
+    w_dict = np.load(r'C:\Users\SjB\OneDrive - NGI\Marmousi\wavelet_Marmousi.npz')
+    w = w_dict['wavelet']
+    w_dt = w_dict['dt'] * 1e-3
+    print(w_dt)
+
+    w_tot_time = w_dt*len(w)
+    w_t = np.linspace(0, w_tot_time, len(w))
+    wt_new = np.linspace(0, w_tot_time, int(w_tot_time/dt))
+    wave_func = interp1d(w_t, w, kind='cubic')
+    wave_new = wave_func(wt_new)
+
+    seis = np.zeros_like(refl)
+    for i, r in enumerate(refl):
+        seis[i, :] = np.convolve(r, wave_new, mode='same')
+    np.savez_compressed(SEAM_fpath + 'convolved_seismic', seis)
+    np.savez_compressed(SEAM_fpath + 'ai_time_domain', ai_time)
+    plt.imshow(seis.T, cmap='seismic')
+    plt.title('SEAM seismic in time')
 
     plt.show()
 
