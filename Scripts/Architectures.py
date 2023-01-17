@@ -1,5 +1,5 @@
 """
-Contains the model architectures so that they may easily be called upon.
+Contains the model architectures so that they may be called by other scripts.
 """
 from distutils.command.sdist import sdist
 import inspect
@@ -448,12 +448,8 @@ class CNN(Layer):
 
 def compiled_TCN(training_data, config, **kwargs):
     """
-    @ Author: Sjur [in progress]
-    Three temporal blocks as feature extractions
-
-    Split into three for regression, and three for reconstruction
-
-   This function only works for reconstruction at present moment 
+    This function is to be called for initiating a model
+    with provided configurations
     """
     nb_filters              = config['nb_filters']
     kernel_size             = config['kernel_size']
@@ -572,7 +568,7 @@ def compiled_TCN(training_data, config, **kwargs):
     return model, History
 
 
-# Loss Function
+# Loss Functions
 import numpy as np
 import tensorflow as tf
 
@@ -582,7 +578,7 @@ def model_loss(y_true, y_pred):
 
 def weight_share_loss(y_true, y_pred):
     """
-    As described in Mustafa et al. (2022)
+    As described in Mustafa et al. (2021)
     """
     yt_reg, yt_recon = y_true[0], y_true[1]
     yp_reg, yp_recon = y_pred[0], y_pred[1]
@@ -596,7 +592,9 @@ def discriminator(Input_shape,
                   convolution_func=Conv1D, 
                   dropout = 0.1, 
                   name='discriminator'):
-
+    """
+    Descriminator model for use in adversarial learning
+    """
     input_layer = Input(Input_shape)
     x = input_layer
     for _ in range(depth):

@@ -1,10 +1,9 @@
 """
-Initializes the task to be done on Odin
+This script is to be run from the command line, and initializes the instructions
+to be performed for any training instance (denoted by three upper case letters).
 
-this script will contain all instructions for which networks to run on odin
---runs all code that has to do with different data permutations
-
-All git operations will happen in this script
+The configurations to the machine learning, and the procedures for iterating
+over these configurations are also defined in this script. 
 """
 
 # External packages
