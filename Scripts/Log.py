@@ -282,8 +282,19 @@ def prediction_histogram(pred, true, **kwargs):
     return hist((pred, true), **kwargs)
 
 
-def prediction_crossplot():
-    pass
+def prediction_crossplot(pred, 
+                         true, 
+                         title='',
+                         xlabel='Estimated property',
+                         ylabel='Ground Truth',
+                         save=False):
+    plt.scatter(pred, true)
+    plt.grid()
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if save:
+        plt.savefig('prediction_crossplot')
 
 
 def repo_push(fps, message):

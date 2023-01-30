@@ -3,7 +3,6 @@ Contains the model architectures so that they may be called by other scripts.
 """
 from distutils.command.sdist import sdist
 import inspect
-from sklearn.ensemble import RandomForestRegressor
 
 # Some mess here that could be sorted out
 from tensorflow import keras
@@ -497,7 +496,7 @@ def compiled_TCN(training_data, config, **kwargs):
             use_batch_norm=use_batch_norm,
             use_layer_norm=use_layer_norm,
             use_weight_norm=use_weight_norm,
-            name='Feature_recognition_module'
+            name='Feature_exctraction_module'
     )(input_layer)
     
     print('receptive field is: {}'.format(x.receptive_field()))
@@ -565,6 +564,11 @@ def compiled_TCN(training_data, config, **kwargs):
 
     History = model.fit(x=X, y=y, batch_size=batch_size, epochs=epochs, **kwargs)
     
+    # Tree model here
+    model.ai_generator.
+
+
+
     return model, History
 
 

@@ -5,7 +5,7 @@ import segyio
 import json
 from numpy import array, row_stack, intersect1d, where, amax, amin
 from scipy.interpolate import interp1d
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from os import listdir
 from pathlib import Path

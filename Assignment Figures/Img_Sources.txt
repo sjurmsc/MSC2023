@@ -1,0 +1,3 @@
+ResNet.png : https://towardsdatascience.com/introduction-to-resnets-c0a830a288a4
+
+This one is from the source by variable name he_deep_2015
