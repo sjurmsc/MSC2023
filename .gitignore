@@ -30,3 +30,5 @@ start_model_run.bat
 !TEMP/AEV/6_combined_recon_pred.jpg
 !TEMP/AEV/6_combined_target_pred.jpg
 !TEMP/AFA/2_combined_target_pred.jpg
+!TEMP/ADX/0_combined_target_pred.jpg
+!TEMP/ADX/1_combined_target_pred.jpg
