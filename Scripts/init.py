@@ -178,7 +178,7 @@ class config_iterator:
 
 
 if __name__ == '__main__':
-    use_optuna = True ; n_trials = 1
+    use_optuna = False ; n_trials = 1
     makemodel = True
 
     # CONFIG :: Static configurations that get replaced by variations
