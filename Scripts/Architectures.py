@@ -295,7 +295,6 @@ class TCN(Layer):
         self.slicer_layer = Lambda(lambda tt: tt[:, self.output_slice_index, :], name='Slice_Output')
         self.slicer_layer.build(self.build_output_shape.as_list())
 
-    # Not needed function that Philippe Remy wrote
     def compute_output_shape(self, input_shape):
         """
         Overridden in case keras uses it somewhere... no idea. Just trying to avoid future errors.
