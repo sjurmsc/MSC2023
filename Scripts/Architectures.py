@@ -564,7 +564,7 @@ def compiled_TCN(training_data, config, **kwargs):
     History = model.fit(x=X, y=y, batch_size=batch_size, epochs=epochs, **kwargs)
     
     # Tree model here
-    model.ai_generator.
+    #model.ai_generator.
 
 
 
