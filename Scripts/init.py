@@ -190,7 +190,7 @@ if __name__ == '__main__':
     config['use_skip_connections']  = True
     config['dropout_type']          = 'normal'
     config['dropout_rate']          = 0.03
-    config['return_sequences']      = False
+    config['return_sequences']      = True
     config['activation']            = LeakyReLU()
     config['convolution_func']      = Conv1D
     config['learn_rate']            = 0.001
