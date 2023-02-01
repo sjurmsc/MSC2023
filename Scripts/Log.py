@@ -270,7 +270,7 @@ def save_training_progression(data, model_fp):
 
 def save_config(model_loc, config):
     with open(model_loc + '/' + 'config.json', 'w') as w_file:
-        dummy_config = config
+        dummy_config = config.copy()
         if not isinstance(config['activation'], str):
             dummy_config['activation'] = str(config['activation'].name)
         dummy_config['convolusion_func'] = str(config['convolution_func'].__name__)
