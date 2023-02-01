@@ -270,7 +270,6 @@ if __name__ == '__main__':
             R = RunModels(train_data, 
                           test_data, 
                           config, 
-                          use_adversaries = config['use_adversaries'], 
                           config_range=config_range, 
                           scalers=scalers)
 
