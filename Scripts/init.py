@@ -292,7 +292,7 @@ if __name__ == '__main__':
                 # if not os.path.isdir(model_loc): os.mkdir(model_loc)
                 # model.save(model_loc)
 
-                save_config(model_loc)
+                save_config(model_loc, config)
 
                 save_training_progression(History.history, model_loc)
 
