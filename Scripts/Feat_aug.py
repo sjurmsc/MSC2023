@@ -67,7 +67,8 @@ def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), grou
             X_traces = segyio.collect(X_data.trace)[idx_X, X_min_idx:X_max_idx]
             y_traces = segyio.collect(y_data.trace)[idx_y, :y_max_idx]
 
-            # Using JR code to resample the acoustic impedance
+            X_func = interp1d(z_X, X_traces, kind='cubic', axis=1)
+            X_traces = X_func(z_y)
  
             # y_refl, slope = ai_to_reflectivity(y_traces)
             # y_interp = interp1d(z_y[:y_max_idx], y_refl, kind='nearest', axis=1)
