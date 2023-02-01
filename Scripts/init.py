@@ -289,7 +289,7 @@ if __name__ == '__main__':
                 model, History = compiled_TCN(train_data, config, callbacks = [tb_callback])
                 
                 model_loc = './Models/{}/{}'.format(groupname, modelname)
-                # if not os.path.isdir(model_loc): os.mkdir(model_loc)
+                if not os.path.isdir(model_loc): os.mkdir(model_loc)
                 # model.save(model_loc)
 
                 save_config(model_loc, config)
