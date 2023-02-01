@@ -255,7 +255,6 @@ if __name__ == '__main__':
                                                               fraction_data=0.01, 
                                                               test_size=0.8, 
                                                               group_traces=group_traces, 
-                                                              X_normalize='StandardScaler',
                                                               y_normalize='MinMaxScaler',
                                                               truncate_data=80)
         test_X, test_y = test_data
@@ -290,8 +289,8 @@ if __name__ == '__main__':
                 model, History = compiled_TCN(train_data, config, callbacks = [tb_callback])
                 
                 model_loc = './Models/{}/{}'.format(groupname, modelname)
-                if not os.path.isdir(model_loc): os.mkdir(model_loc)
-                model.save(model_loc)
+                # if not os.path.isdir(model_loc): os.mkdir(model_loc)
+                # model.save(model_loc)
 
                 save_config(model_loc)
 
