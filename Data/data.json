@@ -1,4 +1,6 @@
 {
   "00_AI": "../OneDrive - NGI/Documents/NTNU/MSC_DATA/00_AI",
-  "2DUHRS_06_MIG_DEPTH": "../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH"
+  "2DUHRS_06_MIG_DEPTH": "../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH",
+  "TNW_CPT": "../OneDrive - NGI/Documents/NTNU/MSC_DATA/CPT-data_phase1_phase2",
+  "TNW_CPT_COORDS": "../OneDrive - NGI/Documents/NTNU/MSC_DATA/CPT_final.list"
 }
