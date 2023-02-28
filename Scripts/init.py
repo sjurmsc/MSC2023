@@ -179,7 +179,7 @@ class config_iterator:
 
 if __name__ == '__main__':
     use_optuna = False ; n_trials = 1
-    makemodel = True
+    makemodel = False
 
     # CONFIG :: Static configurations that get replaced by variations
     config = dict()
@@ -300,7 +300,5 @@ if __name__ == '__main__':
 
     # Loading the model of selected model name
     else: 
-        mname = 'ABA/0'
-        model = load_model('./Models/{}'.format(mname))
-        error = model.evaluate(test_X, test_y, batch_size = 1, verbose=0)
-        print(error)
+        model = compiled_tcn_enc_lgbm_dec(train_data)
+        model.score(test_X, test_y)
