@@ -4,6 +4,7 @@ Functions to be used for feature augmentation
 import segyio
 import json
 from numpy import array, row_stack, intersect1d, where, amax, amin
+from pandas import read_csv
 from scipy.interpolate import interp1d
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
@@ -19,7 +20,43 @@ def get_data_loc():
     return json.loads(d_filepath)
 
 
-def get_traces(fp, mmap=True, zrange: tuple = (None,100)):
+def get_cpt_data_from_file(fp, zrange: tuple = (None, 100)):
+    """
+    Function to read in CPT data from a file
+    """
+    cols = ['depth', 'cone', 'friction', 'pore 2']
+    data = read_csv(fp, sep=';')[cols]
+    
+    data = array(data).astype(float)
+    z = data[:, 0]
+    data = data[:, 1:]
+
+    z = z[z < zrange[1]]
+    data = data[z < zrange[1]]
+    return data, z
+
+from pandas import read_excel
+def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100)):
+    distances = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines.xlsx'
+    CPT_match = read_excel(distances)
+
+    for i, row in CPT_match.iterrows():
+        cpt_loc = int(row['Location no.'])
+        cpt_file = f'../OneDrive - NGI/Documents/NTNU/MSC_DATA/CPT-data_phase1_phase2/TNW{cpt_loc:03d}-PCPT/TNW{cpt_loc:03d}-PCPT.data'
+        CDP = int(row['CDP'])
+        seis_file = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/{}.sgy'.format(row['2D UHR line'])
+        with segyio.open(seis_file, ignore_geometry=True) as SEISMIC:
+            z = SEISMIC.samples
+            a = array(SEISMIC.attributes(segyio.TraceField.CDP)).astype(int)
+            traces = segyio.collect(SEISMIC.trace)[where(abs(array(SEISMIC.attributes(segyio.TraceField.CDP)).astype(int) - CDP) <= n_neighboring_traces)[0]]
+            traces, z = traces[:, (z>=zrange[0])&(z<zrange[1])], z[(z>=zrange[0])&(z<zrange[1])]
+            return traces, z 
+        
+
+
+
+
+def get_traces(fp, mmap=True, zrange: tuple = (None, 100)):
     """
     This function should conserve some information about the domain (time or depth) of
     the data.
@@ -255,10 +292,6 @@ def update_data_dict():
         writefile.write(json.dumps(data_dict, indent=2))
 
 
-def combine_seismic_traces():
-    pass
-
-
 def find_nth(haystack, needle, n : int):
     n = abs(n); assert n > 0
     max_needle_amount = len(haystack.split(needle)); assert n < max_needle_amount
@@ -379,33 +412,43 @@ def negative_ai_values():
 # Only used for testing the code
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    import numpy as np
-    from random import randint
-    d_dict = load_data_dict()
-    m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
-    z_high = []
-    y_below_zero = []
-    t_b_z = []
-    for file, i in m_files:
+    # import numpy as np
+    # from random import randint
+    # d_dict = load_data_dict()
+    # m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
+    # z_high = []
+    # y_below_zero = []
+    # t_b_z = []
+    # for file, i in m_files:
         # _, z = get_traces(file, zrange=(25, 100))
-        traces, z_ai = get_traces(i, zrange=(25, 100))
+        # traces, z_ai = get_traces(i, zrange=(25, 100))
         # r = randint(0, len(traces))
         # plt.plot(traces[r], z_ai[::-1])
         # flat_t = traces.flatten()
-        t = traces[np.where(np.any((traces<-10000), axis=1)), :]
+        # t = traces[np.where(np.any((traces<-10000), axis=1)), :]
         # print(np.shape(t))
-        t_b_z+=list(t[0])
+        # t_b_z+=list(t[0])
         
         #y_below_zero.append(list(t_b_z))
 
     # plt.hist(y_below_zero)
-    print(np.shape(t_b_z))
-    r = randint(0, len(t_b_z))
-    plt.plot(t_b_z[r], z_ai)
-    print('Minimum on the plot is: {}'.format(np.min(t_b_z[r])))
-    print('Total minimum is {}'.format(np.min(t_b_z)))
-    plt.show()
+    # print(np.shape(t_b_z))
+    # r = randint(0, len(t_b_z))
+    # plt.plot(t_b_z[r], z_ai)
+    # print('Minimum on the plot is: {}'.format(np.min(t_b_z[r])))
+    # print('Total minimum is {}'.format(np.min(t_b_z)))
+    # plt.show()
 
     # plt.boxplot(lines)
     # plt.show()
-    sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'], fraction_data=0.05, group_traces=3, normalize='StandardScaler')
+    # sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'], fraction_data=0.05, group_traces=3, normalize='StandardScaler')
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import Normalize
+    # Display seismic traces at cpt locations
+    traces, z = match_cpt_to_seismic(n_neighboring_traces=500)
+    plt.imshow(traces.T, cmap='Greys', norm=Normalize(-3, 3))
+    plt.yticks(np.arange(0, 1400, 200), z[::200])
+    plt.show()
+    
