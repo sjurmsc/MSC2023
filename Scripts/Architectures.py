@@ -204,6 +204,7 @@ class TCN(Layer):
                  use_batch_norm=False,
                  use_layer_norm=False,
                  use_weight_norm=False,
+                 reduce_rows=False,
                  **kwargs):
         
         self.return_sequences = return_sequences
@@ -719,3 +720,102 @@ class multi_task_GAN(Model):
     
     def call(self, input):
         return [self.ai_generator(input), self.seismic_generator(input)]
+    
+from lightgbm import LGBMRegressor
+
+class TCN_encoder(keras.Model):
+    def __init__(self, **kwargs):
+        super(TCN_encoder, self).__init__(**kwargs)
+        self.tcn = TCN(nb_stacks=5,
+                       nb_filters=16, 
+                       kernel_size=(3, 9), 
+                       dilations=[1, 2, 4, 8, 16, 32, 64], 
+                       padding='same',
+                       reduce_rows=True,
+                       return_sequences=True, 
+                       use_skip_connections=True, 
+                       dropout_rate=0.2,
+                       activation='relu', 
+                       use_batch_norm=True, 
+                       use_layer_norm=False, 
+                       use_weight_norm=False, 
+                       name='tcn_encoder')
+
+    def build(self, input_shape):
+        self.tcn.build(input_shape)
+        self.tcn.summary()
+        super(TCN_encoder, self).build(input_shape)
+
+    def compute_output_shape(self, input_shape):
+        return self.tcn.compute_output_shape(input_shape)
+
+    def call(self, input):
+        return self.tcn(input)
+
+
+class LGBM_decoder(keras.Model):
+    def __init__(self, **kwargs):
+        super(LGBM_decoder, self).__init__(**kwargs)
+        self.lgbm = LGBMRegressor()
+
+    def call(self, input):
+        return self.lgbm.predict(input)
+
+class TCN_enc_LGBM_dec(keras.Model):
+    """TCN encoder + LGBM decoder model.
+    Made to predict CPT from seismic data."""
+
+
+    def __init__(self, tcn_encoder):
+        self.tcn_encoder = tcn_encoder
+        self.lgbm_decoder = LGBMRegressor()
+
+    def compile(self):
+        self.tcn_encoder.compile(optimizer='adam', loss='mse')
+
+    def train_step(self, batch_data):
+        X, y = batch_data
+
+        latent_space = self.tcn_encoder(X)
+        self.lgbm_decoder.fit(latent_space, y)
+
+        with tf.GradientTape() as tape:
+            loss = 1. - self.lgbm_decoder.score(latent_space, y)
+        
+        gradients = tape.gradient(loss, self.tcn_encoder.trainable_variables)
+        self.tcn_encoder.optimizer.apply_gradients(zip(gradients, self.tcn_encoder.trainable_variables))
+
+        return loss
+
+    def predict(self, X):
+        return self.lgbm_decoder.predict(self.tcn_encoder(X))
+
+    def score(self, X, y):
+        return self.lgbm_decoder.score(self.tcn_encoder(X), y)
+
+    def get_params(self, deep=True):
+        return {'tcn_encoder': self.tcn_encoder, 'lgbm_decoder': self.lgbm_decoder}
+
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
+
+    def __repr__(self):
+        return 'TCN_enc_LGBM_dec(tcn_encoder={}, lgbm_decoder={})'.format(self.tcn_encoder, self.lgbm_decoder)
+
+    def __str__(self):
+        return 'TCN_enc_LGBM_dec(tcn_encoder={}, lgbm_decoder={})'.format(self.tcn_encoder, self.lgbm_decoder)
+    
+
+def compiled_tcn_enc_lgbm_dec(trainig_data, **kwargs):
+    X, y = trainig_data
+    tcn_encoder = TCN_encoder()
+    tcn_enc_lgbm_dec = TCN_enc_LGBM_dec(tcn_encoder)
+    tcn_enc_lgbm_dec.compile()
+    tcn_enc_lgbm_dec.fit(X=X, y=y, **kwargs)
+    return tcn_enc_lgbm_dec
+
+
+# import sklearn random forest regressor
+from sklearn.ensemble import RandomForestRegressor
