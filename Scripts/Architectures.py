@@ -761,6 +761,7 @@ class LGBM_decoder(keras.Model):
     def call(self, input):
         return self.lgbm.predict(input)
 
+
 class TCN_enc_LGBM_dec(keras.Model):
     """TCN encoder + LGBM decoder model.
     Made to predict CPT from seismic data."""
@@ -780,7 +781,7 @@ class TCN_enc_LGBM_dec(keras.Model):
         self.lgbm_decoder.fit(latent_space, y)
 
         with tf.GradientTape() as tape:
-            loss = 1. - self.lgbm_decoder.score(latent_space, y)
+            loss = 1. - self.lgbm_decoder.score(latent_space, y) # 1 - because score is R^2
         
         gradients = tape.gradient(loss, self.tcn_encoder.trainable_variables)
         self.tcn_encoder.optimizer.apply_gradients(zip(gradients, self.tcn_encoder.trainable_variables))
@@ -792,14 +793,6 @@ class TCN_enc_LGBM_dec(keras.Model):
 
     def score(self, X, y):
         return self.lgbm_decoder.score(self.tcn_encoder(X), y)
-
-    def get_params(self, deep=True):
-        return {'tcn_encoder': self.tcn_encoder, 'lgbm_decoder': self.lgbm_decoder}
-
-    def set_params(self, **parameters):
-        for parameter, value in parameters.items():
-            setattr(self, parameter, value)
-        return self
 
     def __repr__(self):
         return 'TCN_enc_LGBM_dec(tcn_encoder={}, lgbm_decoder={})'.format(self.tcn_encoder, self.lgbm_decoder)
@@ -819,3 +812,120 @@ def compiled_tcn_enc_lgbm_dec(trainig_data, **kwargs):
 
 # import sklearn random forest regressor
 from sklearn.ensemble import RandomForestRegressor
+
+
+class TCN_enc_RF_dec(keras.Model):
+    """TCN encoder + Random Forest decoder model.
+    Made to predict CPT from seismic data."""
+
+
+    def __init__(self, tcn_encoder):
+        self.tcn_encoder = tcn_encoder
+        self.rf_decoder = RandomForestRegressor()
+
+    def compile(self):
+        self.tcn_encoder.compile(optimizer='adam', loss='mse')
+
+    def train_step(self, batch_data):
+        X, y = batch_data
+
+        latent_space = self.tcn_encoder(X)
+        self.rf_decoder.fit(latent_space, y)
+
+        with tf.GradientTape() as tape:
+            loss = 1. - self.rf_decoder.score(latent_space, y) # 1 - because score is R^2
+        
+        gradients = tape.gradient(loss, self.tcn_encoder.trainable_variables)
+        self.tcn_encoder.optimizer.apply_gradients(zip(gradients, self.tcn_encoder.trainable_variables))
+
+        return loss
+
+    def predict(self, X):
+        return self.rf_decoder.predict(self.tcn_encoder(X))
+
+    def score(self, X, y):
+        return self.rf_decoder.score(self.tcn_encoder(X), y)
+
+    def __repr__(self):
+        return 'TCN_enc_RF_dec(tcn_encoder={}, rf_decoder={})'.format(self.tcn_encoder, self.rf_decoder)
+
+    def __str__(self):
+        return 'TCN_enc_RF_dec(tcn_encoder={}, rf_decoder={})'.format(self.tcn_encoder, self.rf_decoder)
+    
+
+def compiled_tcn_enc_rf_dec(trainig_data, **kwargs):
+    X, y = trainig_data
+    tcn_encoder = TCN_encoder()
+    tcn_enc_rf_dec = TCN_enc_RF_dec(tcn_encoder)
+    tcn_enc_rf_dec.compile()
+    tcn_enc_rf_dec.fit(X=X, y=y, **kwargs)
+    return tcn_enc_rf_dec
+
+
+class ANN_committee(keras.Layer):
+    """ANN committee layer.
+    Made to predict CPT from seismic data."""
+
+
+    def __init__(self, n_members=5, **kwargs):
+        super(ANN_committee, self).__init__(**kwargs)
+        self.anns = [
+            keras.Sequential([
+                keras.layers.Dense(32, activation='relu'),
+                keras.layers.Dense(16, activation='relu'),
+                keras.layers.Dense(1)
+            ]) for _ in range(n_members)
+        ]
+
+    def call(self, input):
+        return [ann(input) for ann in self.anns]
+
+    def call_vote(self, input):
+        mean = tf.reduce_mean([ann(input) for ann in self.anns], axis=0)
+        variance = tf.reduce_mean([tf.square(ann(input) - mean) for ann in self.anns], axis=0)
+        return mean, variance
+
+
+class TCN_enc_ANN_dec(keras.Model):
+    """TCN encoder + ANN decoder model.
+    Made to predict CPT from seismic data."""
+
+
+    def __init__(self, tcn_encoder):
+
+        self.tcn_encoder = tcn_encoder
+        self.ann_decoder = ANN_committee()(self.tcn_encoder.output)
+
+    def compile(self):
+        self.ann_decoder.compile(optimizer='adam', loss='mse')
+
+    def train_step(self, batch_data):
+        X, y = batch_data
+
+        latent_space = self.tcn_encoder(X)
+
+        with tf.GradientTape() as tape:
+            y_pred = self.ann_decoder(latent_space)
+            losses = [self.ann_decoder.loss(y, pred) for pred in y_pred]
+        
+
+        for member, loss in zip(self.ann_decoder, losses):
+            gradients = tape.gradient(loss, member.trainable_variables)
+            self.tcn_encoder.optimizer.apply_gradients(zip(gradients, member.trainable_variables))
+
+        committee_loss = self.ann_decoder.loss(y, self.ann_decoder.call_vote(latent_space)[0])
+        committee_variance = self.ann_decoder.call_vote(latent_space)[1]
+
+        return {'committee_loss': committee_loss, 'committee_variance': committee_variance}
+
+    def predict(self, X):
+        return self.ann_decoder.call_vote(self.tcn_encoder(X))
+
+    def score(self, X, y):
+        return self.ann_decoder.score(self.tcn_encoder(X), y)
+
+    def __repr__(self):
+        return 'TCN_enc_ANN_dec(tcn_encoder={}, ann_decoder={})'.format(self.tcn_encoder, self.ann_decoder)
+
+    def __str__(self):
+        return 'TCN_enc_ANN_dec(tcn_encoder={}, ann_decoder={})'.format(self.tcn_encoder, self.ann_decoder)
