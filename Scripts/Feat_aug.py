@@ -562,6 +562,7 @@ if __name__ == '__main__':
         ax[i].scatter(latent_model.predict(seis[:, :, :2*bs.shape[1]]).reshape(bs.shape[1], 16)[:, i], bs[0][:, i])
         ax[i].set_xlabel('Predicted')
         ax[i].set_ylabel('True')
+        ax[i].invert_yaxis()
         ax[i].set_title('Feature {}'.format(i+1))
     plt.show()
 
