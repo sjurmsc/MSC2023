@@ -9,6 +9,7 @@ from tensorflow import keras
 from keras import backend as K, Model, Input, optimizers, layers
 from keras.layers import Dense, Dropout, Conv1D, Conv2D, Layer, BatchNormalization, LayerNormalization
 from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda, Flatten, LeakyReLU
+from keras.layers import ZeroPadding1D, ZeroPadding2D
 from tensorflow_addons.layers import WeightNormalization
 from numpy import array
 from keras.utils.vis_utils import plot_model
@@ -364,7 +365,7 @@ class CNN(Layer):
                 nb_filters=64,
                 kernel_size=3,
                 nb_stacks=3,
-                padding='same',
+                padding='collapse',
                 activation='relu',
                 convolution_func = Conv2D,
                 kernel_initializer='he_normal',
@@ -377,10 +378,29 @@ class CNN(Layer):
         
         self.nb_filters = nb_filters
         self.kernel_size = kernel_size
+
+        # If collapse padding is used, then the kernel size must be odd, and stacks must be sufficient to collapse the input
         self.nb_stacks = nb_stacks
+
+
+
         self.padding = padding
         self.activation = activation
         self.convolution_func = convolution_func
+        self.pad_func = ZeroPadding2D
+        self.dim = 2
+        self.collapse = (padding=='collapse')
+        if self.collapse:
+            self.padding='valid'
+            if kernel_size%2==0:
+                raise ValueError('Kernel size must be odd for collapse padding.')
+            if nb_stacks < int((kernel_size-1)/2):
+                raise ValueError('Number of stacks must be sufficient to collapse the input.')
+
+
+        # Compute the shape the data must have before being fed to the first layer
+        self.data_shape = None
+
         self.kernel_initializer = kernel_initializer
         self.dropout_rate = dropout_rate
         self.use_dropout = use_dropout
@@ -395,6 +415,14 @@ class CNN(Layer):
         self.layers_outputs = []
         self.build_output_shape = None
 
+
+        if convolution_func.__name__ == 'Conv1D':
+            self.dim = 1
+            self.pad_func = ZeroPadding1D
+            if padding=='collapse':
+                raise ValueError('Collapse padding is not supported for 1D convolutions.')
+
+
         super(CNN, self).__init__(**kwargs)
 
         
@@ -406,6 +434,12 @@ class CNN(Layer):
         self.conv_blocks = []
 
         for k in range(self.nb_stacks):
+
+            if self.collapse:
+                #  the first dimension
+                self.conv_blocks.append(self.pad_func(padding=((0, 0), ((self.kernel_size-1)/2,(self.kernel_size-1)/2)), name='pad_{}'.format(len(self.conv_blocks))))
+                self.build_output_shape = self.conv_blocks[-1].compute_output_shape(self.build_output_shape)
+                self.__setattr__(self.conv_blocks[-1].name, self.conv_blocks[-1])
             for i, f in enumerate([self.nb_filters]):
                 conv_filters = self.nb_filters[i] if isinstance(self.nb_filters, list) else self.nb_filters
                 self.conv_blocks.append(self.convolution_func(filters=conv_filters, 
@@ -723,7 +757,7 @@ class multi_task_GAN(Model):
     
 from lightgbm import LGBMRegressor
 
-class TCN_encoder(keras.Model):
+class TCN_encoder(Model):
     def __init__(self, **kwargs):
         super(TCN_encoder, self).__init__(**kwargs)
         self.tcn = TCN(nb_stacks=5,
@@ -753,7 +787,7 @@ class TCN_encoder(keras.Model):
         return self.tcn(input)
 
 
-class LGBM_decoder(keras.Model):
+class LGBM_decoder(Model):
     def __init__(self, **kwargs):
         super(LGBM_decoder, self).__init__(**kwargs)
         self.lgbm = LGBMRegressor()
@@ -762,7 +796,7 @@ class LGBM_decoder(keras.Model):
         return self.lgbm.predict(input)
 
 
-class TCN_enc_LGBM_dec(keras.Model):
+class TCN_enc_LGBM_dec(Model):
     """TCN encoder + LGBM decoder model.
     Made to predict CPT from seismic data."""
 
@@ -814,7 +848,7 @@ def compiled_tcn_enc_lgbm_dec(trainig_data, **kwargs):
 from sklearn.ensemble import RandomForestRegressor
 
 
-class TCN_enc_RF_dec(keras.Model):
+class TCN_enc_RF_dec(Model):
     """TCN encoder + Random Forest decoder model.
     Made to predict CPT from seismic data."""
 
@@ -862,7 +896,7 @@ def compiled_tcn_enc_rf_dec(trainig_data, **kwargs):
     return tcn_enc_rf_dec
 
 
-class ANN_committee(keras.Layer):
+class ANN_committee(Layer):
     """ANN committee layer.
     Made to predict CPT from seismic data."""
 
@@ -929,3 +963,42 @@ class TCN_enc_ANN_dec(keras.Model):
 
     def __str__(self):
         return 'TCN_enc_ANN_dec(tcn_encoder={}, ann_decoder={})'.format(self.tcn_encoder, self.ann_decoder)
+    
+
+def CNN_collapsing_encoder(latent_features, X, y, GM_len=700):
+    """2D CNN encoder collapsing the dimension first dimension down to 1.
+    Made to predict features at centered trace from seismic data."""
+
+    assert np.isclose(X.shape[2]/(2*GM_len),  1), 'X.shape[1]/2*GM_len != 1'
+    assert y.shape[1] == GM_len, 'y.shape[1] != GM_len'
+
+    width = X.shape[1]
+    assert width % 2 == 1, 'width % 2 != 1'
+
+    cnn_encoder = keras.Sequential([
+        keras.layers.InputLayer(input_shape=(X.shape[1], X.shape[2], 1)),
+        keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))),
+        keras.layers.Conv2D(16, (3, 3), activation='relu'),
+        keras.layers.BatchNormalization(),
+        keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))), # 1, 1 padding because kernel is 3x3
+        keras.layers.Conv2D(32, (3, 3), activation='relu'),
+        keras.layers.MaxPooling2D((1, 2)), # Reduce the depth of seismic to GM_len
+        keras.layers.BatchNormalization()
+    ])
+
+    # Add more layers for shape reduction
+    for _ in range((width-2*(3-1))//2):
+        cnn_encoder.add(keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))))
+        cnn_encoder.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
+        cnn_encoder.add(keras.layers.BatchNormalization())
+
+
+    cnn_encoder.add(keras.layers.Conv1D(latent_features, (1), activation='relu'))
+    # cnn_encoder.add(keras.layers.Reshape((GM_len, latent_features))) # Reshape to get features in the second dimension
+
+    # cnn_encoder.compile(optimizer='adam', loss='mse')
+
+    return cnn_encoder
+
+
+    
