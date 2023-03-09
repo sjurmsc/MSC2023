@@ -38,8 +38,10 @@ def get_cpt_data_from_file(fp, zrange: tuple = (None, 100)):
     z = data[:, 0]
     data = data[:, 1:]
 
-    z = z[z < zrange[1]]
-    data = data[z < zrange[1]]
+    
+    data = data[(z>=zrange[0])&(z < zrange[1])]
+    z = z[(z>=zrange[0])&(z < zrange[1])]
+
     return data, z
 
 from pandas import read_excel
@@ -48,18 +50,60 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100)):
     distances = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines.xlsx'
     CPT_match = read_excel(distances)
 
+
+    cpt_dict = get_cpt_las_files()
+
+    match_dict = {}
+
+
     for i, row in CPT_match.iterrows():
         cpt_loc = int(row['Location no.'])
+        print('Retrieving from TNW{:03d}'.format(cpt_loc))
         cpt_file = f'../OneDrive - NGI/Documents/NTNU/MSC_DATA/CPT-data_phase1_phase2/TNW{cpt_loc:03d}-PCPT/TNW{cpt_loc:03d}-PCPT.data'
         CDP = int(row['CDP'])
         seis_file = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/{}.sgy'.format(row['2D UHR line'])
         with segyio.open(seis_file, ignore_geometry=True) as SEISMIC:
             z = SEISMIC.samples
             a = array(SEISMIC.attributes(segyio.TraceField.CDP)).astype(int)
-            traces = segyio.collect(SEISMIC.trace)[where(abs(array(SEISMIC.attributes(segyio.TraceField.CDP)).astype(int) - CDP) <= n_neighboring_traces)[0]]
-            traces, z = traces[:, (z>=zrange[0])&(z<zrange[1])], z[(z>=zrange[0])&(z<zrange[1])]
-            return traces, z 
+            traces = segyio.collect(SEISMIC.trace)[where(abs(a - CDP) <= n_neighboring_traces)[0]]
+            traces, z_traces = traces[:, (z>=zrange[0])&(z<zrange[1])], z[(z>=zrange[0])&(z<zrange[1])]
+        cpt_name = f'TNW{cpt_loc:03d}'
+        CPT = cpt_dict[cpt_name].values
+        CPT_DATA = CPT[:, 1:]
+        CPT_DEPTH = CPT[:, 0]
+        match_dict[cpt_loc] = {'CDP': CDP, 'CPT_data': CPT_DATA, 'Seismic_data': traces, 'z_traces': z_traces, 'z_cpt': CPT_DEPTH}
+    return match_dict
         
+
+def create_sequence_dataset(n_neighboring_traces=5, zrange: tuple = (30, 100)):
+    """
+    Creates a dataset with sections of seismic image and corresponding CPT data where
+    none of the CPT data is missing.
+    """
+    match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange)
+    X, y = [], []
+    for key, value in match_dict.items():
+        bootstraps = bootstrap_CPT_by_seis_depth(value['CPT_data'], value['z_cpt'], value['z_traces'][::2], n=20)
+
+        for bootstrap in bootstraps:
+            # Split CPT data by nan values
+            nan_idx = ~np.where(all(~np.isnan(bootstrap), axis=1))
+            splits = np.split(bootstrap, nan_idx)
+            
+            if len(nan_idx) > 0:
+                cpt_data = array(np.split(bootstrap, nan_idx))
+                cpt_data = cpt_data[[len(cpt) > 0 for cpt in cpt_data]]
+            else:
+                cpt_data = array([bootstrap])
+            
+            # Split seismic data where cpt has nan values
+            seis_data = value['Seismic_data']
+            seis_data = array(np.split(seis_data, nan_idx))
+
+            # Remove empty arrays
+            seis_data = seis_data[[len(seis) > 0 for seis in seis_data]]
+
+    return array(X), array(y)
 
 
 
@@ -260,8 +304,9 @@ class CPT_TRACE:
 
 
 import numpy as np
+import pandas as pd
 
-def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=False):
+def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=False, to_file=''):
     """ This function creates bins of cpt values at ground model depths, and then samples
         from these bins to create a new downsampled CPT dataset. This is done to
         increase the number of CPT samples at model depths. The function returns
@@ -312,11 +357,50 @@ def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=Fals
         for a in ax:
             a.invert_yaxis()
 
-        # plt.hist(cpt_samples, bins=100)
-        plt.show()
-
+        # plt.hist(cpt_samples, bins=100)'
+        if len(to_file):
+            plt.savefig(to_file)
+        else:
+            plt.show()
+    plt.close()
     return cpt_samples
     
+import lasio
+def get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/combined'):
+    """
+    Returns a list of all las files in a given folder
+    """
+    cpt_dir = list(Path(cpt_folder_loc).glob('*.las'))
+    cpt_keys = [cpt.name[:cpt.name.find('.las')] for cpt in cpt_dir]
+
+    df_dict = {}
+
+    for key, cpt in zip(cpt_keys, cpt_dir):
+        with open(cpt, 'r') as lasfile:
+            las = lasio.read(lasfile)
+            df = las.df().iloc[:, :3]
+            df_dict[key] = df.copy()
+            # bootstrap_CPT_by_seis_depth(df.values, df.index.values, np.arange(0, df.index.values.argmax(), 0.1), n=10, plot=True, to_file=f'./Assignment figures/Bootstrap_figs/{key}.png')
+
+    return df_dict
+
+
+def get_seismic_where_there_is_cpt(cpt, z_cpt, seis, z_seis):
+    """
+    For a given cpt trace, this function gives a pair of seismic image and cpt for a continuous range where all cpt parameters are defined.
+    """
+    # Get the indices of the cpt trace where all parameters are defined
+    idx = np.where(~np.isnan(cpt).any(axis=1))[0]
+    # Get the corresponding cpt depth
+    z_cpt = z_cpt[idx]
+    # Get the corresponding cpt trace
+    cpt = cpt[idx]
+    # Get the corresponding seismic trace
+    seis = seis[idx]
+    # Get the corresponding seismic depth
+    z_seis = z_seis[idx]
+
+    return cpt, z_cpt, seis, z_seis
 
 
 def load_data_dict():
@@ -506,27 +590,13 @@ if __name__ == '__main__':
     import keras
     from lightgbm import LGBMRegressor
     from sklearn.multioutput import MultiOutputRegressor
+    from sklearn.manifold import TSNE
 
-    CPT_fp = r"P:\2019\07\20190798\Calculations\CPT-data_phase1_phase2\TNW001-PCPT\TNW001-PCPT.data"
+    create_sequence_dataset()
 
-    # Get the CPT data
-    CPT_data, z = get_cpt_data_from_file(CPT_fp)
-
-    GM_depth = np.arange(0, z[-1], 0.1)
-
-    bootstraps = bootstrap_CPT_by_seis_depth(CPT_data, z, GM_depth, n=10, plot=False)
-    seis, z = match_cpt_to_seismic(n_neighboring_traces=5)
-
-    seis = seis.reshape((1, seis.shape[0], seis.shape[1]))
-
-    #Remove rows with nan values
-    bs = bootstraps[0]
-    bs = bs[~np.isnan(bs).any(axis=1), :]
     
 
-    bs = bs.T.reshape((1, bs.shape[0], bs.shape[1]))
-
-    latent_model = CNN_collapsing_encoder(16, seis[:, :, :2*bs.shape[1]], bs, GM_len=bs.shape[1])
+    latent_model = CNN_collapsing_encoder(latent_features=16, image_width=11)
 
     n_models = 5
 
@@ -535,8 +605,8 @@ if __name__ == '__main__':
             keras.layers.Conv1D(16, (1), activation="relu", padding='valid'),
             keras.layers.Conv1D(32, (1), activation="relu", padding='valid'),
             keras.layers.Conv1D(64, (1), activation="relu", padding='valid'),
-            keras.layers.Conv1D(3, (1), activation="relu"),
-            keras.layers.Reshape((bs.shape[1], 3))
+            keras.layers.Conv1D(3, (1), activation="relu")
+            # keras.layers.Reshape((bs.shape[1], 3))
         ]
      )(latent_model.output) for _ in range(n_models)]
 
@@ -544,17 +614,22 @@ if __name__ == '__main__':
 
 
     model.compile(loss='mse', optimizer='adam', metrics=['mse'])
-    model.fit(seis[:, :, :2*bs.shape[1]], bs, epochs=1000, batch_size=1, validation_split=0)
+
     model.summary()
 
     LGBM_model = MultiOutputRegressor(LGBMRegressor())
 
 
     # Fitting the LGBM model to the output of the latent model
-    LGBM_model.fit(latent_model.predict(seis[:, :, :2*bs.shape[1]]).reshape(bs.shape[1], 16), bs[0])
 
-    print(LGBM_model.score(latent_model.predict(seis[:, :, :2*bs.shape[1]]).reshape(bs.shape[1], 16), bs[0]))
 
+
+    # Plot TSNE of the latent model
+    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+    tsne_results = tsne.fit_transform(latent_model.predict(seis[:, :, :2*bs.shape[1]]).reshape(bs.shape[1], 16))
+    plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=bs[0][:, 0])
+    plt.colorbar()
+    plt.show()
 
     # Make three scatterplots of prediction results of the LGBM model
     fig, ax = plt.subplots(1, 3, figsize=(15, 5))

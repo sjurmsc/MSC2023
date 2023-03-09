@@ -965,18 +965,14 @@ class TCN_enc_ANN_dec(keras.Model):
         return 'TCN_enc_ANN_dec(tcn_encoder={}, ann_decoder={})'.format(self.tcn_encoder, self.ann_decoder)
     
 
-def CNN_collapsing_encoder(latent_features, X, y, GM_len=700):
+def CNN_collapsing_encoder(latent_features, image_width, GM_dz=0.1):
     """2D CNN encoder collapsing the dimension first dimension down to 1.
     Made to predict features at centered trace from seismic data."""
 
-    assert np.isclose(X.shape[2]/(2*GM_len),  1), 'X.shape[1]/2*GM_len != 1'
-    assert y.shape[1] == GM_len, 'y.shape[1] != GM_len'
-
-    width = X.shape[1]
-    assert width % 2 == 1, 'width % 2 != 1'
+    assert image_width % 2 == 1, 'width % 2 != 1'
 
     cnn_encoder = keras.Sequential([
-        keras.layers.InputLayer(input_shape=(X.shape[1], X.shape[2], 1)),
+        keras.layers.InputLayer(ragged=True),
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))),
         keras.layers.Conv2D(16, (3, 3), activation='relu'),
         keras.layers.BatchNormalization(),
@@ -987,7 +983,7 @@ def CNN_collapsing_encoder(latent_features, X, y, GM_len=700):
     ])
 
     # Add more layers for shape reduction
-    for _ in range((width-2*(3-1))//2):
+    for _ in range((image_width-2*(3-1))//2):
         cnn_encoder.add(keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))))
         cnn_encoder.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
         cnn_encoder.add(keras.layers.BatchNormalization())
@@ -1000,5 +996,28 @@ def CNN_collapsing_encoder(latent_features, X, y, GM_len=700):
 
     return cnn_encoder
 
+
+def CNN_pooling_collapsing_encoder(latent_features, X, y, GM_len=700):
+    """2D Cnn encoder collapsing the first dimension down to 1 by maxpooling."""
+    assert np.isclose(X.shape[2]/(2*GM_len),  1), 'X.shape[1]/2*GM_len != 1'
+
+
+    width = X.shape[1]
+    assert width % 2 == 1, 'width % 2 != 1'
+
+    cnn_encoder = keras.Sequential([
+        keras.layers.InputLayer(ragged=True),
+        keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same'),
+        keras.layers.BatchNormalization(),
+        keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same'),
+        # keras.layers.MaxPooling2D((2, 1)), # Reduce the depth of seismic to GM_len
+        keras.layers.BatchNormalization(),
+        keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
+        keras.layers.MaxPooling2D((2, 2)) # Reduce the depth of seismic to GM_len
+    ])
+
+    cnn_encoder.add(keras.layers.Conv1D(latent_features, (1), activation='relu'))
+
+    return cnn_encoder
 
     

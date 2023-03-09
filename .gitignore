@@ -9,6 +9,7 @@ TEMP/*/*.jpg
 _tb/*
 Data/dupelicates
 start_model_run.bat
+*.png
 !TEMP/AAO/1_combined_pred.jpg
 !TEMP/ABW/0_combined_pred.jpg
 !TEMP/ACC/9_combined_pred.jpg
