@@ -903,21 +903,27 @@ class ANN_committee(Layer):
 
     def __init__(self, n_members=5, **kwargs):
         super(ANN_committee, self).__init__(**kwargs)
-        self.anns = [
-            keras.Sequential([
-                keras.layers.Dense(32, activation='relu'),
-                keras.layers.Dense(16, activation='relu'),
-                keras.layers.Dense(1)
-            ]) for _ in range(n_members)
+
+        self.opc = keras.Sequential(
+        [
+            keras.layers.Conv2D(16, (1, 1), activation="relu", padding='valid'),
+            keras.layers.Conv2D(32, (1, 1), activation="relu", padding='valid'),
+            keras.layers.Conv2D(64, (1, 1), activation="relu", padding='valid'),
+            keras.layers.Conv2D(3, (1, 1), activation="relu")
         ]
+        )
 
-    def call(self, input):
-        return [ann(input) for ann in self.anns]
+    def call(self, inputs, *args, **kwargs):
+        return super().call(inputs, *args, **kwargs)
 
-    def call_vote(self, input):
-        mean = tf.reduce_mean([ann(input) for ann in self.anns], axis=0)
-        variance = tf.reduce_mean([tf.square(ann(input) - mean) for ann in self.anns], axis=0)
-        return mean, variance
+    # def call(self, input):
+    #     return [ann(input) for ann in self.anns]
+    
+
+    # def call_vote(self, input):
+    #     mean = tf.reduce_mean([ann(input) for ann in self.anns], axis=0)
+    #     variance = tf.reduce_mean([tf.square(ann(input) - mean) for ann in self.anns], axis=0)
+    #     return mean, variance
 
 
 class TCN_enc_ANN_dec(keras.Model):
@@ -930,8 +936,8 @@ class TCN_enc_ANN_dec(keras.Model):
         self.tcn_encoder = tcn_encoder
         self.ann_decoder = ANN_committee()(self.tcn_encoder.output)
 
-    def compile(self):
-        self.ann_decoder.compile(optimizer='adam', loss='mse')
+    def compile(self, **kwargs):
+        self.ann_decoder.compile(**kwargs)
 
     def train_step(self, batch_data):
         X, y = batch_data
@@ -971,8 +977,12 @@ def CNN_collapsing_encoder(latent_features, image_width, GM_dz=0.1):
 
     assert image_width % 2 == 1, 'width % 2 != 1'
 
-    cnn_encoder = keras.Sequential([
-        keras.layers.InputLayer(ragged=True),
+    # input = keras.layers.Input(shape=(None, image_width, 1), ragged=True)
+
+    image_shape = (image_width, None, 1)
+
+    cnn_encoder = keras.Sequential([        
+        keras.layers.InputLayer(input_shape=image_shape),
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))),
         keras.layers.Conv2D(16, (3, 3), activation='relu'),
         keras.layers.BatchNormalization(),
@@ -992,7 +1002,7 @@ def CNN_collapsing_encoder(latent_features, image_width, GM_dz=0.1):
     cnn_encoder.add(keras.layers.Conv1D(latent_features, (1), activation='relu'))
     # cnn_encoder.add(keras.layers.Reshape((GM_len, latent_features))) # Reshape to get features in the second dimension
 
-    # cnn_encoder.compile(optimizer='adam', loss='mse')
+
 
     return cnn_encoder
 
@@ -1020,4 +1030,44 @@ def CNN_pooling_collapsing_encoder(latent_features, X, y, GM_len=700):
 
     return cnn_encoder
 
+    
+class Collapse_CNN(Model):
+    """ Initializes a model with reducing dimensionality from a seismic image
+    to a vector of latent features. The latent features are used to predict
+    cpt response.
+    """
+
+    def __init__(self, latent_features, image_width, n_members=5):
+        super(Collapse_CNN, self).__init__()
+        self.cnn_encoder = CNN_collapsing_encoder(latent_features=latent_features, image_width=image_width)
+        self.ann_decoder = keras.models.Sequential([
+             keras.layers.Conv1D(16, 1, activation='relu', padding='same'),
+             keras.layers.Conv1D(3, 1, activation='relu', padding='same')]
+        )(self.cnn_encoder.output)
+
+    def call(self, X):
+        latent_space = self.cnn_encoder(X)
+        return self.ann_decoder(latent_space)
+    
+    def train_step(self, batch_data):
+        X, y = batch_data
+
+
+        with tf.GradientTape() as tape:
+            y_pred = self.cnn_encoder(X)
+            loss = self.loss(y, y_pred)
+        
+
+        for member, l in zip(self.ann_decoder, loss):
+            gradients = tape.gradient(l, member.trainable_variables)
+            self.cnn_encoder.optimizer.apply_gradients(zip(gradients, member.trainable_variables))
+
+        # committee_loss = self.ann_decoder.loss(y, self.ann_decoder.call_vote(latent_space)[0])
+        # committee_variance = self.ann_decoder.call_vote(latent_space)[1]
+
+        # return {'committee_loss': committee_loss, 'committee_variance': committee_variance}
+        return loss
+    
+    def predict(self, X):
+        return self.ann_decoder.call_vote(self.cnn_encoder(X))
     

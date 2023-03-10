@@ -57,9 +57,11 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100)):
 
 
     for i, row in CPT_match.iterrows():
+        # For testing
+        if i > 10: break
+
         cpt_loc = int(row['Location no.'])
         print('Retrieving from TNW{:03d}'.format(cpt_loc))
-        cpt_file = f'../OneDrive - NGI/Documents/NTNU/MSC_DATA/CPT-data_phase1_phase2/TNW{cpt_loc:03d}-PCPT/TNW{cpt_loc:03d}-PCPT.data'
         CDP = int(row['CDP'])
         seis_file = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/{}.sgy'.format(row['2D UHR line'])
         with segyio.open(seis_file, ignore_geometry=True) as SEISMIC:
@@ -68,14 +70,22 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100)):
             traces = segyio.collect(SEISMIC.trace)[where(abs(a - CDP) <= n_neighboring_traces)[0]]
             traces, z_traces = traces[:, (z>=zrange[0])&(z<zrange[1])], z[(z>=zrange[0])&(z<zrange[1])]
         cpt_name = f'TNW{cpt_loc:03d}'
-        CPT = cpt_dict[cpt_name].values
-        CPT_DATA = CPT[:, 1:]
-        CPT_DEPTH = CPT[:, 0]
-        match_dict[cpt_loc] = {'CDP': CDP, 'CPT_data': CPT_DATA, 'Seismic_data': traces, 'z_traces': z_traces, 'z_cpt': CPT_DEPTH}
+        CPT_DATA = cpt_dict[cpt_name].values
+        CPT_DEPTH = cpt_dict[cpt_name].index.values
+
+        # TEMPORARY
+        SEAFLOOR = 35
+
+        match_dict[cpt_loc] = {'CDP': CDP, 
+                               'CPT_data': CPT_DATA, 
+                               'Seismic_data': traces, 
+                               'z_traces': z_traces, 
+                               'z_cpt': CPT_DEPTH,
+                               'seafloor': SEAFLOOR}
     return match_dict
         
 
-def create_sequence_dataset(n_neighboring_traces=5, zrange: tuple = (30, 100)):
+def create_sequence_dataset(n_neighboring_traces=5, zrange: tuple = (30, 100), random_flip=True, shortest_sequence=5, ran=406):
     """
     Creates a dataset with sections of seismic image and corresponding CPT data where
     none of the CPT data is missing.
@@ -83,27 +93,45 @@ def create_sequence_dataset(n_neighboring_traces=5, zrange: tuple = (30, 100)):
     match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange)
     X, y = [], []
     for key, value in match_dict.items():
-        bootstraps = bootstrap_CPT_by_seis_depth(value['CPT_data'], value['z_cpt'], value['z_traces'][::2], n=20)
+        z_GM = np.arange(0, value['z_cpt'].max(), 0.1)
+        cpt_vals = value['CPT_data']
+        bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, value['z_cpt'], z_GM, n=20)
+        sea_floor_depth = value['seafloor']
+        correlated_cpt_z = z_GM + sea_floor_depth
 
         for bootstrap in bootstraps:
             # Split CPT data by nan values
-            nan_idx = ~np.where(all(~np.isnan(bootstrap), axis=1))
-            splits = np.split(bootstrap, nan_idx)
-            
-            if len(nan_idx) > 0:
-                cpt_data = array(np.split(bootstrap, nan_idx))
-                cpt_data = cpt_data[[len(cpt) > 0 for cpt in cpt_data]]
-            else:
-                cpt_data = array([bootstrap])
-            
-            # Split seismic data where cpt has nan values
-            seis_data = value['Seismic_data']
-            seis_data = array(np.split(seis_data, nan_idx))
+            row_w_nan = lambda x: np.any(np.isnan(x))
+            nan_idx = np.apply_along_axis(row_w_nan, axis=1, arr=bootstrap)
+            split_indices = np.unique([(i+1)*b for i, b in enumerate(nan_idx)])[1:]
+            splits = np.split(bootstrap, split_indices)
+            splits_depth = np.split(correlated_cpt_z, split_indices)
 
-            # Remove empty arrays
-            seis_data = seis_data[[len(seis) > 0 for seis in seis_data]]
+            for section, z in zip(splits, splits_depth):
 
-    return array(X), array(y)
+                if (section.shape[0]-1) > shortest_sequence:
+                    in_seis = np.where((value['z_traces'] >= z.min()) & (value['z_traces'] < z.max()))
+                    seis_seq = value['Seismic_data'][:, in_seis][:, 0, :]
+                    cpt_seq = section[:-1, :]
+                    assert seis_seq.shape[1] == 2*cpt_seq.shape[0], 'Seismic sequences must represent the same interval as the CPT'
+                    X.append(seis_seq) # .reshape((seis_seq.shape[0], seis_seq.shape[1], 1)))
+                    y.append(cpt_seq) # .reshape((1, cpt_seq.shape[0], cpt_seq.shape[1])))
+            
+
+    # Randomly flip the X data about the 1 axis
+    if random_flip:
+        for i in range(len(X)):
+            if np.random.randint(2):
+                X[i] = np.flip(X[i], 0)
+    
+    a = []
+    b = []
+    for x, t in zip(X, y):
+        if x.shape[1] == ran:
+            a.append(x)
+            b.append(t)
+
+    return np.array(a), np.array(b)
 
 
 
@@ -363,7 +391,7 @@ def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=Fals
         else:
             plt.show()
     plt.close()
-    return cpt_samples
+    return cpt_samples, GM_depth
     
 import lasio
 def get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/combined'):
@@ -586,36 +614,55 @@ if __name__ == '__main__':
     # plt.yticks(np.arange(0, 1400, 200), z[::200])
     # plt.show()
 
-    from Architectures import CNN_collapsing_encoder
+    from Architectures import CNN_collapsing_encoder, Collapse_CNN
     import keras
     from lightgbm import LGBMRegressor
     from sklearn.multioutput import MultiOutputRegressor
     from sklearn.manifold import TSNE
 
-    create_sequence_dataset()
+    X, y = create_sequence_dataset()
 
+    A, b = create_sequence_dataset(ran=422)
     
 
     latent_model = CNN_collapsing_encoder(latent_features=16, image_width=11)
 
-    n_models = 5
+    # n_models = 1
 
-    models = [keras.Sequential(
-        [
-            keras.layers.Conv1D(16, (1), activation="relu", padding='valid'),
-            keras.layers.Conv1D(32, (1), activation="relu", padding='valid'),
-            keras.layers.Conv1D(64, (1), activation="relu", padding='valid'),
-            keras.layers.Conv1D(3, (1), activation="relu")
-            # keras.layers.Reshape((bs.shape[1], 3))
-        ]
-     )(latent_model.output) for _ in range(n_models)]
+    # print(latent_model.output)
 
-    model = keras.Model(inputs=latent_model.input, outputs=models)
+    # models = [keras.Sequential(
+    #     [
+    #         keras.layers.Conv2D(16, (1, 1), activation="relu", padding='valid'),
+    #         keras.layers.Conv2D(32, (1, 1), activation="relu", padding='valid'),
+    #         keras.layers.Conv2D(64, (1, 1), activation="relu", padding='valid'),
+    #         keras.layers.Conv2D(3, (1, 1), activation="relu")
+    #         # keras.layers.Reshape((bs.shape[1], 3))
+    #     ]
+    #  )(latent_model.output) for _ in range(n_models)]
 
+    # model = keras.Model(inputs=latent_model.input, outputs=models)
+
+
+    # model.compile(loss='mse', optimizer='adam', metrics=['mse'])
+    # model.summary()
+
+    # print(latent_model.predict(X).shape)
+
+    # model = Collapse_CNN(latent_features=16, image_width=11, n_members=1)
+
+    ann_decoder = keras.models.Sequential([
+             keras.layers.Conv1D(16, 1, activation='relu', padding='same'),
+             keras.layers.Conv1D(3, 1, activation='relu', padding='same')]
+        )(latent_model.output)
+    
+    model = keras.Model(inputs=latent_model.input, outputs=ann_decoder)
 
     model.compile(loss='mse', optimizer='adam', metrics=['mse'])
 
-    model.summary()
+
+    model.fit(X, y, epochs=400, batch_size=10, verbose=1)
+    
 
     LGBM_model = MultiOutputRegressor(LGBMRegressor())
 
@@ -626,18 +673,24 @@ if __name__ == '__main__':
 
     # Plot TSNE of the latent model
     tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
-    tsne_results = tsne.fit_transform(latent_model.predict(seis[:, :, :2*bs.shape[1]]).reshape(bs.shape[1], 16))
-    plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=bs[0][:, 0])
-    plt.colorbar()
+    tsne_results = tsne.fit_transform(latent_model.predict(A[0].reshape(1, *A[0].shape)).reshape(b[0].shape[0], 16))
+
+    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+    for i in range(3):
+        ax[i].scatter(tsne_results[:, 0], tsne_results[:, 1], c=b[0][:, i])
+        ax[i].set_title('Feature {}'.format(i+1))
+
+
+
     plt.show()
 
     # Make three scatterplots of prediction results of the LGBM model
-    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    for i in range(3):
-        ax[i].scatter(latent_model.predict(seis[:, :, :2*bs.shape[1]]).reshape(bs.shape[1], 16)[:, i], bs[0][:, i])
-        ax[i].set_xlabel('Predicted')
-        ax[i].set_ylabel('True')
-        ax[i].invert_yaxis()
-        ax[i].set_title('Feature {}'.format(i+1))
-    plt.show()
+    # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+    # for i in range(3):
+    #     ax[i].scatter(latent_model.predict(seis[:, :, :2*bs.shape[1]]).reshape(bs.shape[1], 16)[:, i], bs[0][:, i])
+    #     ax[i].set_xlabel('Predicted')
+    #     ax[i].set_ylabel('True')
+    #     ax[i].invert_yaxis()
+    #     ax[i].set_title('Feature {}'.format(i+1))
+    # plt.show()
 
