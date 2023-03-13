@@ -124,14 +124,9 @@ def create_sequence_dataset(n_neighboring_traces=5, zrange: tuple = (30, 100), r
             if np.random.randint(2):
                 X[i] = np.flip(X[i], 0)
     
-    a = []
-    b = []
-    for x, t in zip(X, y):
-        if x.shape[1] == ran:
-            a.append(x)
-            b.append(t)
+    
 
-    return np.array(a), np.array(b)
+    return X, y
 
 
 
