@@ -1,0 +1,258 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Mar 30 10:51:40 2021
+
+PySynCPT
+Linear regression with scikit
+Kriging of slope and intercept
+
+@author: GuS
+"""
+
+#%% Import libraries
+import numpy as np
+import pandas as pd
+import pickle
+import matplotlib.pyplot as plt
+
+from scipy.optimize import lsq_linear, curve_fit
+from sklearn import linear_model
+from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_validate
+from sklearn.base import BaseEstimator 
+from sklearn.base import RegressorMixin
+
+import GM_Toolbox as GMT 
+
+#%% Define functions
+def save_obj(path_obj, obj):
+    with open(path_obj, 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+        
+
+def load_obj(path_obj):
+    with open(path_obj, 'rb') as f:
+        return pickle.load(f)
+        
+def rtk_fit(df_data, feature): 
+    gam=19.5
+    a=0.55
+    z=df_data['z_bsf'].values
+    qc=df_data['qc'].values
+    fs=df_data['fs'].values
+    u2=df_data['u2'].values
+    u2[np.isnan(u2)] = z[np.isnan(u2)]*10
+    fs[np.isnan(fs)] = qc[np.isnan(fs)]/100
+    qt=(qc*1000+u2*(1-a))/1000     
+    (Qt,Fr,Bq)=GMT.CPT_norm(z,qt*1000,fs*1000,u2*1000)
+    (sig_vo,sig_vo_eff)=GMT.calc_vertical_stress(z,gam)
+    qnet=(qt*1000-sig_vo)/1000
+    if feature == 'qc':
+        y_pred=(np.nanmedian(qnet*1000)+sig_vo)/1000
+    elif feature == 'fs':
+        y_pred=(np.nanmedian(fs*1000)+y*0)/1000
+    elif feature == 'u2':
+        y_pred=(np.nanmedian(u2*1000-z*10)+z*10)/1000
+    return y_pred.reshape(-1,1)
+
+
+class RTK_Regressor(BaseEstimator, RegressorMixin):
+    def fit(self, X, y):
+        # The prediction of simple model 
+        if Ulvl!='0': # fit also the intercept
+            lin_Hub = linear_model.HuberRegressor(epsilon=1.35)
+        else:  # if the unit is 0, then itnercept is set to 0.
+            lin_Hub = linear_model.HuberRegressor(epsilon=1.35,fit_intercept=False)   
+            
+        # Filtering to avoid to big influence of sand lines
+        X0,y0=data_preparation(X,y,0,detrend=0,bounds=[-1, 1])
+        model=lin_Hub.fit(X0,y0)
+        y_pred=model.predict(X)
+        
+        X1,y1,_=data_preparation(X,y,y_pred,detrend='detrend', bounds=[-1,1])
+#        self.params_ = np.polyfit(z0, y0,1)[:,0]
+        self.model  = lin_Hub.fit(X1,y1)
+        self.coef_   = lin_Hub.coef_
+        self.intercept_   = lin_Hub.intercept_
+        # self.coef_   = model.coef_
+        # self.intercept_   = model.intercept_
+        return self
+    
+    def predict(self, X):
+        return self.model.predict(X)
+    
+    
+def linear_fit(x,slope,inter):
+    return slope*x + inter
+
+#%% Load database
+path_database = '../../09-Results/Stage-01/Database.csv'
+df = pd.read_csv(path_database)
+# Load Global linear regrssion results
+path_dict = '../../09-Results/Stage-01/GlobalLinearFit-Kfold-Results.pkl'
+
+df_GL = load_obj(path_dict)
+
+# Restrict z
+z_min, z_max = -1, 80
+# z_min, z_max = df['z_bsf'].min(), df['z_bsf'].max()
+df = df[(df['z_bsf']>=z_min) & (df['z_bsf']<=z_max)]
+
+
+
+#%% Linear fit per unit per CPT
+# List of locations and units
+loclist = df['ID'].unique()
+
+# Loop over features
+df_store = pd.DataFrame([])
+
+for feature in ['qc', 'fs', 'u2']:
+# for feature in ['qc', 'fs', 'u2'][0:1]:
+    print('Data: ', feature)
+    for loc in loclist:
+    # for loc in loclist[0:1]:
+        print('\tLoc: ', int(loc))
+        df_loc = df.loc[df['ID']==loc,:]
+            
+        
+        for unit in df_loc['unit_geo'].dropna().unique():
+        # for unit in df_loc['unit_geo'].dropna().unique()[4:5]:
+            # df_data = df_loc.loc[df_loc['unit']==unit,['z_bsf', 'x', 'y', feature]].dropna()       
+            df_data = df_loc.loc[df_loc['unit_geo']==unit, ['ID','z_bsf', 'x','y', 'qc', 'fs', 'u2']].dropna(subset=[feature])
+            
+            Xtot=df.loc[df['unit_geo']==unit]['z_bsf'].values
+            # if not df_data.empty:
+            if len(df_data)>10:
+                print('\t\tUnit: ', unit)
+                df_tmp = pd.DataFrame(columns=['feature', 'ID', 'x', 'y', 'unit_geo', 'lreg', 'slope', 'intercept', 'r2', 'mae', 'r2_std', 'mae_std'])
+                X = df_data['z_bsf'].values#.reshape(-1,1)
+                y = df_data[feature].values#.reshape(-1,1)
+                
+
+                df_loc = df.loc[df['ID']==loc,:]
+                GL_slope=df_GL.loc[ (df_GL.feature==feature) & (df_GL.unit_geo==unit)]['slope'].to_numpy()[0]
+                GL_intercept=df_GL.loc[ (df_GL.feature==feature) & (df_GL.unit_geo==unit)]['intercept'].to_numpy()[0]
+                GL_std=df_GL.loc[ (df_GL.feature==feature) & (df_GL.unit_geo==unit)]['std'].to_numpy()[0]
+                
+                # Xmin=X.min()    ;  Xmax=X.max()
+                Xmin=Xtot.min() ;  Xmax=Xtot.max()
+                
+                ymin=linear_fit(Xmin,GL_slope, GL_intercept)
+                ymax=linear_fit(Xmax,GL_slope, GL_intercept)
+                
+            
+                
+                sl=[(ymax-ymin-2*GL_std)/(Xmax-Xmin), (ymax-ymin+2*GL_std)/(Xmax-Xmin)]
+                interc=[ymin+GL_std-sl[0]*Xmin, ymin-GL_std-sl[1]*Xmin]
+                
+                bounds=((np.min(sl),np.min(interc)),(np.max(sl),np.max(interc)))
+
+
+                # linear regression all the data
+                # params, covariance = curve_fit(f = linear_fit, xdata = X, ydata = y, bounds=bounds)
+                # slope=params[0]
+                # intercept=params[1]
+                # y_pred = linear_fit(X,slope,intercept)
+                
+                # linear regression without outliers
+                # Data prep if outliers - using the IQR interquartile range
+                q25,q75=np.percentile(y,[25,75])
+                intqrt=q75-q25
+                y0=y[(y>(q25-1.5*intqrt)) & (y<(q75+1.5*intqrt))]
+                X0=X[(y>(q25-1.5*intqrt)) & (y<(q75+1.5*intqrt))]
+                
+                params, covariance = curve_fit(f = linear_fit, xdata = X0, ydata = y0, bounds=bounds)
+                slope=params[0]
+                intercept=params[1]
+                y_pred = linear_fit(X,slope,intercept)
+                
+                if feature=='qc':
+                    if slope<0:
+                        slope=0.0001
+                        intercept=np.mean(np.unique(y_pred))                        
+                        y_pred = linear_fit(X,slope,intercept)
+                
+                lin_reg = linear_model.LinearRegression()
+                lin_reg.fit(X.reshape(-1,1), y_pred.reshape(-1,1))
+                
+                #%%
+                params1, covariance = curve_fit(f = linear_fit, xdata = X, ydata = y)
+                slope1=params1[0]
+                intercept1=params1[1]
+                y_pred1 = linear_fit(X,slope1,intercept1)
+                
+                
+                # plt.figure(figsize=(8,4))
+                # plt.plot(df.loc[df['unit_geo']==unit,'z_bsf'],df.loc[df['unit_geo']==unit,'qc'],'.', color=[0.55,0.75,1])
+                # plt.plot(X,y,'+')
+                
+                
+                # # plt.plot([Xmin, Xmax],[ymin,ymax],color='C1',linewidth=3)
+                # # plt.plot([Xmin, Xmax],[ymin+GL_std,ymax+GL_std],color='C1',alpha=0.4,linewidth=3)
+                # # plt.plot([Xmin, Xmax],[ymin-GL_std,ymax-GL_std],color='C1',alpha=0.4,linewidth=3)
+                
+                # plt.plot(X,y_pred,color='C2',linewidth=3)
+                # plt.plot(X,y_pred1,color='C3',linewidth=3)
+                
+                # c=0.5
+                # # plt.plot([0,Xmin,Xmax],[ymin-GL_std-sl[1]*Xmin, ymin-GL_std, ymax+GL_std],\
+                # #          '.-',mew=3,ms=8,color=[c,c,c])
+                # # plt.plot([0,Xmin,Xmax],[ymin+GL_std-sl[0]*Xmin, ymin+GL_std, ymax-GL_std],\
+                # #          '.-',mew=3,ms=8,color=[c,c,c])
+                
+                    
+                # plt.plot([0,0],[-5,40],color=[0.3,0.3,0.3])
+                # plt.xlim(-1,14)
+                # plt.ylim(-2,50)
+                # plt.xlabel('Depth [m]')
+                # plt.ylabel('qc [Mpa]')
+                
+                
+                #%%
+                
+                # Store results to dataframes
+                df_tmp.loc[0, 'feature'] = feature
+                df_tmp.loc[0, 'ID'] = loc
+                df_tmp.loc[0, 'unit_geo'] = unit
+                df_tmp.loc[0, 'lreg'] = lin_reg
+                df_tmp.loc[0, 'slope'] = slope
+                df_tmp.loc[0, 'intercept'] = intercept
+                df_tmp.loc[0, 'x'] = df_data['x'].mean()
+                df_tmp.loc[0, 'y'] = df_data['y'].mean()
+                
+                # Evaluation of linear regression score with KFold cross validation
+                # n_splits = np.min([5, X.shape[0]])
+                # if n_splits > 1:
+                #     cv = KFold(n_splits=n_splits)
+                #     score_kfold = cross_validate(lin_reg, X, y, scoring=['r2', 'neg_mean_absolute_error'], 
+                #                            cv = cv, n_jobs=-1, verbose=0)
+                    
+                #     df_tmp.loc[0, 'n_splits'] = n_splits
+                #     df_tmp.loc[0, 'r2'] = np.mean(score_kfold['test_r2'])
+                #     df_tmp.loc[0, 'mae'] = -np.mean(score_kfold['test_neg_mean_absolute_error'])
+                #     df_tmp.loc[0, 'r2_std'] = np.std(score_kfold['test_r2'])
+                #     df_tmp.loc[0, 'mae_std'] = np.std(score_kfold['test_neg_mean_absolute_error'])
+
+                df_store = df_store.append(df_tmp,ignore_index=True)
+
+#%% Save results to pickle
+path_dict = '../../09-Results/Stage-01/LocalLinearFit-Kfold-results_bounds.pkl'
+save_obj(path_dict, df_store)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
