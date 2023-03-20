@@ -10,6 +10,9 @@ _tb/*
 Data/dupelicates
 start_model_run.bat
 *.png
+*.svg
+/QGIS
+.vscode/
 !TEMP/AAO/1_combined_pred.jpg
 !TEMP/ABW/0_combined_pred.jpg
 !TEMP/ACC/9_combined_pred.jpg
