@@ -50,7 +50,7 @@ def get_cpt_data_from_file(fp, zrange: tuple = (None, 100)):
 from pandas import read_excel
 
 def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_file=''):
-    distances = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx'
+    distances = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx'
     CPT_match = read_excel(distances)
 
 
