@@ -54,7 +54,7 @@ if __name__ == '__main__':
     methods = ['Ensemble_CNN'] #, 'RF', 'LGBM']
     cv = LeaveOneGroupOut()
 
-    X, y, groups = create_sequence_dataset(groupby='cpt_loc')
+    X, y, groups = create_sequence_dataset(n_bootstraps = 20, groupby='cpt_loc')
 
     # Split data into training and test set
     X_train, X_test, y_train, y_test, groups_train, groups_test = train_test_split(X, y, groups, test_size=0.2, random_state=1, stratify=groups)
