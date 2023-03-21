@@ -255,7 +255,6 @@ def create_sgy_of_latent_predictions(model, seismic_dir, image_width = 11):
 
 
 from NGI.GM_BuildDatabase import *
-from openpyxl import load_workbook
 def get_seis_at_cpt_locations(df_NAV, dirpath_sgy, df_CPT_loc=pd.DataFrame([]), n_tr = 1):
     # def get_seis_at_CPT(df_NAV, dirpath_sgy, df_CPT_loc=pd.DataFrame([]), n_tr = 1):
     ''' 
