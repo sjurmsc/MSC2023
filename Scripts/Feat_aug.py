@@ -64,7 +64,7 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
         # Get CPT name
         if cpt_loc < 86:
             cpt_name = f'TNW{cpt_loc:03d}'
-        elif (cpt_loc>85) and (cpt_loc<89):
+        elif (cpt_loc>85) and (cpt_loc<=89):
             cpt_name = 'TNWTT{}'.format(int(cpt_loc % 85))
 
         sys.stdout.write('\rRetrieving from {}'.format(cpt_name))
@@ -258,7 +258,8 @@ def create_sgy_of_latent_predictions(model, seismic_dir, image_width = 11):
     
 
 
-from NGI.GM_BuildDatabase import *
+# from NGI.GM_BuildDatabase import *
+import scipy.spatial as spatial
 def get_seis_at_cpt_locations(df_NAV, dirpath_sgy, df_CPT_loc=pd.DataFrame([]), n_tr = 1):
     # def get_seis_at_CPT(df_NAV, dirpath_sgy, df_CPT_loc=pd.DataFrame([]), n_tr = 1):
     ''' 
@@ -753,7 +754,7 @@ def negative_ai_values():
 import pandas as pd
 def get_csv_of_cdp_location_coordinates():
     seismic_folder = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/'
-    seismic_files = [f for f in os.listdir(seismic_folder) if f.endswith('.sgy')]
+    seismic_files = [f for f in listdir(seismic_folder) if f.endswith('.sgy')]
     seismic_files.sort()
     line = []
     cdp = []
