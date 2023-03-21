@@ -5,6 +5,7 @@ import segyio
 import json
 from numpy import array, row_stack, intersect1d, where, amax, amin, stack
 from pandas import read_csv
+import pandas as pd
 from scipy.interpolate import interp1d
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
