@@ -19,6 +19,7 @@ from sklearn.ensemble import RandomForestRegressor
 from lightgbm import LGBMRegressor
 from sklearn.manifold import TSNE
 from sklearn.multioutput import MultiOutputRegressor
+from keras.losses import mean_squared_error
 
 # My scripts
 from Log import *
@@ -72,7 +73,7 @@ if __name__ == '__main__':
 
         if m == 'Ensemble_CNN':
             model = Collapse_CNN(latent_features=16, image_width=11)
-            model.compile(optimizer='adam', loss='mse')
+            model.compile(optimizer='adam', loss=mean_squared_error, metrics=['mse'])
 
             for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
                 X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
