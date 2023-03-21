@@ -80,7 +80,7 @@ if __name__ == '__main__':
                 y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
                 groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
 
-                model.fit(X_train_cv, y_train_cv, **NN_param_dict)
+                model.fit(X_train_cv, y_train_cv, epochs=NN_param_dict['epochs'], batch_size=NN_param_dict['batch_size'], validation_data=NN_param_dict['validation_data'], verbose=0)
 
                 if i == 0:
                     preds = model.predict(X_test_cv)
