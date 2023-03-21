@@ -58,7 +58,7 @@ if __name__ == '__main__':
     X, y, groups = create_sequence_dataset(n_bootstraps = 20, groupby='cpt_loc')
 
     # Split data into training and test set
-    X_train, X_test, y_train, y_test, groups_train, groups_test = train_test_split(X, y, groups, test_size=0.2, random_state=1, stratify=groups)
+    X_train, X_test, y_train, y_test, groups_train, groups_test = train_test_split(X, y, groups, test_size=0.1, random_state=1, stratify=groups)
 
     NN_param_dict = {
         'epochs': 200,
@@ -83,9 +83,9 @@ if __name__ == '__main__':
                 model.fit(X_train_cv, y_train_cv, **NN_param_dict)
 
                 if i == 0:
-                    preds = model.predict(X_train)
+                    preds = model.predict(X_test_cv)
                 else:
-                    preds = np.vstack((preds, model.predict(X_train)))
+                    preds = np.vstack((preds, model.predict(X_test_cv)))
 
             
             # preds = cross_val_predict(model, X_train, y_train, cv=cv, groups=groups_train, fit_params = NN_param_dict, n_jobs=-1)

@@ -919,6 +919,14 @@ class Collapse_CNN(Model):
         latent_space = self.cnn_encoder(X)
         return self.ann_decoder(latent_space)
     
+    def compile(self, **kwargs):
+        super(Collapse_CNN, self).compile(**kwargs)
+        self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+        self.loss = tf.keras.losses.MeanSquaredError()
+
+    def fit(self, X, y, **kwargs):
+        return super(Collapse_CNN, self).fit(X, y, **kwargs)
+
     def train_step(self, batch_data):
         X, y = batch_data
 
