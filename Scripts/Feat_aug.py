@@ -85,6 +85,7 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
         z_cpt = CPT_DEPTH + SEAFLOOR
 
         match_dict[row['Borehole']] = {'CDP'            : CDP, 
+                                       'cpt_loc'        : cpt_loc,
                                        'CPT_data'       : CPT_DATA, 
                                        'Seismic_data'   : traces, 
                                        'z_traces'       : z_traces, 
@@ -108,7 +109,8 @@ def create_sequence_dataset(n_neighboring_traces=5,
                             random_flip=True, 
                             n_bootstraps=20,
                             sequence_length=5, 
-                            stride=1):
+                            stride=1,
+                            groupby='cpt_loc'):
     """
     Creates a dataset with sections of seismic image and corresponding CPT data where
     none of the CPT data is missing.
@@ -122,6 +124,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
             match_dict = pickle.load(file)
     
     X, y = [], []
+    groups = []
 
     print('Bootstrapping CPT data...')
     for key, value in match_dict.items():
@@ -158,14 +161,15 @@ def create_sequence_dataset(n_neighboring_traces=5,
                         X.append(X_val)
                         y_val = cpt_seq[i:i+sequence_length, :]
                         y.append(y_val)
+                        if groupby == 'cpt_loc':
+                            groups.append(int(value['cpt_loc']))
+                        elif groupby == 'borehole':
+                            groups.append(int(key))
 
-                # else:
-
-                #     X.append(seis_seq) # .reshape((seis_seq.shape[0], seis_seq.shape[1], 1)))
-                #     y.append(cpt_seq) # .reshape((1, cpt_seq.shape[0], cpt_seq.shape[1])))
     
     X = np.array(X)
-    y = np.array(y)   
+    y = np.array(y)
+    groups = np.array(groups)   
 
     # Randomly flip the X data about the 1 axis
     if random_flip:
@@ -174,7 +178,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
                 X[i] = np.flip(X[i], 0)
 
 
-    return X, y
+    return X, y, groups
 
 
 def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_width = 11):
@@ -895,7 +899,7 @@ if __name__ == '__main__':
 
     image_width = 11
     n_neighboring_traces = (image_width-1)//2
-    # X, y = create_sequence_dataset(n_bootstraps=1, sequence_length=10)
+    # X, y, groups = create_sequence_dataset(n_bootstraps=1, sequence_length=10)
     # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     # X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=42)
 

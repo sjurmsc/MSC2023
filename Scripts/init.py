@@ -14,7 +14,7 @@ from keras.utils.vis_utils import plot_model
 
 from pandas import read_csv
 import numpy as np
-from sklearn.model_selection import LeaveOneGroupOut, cross_validate, cross_val_predict
+from sklearn.model_selection import LeaveOneGroupOut, cross_validate, cross_val_predict, train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from lightgbm import LGBMRegressor
 from sklearn.manifold import TSNE
@@ -42,11 +42,7 @@ LGBM_param_dict = {
     'n_estimators': 100
     }
 
-NN_param_dict = {
-    'epochs': 200,
-    'batch_size': 20
 
-    }
 
 if __name__ == '__main__':
 
@@ -55,11 +51,20 @@ if __name__ == '__main__':
 
 
     # Creating the model
-    methods = ['Ensemble_CNN', 'RF', 'LGBM']
-    groups = cpt_exhausive_dataset['ID'].values.flatten()
+    methods = ['Ensemble_CNN'] #, 'RF', 'LGBM']
     cv = LeaveOneGroupOut()
 
-    X, y = create_sequence_dataset()
+    X, y, groups = create_sequence_dataset(groupby='cpt_loc')
+
+    # Split data into training and test set
+    X_train, X_test, y_train, y_test, groups_train, groups_test = train_test_split(X, y, groups, test_size=0.2, random_state=1, stratify=groups)
+
+    NN_param_dict = {
+        'epochs': 200,
+        'batch_size': 20,
+        'validation_data': (X_test, y_test)
+
+        }
 
     for m in methods:
 
@@ -68,7 +73,7 @@ if __name__ == '__main__':
         if m == 'Ensemble_CNN':
             model = Collapse_CNN(latent_features=16, image_width=11)
             model.compile(optimizer='adam', loss='mse')
-            preds = cross_val_predict(model, X, y, cv=cv, groups=groups, fit_params = NN_param_dict, n_jobs=-1)
+            preds = cross_val_predict(model, X_train, y_train, cv=cv, groups=groups_train, fit_params = NN_param_dict, n_jobs=-1)
 
             for dec in ['RF', 'LGBM']:
                 encoder = model.cnn_encoder
@@ -79,7 +84,7 @@ if __name__ == '__main__':
                     decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
                     lgbm_preds = cross_val_predict(decoder, encoder(X), y, cv=cv, groups=groups, n_jobs=-1)
 
-            for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
+            for label, pred in zip(['Ensemble_CNN'], [preds]): # zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
                 stds = []
                 for k in range(pred.shape[-1]):
                     _, _, _, _, std, _ = evaluate_modeldist_norm(y[:, k], pred[:, k])
