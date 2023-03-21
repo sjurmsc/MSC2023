@@ -913,7 +913,7 @@ class Collapse_CNN(Model):
              keras.layers.Conv1D(16, 1, activation='relu', padding='same'),
              keras.layers.Conv1D(32, 1, activation='relu', padding='same'),
              keras.layers.Conv1D(3, 1, activation='relu', padding='same')]
-        )(self.cnn_encoder.output)
+        )
 
     def call(self, X):
         latent_space = self.cnn_encoder(X)
@@ -922,9 +922,9 @@ class Collapse_CNN(Model):
     def train_step(self, batch_data):
         X, y = batch_data
 
-
+        latent_space = self.cnn_encoder(X)
         with tf.GradientTape() as tape:
-            y_pred = self.call(X)
+            y_pred = self.ann_decoder(latent_space)
             loss = self.loss(y, y_pred)
         
 

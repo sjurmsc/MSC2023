@@ -109,7 +109,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
                             zrange: tuple = (30, 100), 
                             random_flip=True, 
                             n_bootstraps=20,
-                            sequence_length=5, 
+                            sequence_length=10, 
                             stride=1,
                             groupby='cpt_loc'):
     """
