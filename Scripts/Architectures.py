@@ -927,15 +927,9 @@ class Collapse_CNN(Model):
             y_pred = self.ann_decoder(latent_space)
             loss = [self.loss(y, pred) for pred in y_pred]
         
+        gradients = tape.gradient(loss, self.ann_decoder.trainable_variables)
+        self.cnn_encoder.optimizer.apply_gradients(zip(gradients, self.ann_decoder.trainable_variables))
 
-        for member, l in zip(self.ann_decoder, loss):
-            gradients = tape.gradient(l, member.trainable_variables)
-            self.cnn_encoder.optimizer.apply_gradients(zip(gradients, member.trainable_variables))
-
-        # committee_loss = self.ann_decoder.loss(y, self.ann_decoder.call_vote(latent_space)[0])
-        # committee_variance = self.ann_decoder.call_vote(latent_space)[1]
-
-        # return {'committee_loss': committee_loss, 'committee_variance': committee_variance}
         return loss
     
     def predict(self, X):
