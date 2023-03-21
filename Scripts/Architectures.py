@@ -925,7 +925,7 @@ class Collapse_CNN(Model):
         latent_space = self.cnn_encoder(X)
         with tf.GradientTape() as tape:
             y_pred = self.ann_decoder(latent_space)
-            loss = self.loss(y, y_pred)
+            loss = [self.loss(y, pred) for pred in y_pred]
         
 
         for member, l in zip(self.ann_decoder, loss):
