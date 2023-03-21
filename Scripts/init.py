@@ -104,7 +104,7 @@ if __name__ == '__main__':
                 for k in range(pred.shape[-1]):
                     _, _, _, _, std, _ = evaluate_modeldist_norm(y[:, k], pred[:, k])
                     stds.append(std)
-            Print(f'{label} stds: {stds}')
+            print(f'{label} stds: {stds}')
                 
 
 
