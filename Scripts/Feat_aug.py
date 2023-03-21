@@ -178,7 +178,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
 
 def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_width = 11):
-    distances = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_old.xlsx'
+    distances = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_old.xlsx'
     CPT_match = read_excel(distances)
 
     img_neighbors = int((image_width-1)/2)
@@ -269,7 +269,7 @@ def get_seis_at_cpt_locations(df_NAV, dirpath_sgy, df_CPT_loc=pd.DataFrame([]), 
     print('\nQuadtree decomposition ...\n')
     tree = spatial.KDTree(xy)
 
-    xl_path = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx'
+    xl_path = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx'
     xl = read_excel(xl_path)
 
     # Loop over all CPT locations find closest location and add trace to database
@@ -882,7 +882,7 @@ if __name__ == '__main__':
     # match_dict = match_cpt_to_seismic(n_neighboring_traces=n_neighboring_traces)
     
 
-    from Architectures import CNN_collapsing_encoder, Collapse_CNN
+    from Architectures import CNN_collapsing_encoder #, Collapse_CNN
     import keras
     from lightgbm import LGBMRegressor
     from sklearn.multioutput import MultiOutputRegressor
@@ -956,7 +956,7 @@ if __name__ == '__main__':
     # Fitting the LGBM model to the output of the latent model
     # LGBM_model.fit(latent_model.predict(X_train), y_train)
 
-    m_dict_path = r'C:\Users\SjB\MSC2023\Data\match_dict5_z_30-100.pkl'
+    m_dict_path = r'.\Data\match_dict5_z_30-100.pkl'
 
     with open(m_dict_path, 'rb') as f:
         match_dict = pickle.load(f)
