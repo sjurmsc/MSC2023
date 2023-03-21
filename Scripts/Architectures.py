@@ -911,6 +911,7 @@ class Collapse_CNN(Model):
         self.cnn_encoder = CNN_collapsing_encoder(latent_features=latent_features, image_width=image_width)
         self.ann_decoder = keras.models.Sequential([
              keras.layers.Conv1D(16, 1, activation='relu', padding='same'),
+             keras.layers.Conv1D(32, 1, activation='relu', padding='same'),
              keras.layers.Conv1D(3, 1, activation='relu', padding='same')]
         )(self.cnn_encoder.output)
 
@@ -923,7 +924,7 @@ class Collapse_CNN(Model):
 
 
         with tf.GradientTape() as tape:
-            y_pred = self.cnn_encoder(X)
+            y_pred = self.call(X)
             loss = self.loss(y, y_pred)
         
 
