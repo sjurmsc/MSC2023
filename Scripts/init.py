@@ -73,7 +73,21 @@ if __name__ == '__main__':
         if m == 'Ensemble_CNN':
             model = Collapse_CNN(latent_features=16, image_width=11)
             model.compile(optimizer='adam', loss='mse')
-            preds = cross_val_predict(model, X_train, y_train, cv=cv, groups=groups_train, fit_params = NN_param_dict, n_jobs=-1)
+
+            for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
+                X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
+                y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
+                groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
+
+                model.fit(X_train_cv, y_train_cv, **NN_param_dict)
+
+                if i == 0:
+                    preds = model.predict(X_train)
+                else:
+                    preds = np.vstack((preds, model.predict(X_train)))
+
+            
+            # preds = cross_val_predict(model, X_train, y_train, cv=cv, groups=groups_train, fit_params = NN_param_dict, n_jobs=-1)
 
             for dec in ['RF', 'LGBM']:
                 encoder = model.cnn_encoder
@@ -89,6 +103,7 @@ if __name__ == '__main__':
                 for k in range(pred.shape[-1]):
                     _, _, _, _, std, _ = evaluate_modeldist_norm(y[:, k], pred[:, k])
                     stds.append(std)
+            Print(f'{label} stds: {stds}')
                 
 
 

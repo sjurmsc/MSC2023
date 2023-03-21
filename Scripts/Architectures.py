@@ -938,7 +938,9 @@ class Collapse_CNN(Model):
         return loss
     
     def predict(self, X):
-        return self.ann_decoder.call_vote(self.cnn_encoder(X))
+        return self.ann_decoder.call_vote(self.cnn_encoder(X))¨
+    
+    def get_params()
     
 
 class Collapse_tree(Model):
