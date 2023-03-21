@@ -10,7 +10,7 @@ from keras import backend as K, Model, Input, optimizers, layers
 from keras.layers import Dense, Dropout, Conv1D, Conv2D, Layer, BatchNormalization, LayerNormalization
 from keras.layers import Activation, SpatialDropout1D, SpatialDropout2D, Lambda, Flatten, LeakyReLU
 from keras.layers import ZeroPadding1D, ZeroPadding2D
-from tensorflow_addons.layers import WeightNormalization
+# from tensorflow_addons.layers import WeightNormalization
 from numpy import array
 from keras.utils.vis_utils import plot_model
 
