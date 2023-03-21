@@ -928,7 +928,7 @@ class Collapse_CNN(Model):
             loss = self.loss(y, y_pred)
         
         gradients = tape.gradient(loss, self.ann_decoder.trainable_variables)
-        self.cnn_encoder.optimizer.apply_gradients(zip(gradients, self.ann_decoder.trainable_variables))
+        self.optimizer.apply_gradients(zip(gradients, self.ann_decoder.trainable_variables))
 
         return loss
     
