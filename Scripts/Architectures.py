@@ -645,116 +645,7 @@ def discriminator(Input_shape,
     return Model(input_layer, output_score, name=name)
 
 
-class multi_task_GAN(Model):
 
-    def __init__(self, discriminators, generators, alpha=1, beta=1):
-        """
-        """
-        super(multi_task_GAN, self).__init__()
-        self.seismic_discriminator  = discriminators[1]
-        self.ai_discriminator       = discriminators[0]
-        self.seismic_generator      = generators[1]
-        self.ai_generator           = generators[0]
-        self.alpha                  = alpha
-        self.beta                   = beta
-
-    def compile(self, g_optimizer, d_optimizer, g_loss, d_loss, **kwargs):
-        super(multi_task_GAN, self).compile(**kwargs)
-        self.g_optimizer    = g_optimizer
-        self.d_optimizer  = d_optimizer
-        self.g_loss         = g_loss
-        self.d_loss         = d_loss
-        self.gen_X_metric  = keras.metrics.Mean(name='gen_X_loss')
-        self.gen_y_metric  = keras.metrics.Mean(name='gen_y_loss')
-        self.disc_X_accuracy = keras.metrics.Accuracy()
-        self.disc_y_accuracy = keras.metrics.Accuracy()
-
-    @property
-    def metrics(self):
-        return [self.gen_X_metric, self.gen_y_metric, self.disc_X_accuracy, self.disc_y_accuracy]
-    
-    def train_step(self, batch_data):
-        real_X, real_y = batch_data
-        batch_size = tf.shape(real_X)[0]
-        real_y, _ = real_y
-
-        real_y_1 = real_y*(tf.ones_like(real_y) + .0001*tf.random.uniform(tf.shape(real_y)))
-        real_y_2 = real_y*(tf.ones_like(real_y) + .0001*tf.random.uniform(tf.shape(real_y)))
-
-        with tf.GradientTape(persistent=True) as tape:
-            fake_X = self.seismic_generator(real_X, training=True)
-            fake_y = self.ai_generator(real_X, training=True)
-            disc_real_X = self.seismic_discriminator(real_X, training=True)
-            disc_fake_X = self.seismic_discriminator(fake_X, training=True)
-            disc_real_y = self.ai_discriminator(real_y_1, training=True)
-            disc_fake_y = self.ai_discriminator(fake_y, training=True)
-
-            X_predictions = tf.concat([disc_fake_X, disc_real_X], axis=0)
-            X_truth       = tf.concat([tf.ones((batch_size, 1)), tf.zeros((batch_size, 1))], axis=0)
-            y_predictions = tf.concat([disc_fake_y, disc_real_y], axis=0)
-            y_truth       = tf.concat([tf.ones((batch_size, 1)), tf.zeros((batch_size, 1))], axis=0)
-
-            X_truth += 0.5e-6 * tf.random.uniform(tf.shape(X_truth), minval=0)
-            y_truth += 0.5e-6 * tf.random.uniform(tf.shape(y_truth), minval=0)
-
-            # Discriminator loss
-            self.disc_X_accuracy.update_state(X_truth, X_predictions)
-            self.disc_y_accuracy.update_state(y_truth, y_predictions)
-            disc_X_loss = self.d_loss(X_truth, X_predictions)
-            disc_y_loss = self.d_loss(y_truth, y_predictions)
-        
-        # Get discriminator gradients
-        disc_X_grads = tape.gradient(disc_X_loss, self.seismic_discriminator.trainable_variables)
-        disc_y_grads = tape.gradient(disc_y_loss, self.ai_discriminator.trainable_variables)
-
-        # Apply those gradients
-        self.d_optimizer.apply_gradients(
-            zip(disc_X_grads, self.seismic_discriminator.trainable_variables)
-        )
-        self.d_optimizer.apply_gradients(
-            zip(disc_y_grads, self.ai_discriminator.trainable_variables)
-        )
-
-
-        with tf.GradientTape(persistent=True) as tape:
-            fake_X = self.seismic_generator(real_X)
-            fake_y = self.ai_generator(real_X)
-            X_predictions = self.seismic_discriminator(fake_X)
-            y_predictions = self.ai_discriminator(fake_y)
-
-            misleading_X_truth   = tf.zeros((batch_size, 1))
-            misleading_y_truth   = tf.zeros((batch_size, 1))
-
-            # Generator loss
-            gX_loss = self.g_loss(real_X, fake_X)
-            gy_loss = self.g_loss(real_y_2, fake_y)
-            dX_loss = self.d_loss(misleading_X_truth, X_predictions)
-            dy_loss = self.d_loss(misleading_y_truth, y_predictions)
-            gen_X_loss = self.alpha*(dX_loss) + self.beta*(gX_loss)
-            gen_y_loss = self.alpha*(dy_loss) + self.beta*(gy_loss)
-
-        # Get the gradients
-        gen_X_grads = tape.gradient(gen_X_loss, self.seismic_generator.trainable_variables)
-        gen_y_grads = tape.gradient(gen_y_loss, self.ai_generator.trainable_variables)
-
-        # Update the weights
-        self.g_optimizer.apply_gradients(
-            zip(gen_X_grads, self.seismic_generator.trainable_variables)
-        )
-        self.g_optimizer.apply_gradients(
-            zip(gen_y_grads, self.ai_generator.trainable_variables)
-        )
-
-        return {
-                'generator_X_loss'   : gen_X_loss,
-                'generator_y_loss'   : gen_y_loss,
-                'discriminator_X_loss': disc_X_loss,
-                'discriminator_y_loss': disc_y_loss
-                }
-    
-    def call(self, input):
-        return [self.ai_generator(input), self.seismic_generator(input)]
-    
 from lightgbm import LGBMRegressor
 
 class TCN_encoder(Model):
@@ -1007,28 +898,6 @@ def CNN_collapsing_encoder(latent_features, image_width, GM_dz=0.1):
     return cnn_encoder
 
 
-def CNN_pooling_collapsing_encoder(latent_features, X, y, GM_len=700):
-    """2D Cnn encoder collapsing the first dimension down to 1 by maxpooling."""
-    assert np.isclose(X.shape[2]/(2*GM_len),  1), 'X.shape[1]/2*GM_len != 1'
-
-
-    width = X.shape[1]
-    assert width % 2 == 1, 'width % 2 != 1'
-
-    cnn_encoder = keras.Sequential([
-        keras.layers.InputLayer(ragged=True),
-        keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same'),
-        keras.layers.BatchNormalization(),
-        keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same'),
-        # keras.layers.MaxPooling2D((2, 1)), # Reduce the depth of seismic to GM_len
-        keras.layers.BatchNormalization(),
-        keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
-        keras.layers.MaxPooling2D((2, 2)) # Reduce the depth of seismic to GM_len
-    ])
-
-    cnn_encoder.add(keras.layers.Conv1D(latent_features, (1), activation='relu'))
-
-    return cnn_encoder
 
     
 class Collapse_CNN(Model):
@@ -1071,3 +940,49 @@ class Collapse_CNN(Model):
     def predict(self, X):
         return self.ann_decoder.call_vote(self.cnn_encoder(X))
     
+
+class Collapse_tree(Model):
+    """
+    Uses a CNN collapsing decoder and a tree based multi attribute regressor.
+    """
+    def __init__(self, Treedecoder):
+        super(Collapse_tree, self).__init__()
+        self.cnn_encoder = CNN_collapsing_encoder(latent_features=16, image_width=11)
+        self.tree_decoder = Treedecoder()
+
+    def compile(self, **kwargs):
+        super(Collapse_tree, self).compile(**kwargs)
+        
+    def train_step(self, batch_data):
+        X, y = batch_data
+
+        with tf.GradientTape() as tape:
+            latent_space = self.cnn_encoder(X)
+            self.tree_decoder.fit(latent_space, y)
+            loss = 1 - self.tree_decoder.score(latent_space, y)
+
+        gradients = tape.gradient(loss, self.cnn_encoder.trainable_variables)
+        self.cnn_encoder.optimizer.apply_gradients(zip(gradients, self.cnn_encoder.trainable_variables))
+
+        return loss
+
+
+def ensemble_CNN_decoder(n_members=5):
+    """1D CNN decoder with a committee of n_members."""
+    ann_decoder = keras.models.Sequential([
+        keras.layers.Conv1D(16, 1, activation='relu', padding='same'),
+        keras.layers.Conv1D(32, 1, activation='relu', padding='same'),
+        keras.layers.Conv1D(3, 1, activation='relu', padding='same')
+    ])
+
+    return ann_decoder
+
+
+def ensemble_CNN_model(X, y, **kwargs):
+    encoder = CNN_collapsing_encoder(latent_features=16, image_width=11)
+    decoder = ensemble_CNN_decoder(n_members=5)(encoder.output)
+
+    model = Model(encoder.input, decoder)
+    model.compile(loss='mse', optimizer='adam')
+    model.fit(X, y, **kwargs)
+    return model

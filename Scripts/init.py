@@ -10,82 +10,92 @@ over these configurations are also defined in this script.
 from pathlib import Path
 from PIL import Image
 import numpy as np
-from keras.models import load_model
 from keras.utils.vis_utils import plot_model
-import tensorflow as tf
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-import os.path
-from shutil import rmtree
+
+from pandas import read_csv
 import numpy as np
-import scipy.stats as stats
-import optuna
+from sklearn.model_selection import LeaveOneGroupOut, cross_validate, cross_val_predict
+from sklearn.ensemble import RandomForestRegressor
+from lightgbm import LGBMRegressor
+from sklearn.manifold import TSNE
+from sklearn.multioutput import MultiOutputRegressor
 
 # My scripts
 from Log import *
 from Architectures import *
 from Feat_aug import *
+from NGI.GM_Toolbox import evaluate_modeldist_norm
 
+# Configurations for the Random Forest model
+RF_param_dict = {
+    'max_depth': 20,
+    'n_estimators': 20,
+    'min_samples_leaf': 1,
+    'min_samples_split': 4,
+    'bootstrap': True,
+    'criterion': 'mse'
+    }
 
+LGBM_param_dict = {
+    'num_leaves': 31,
+    'max_depth': 20,
+    'n_estimators': 100
+    }
 
-class config_iterator:
-    """
-    Custom class made to iterate through the different permutations
-    of model configurations
-    """
-    def __init__(self, config, variable_config):
-        self.config = config
-        self.variable_config = variable_config
-        self.keys = variable_config.keys()
+NN_param_dict = {
+    'epochs': 200,
+    'batch_size': 20
 
-        # Setting up the permutation iterator
-        self.it = product(*variable_config.values())
-
-    def __next__(self):
-        try:
-            vals = next(self.it)
-        except:
-            return None
-        for key, val in zip(self.keys, vals):
-            config[key] = val
-        return config
-
+    }
 
 if __name__ == '__main__':
 
-    # CONFIG :: Static configurations that get replaced by variations
-    config = dict()
-    config['nb_filters']            = 12
-    config['kernel_size']           = (3, 3) # Height, width
-    config['padding']               = 'same'
-    config['use_skip_connections']  = True
-    config['dropout_type']          = 'normal'
-    config['dropout_rate']          = 0.03
-    config['return_sequences']      = True
-    config['activation']            = LeakyReLU()
-    config['learn_rate']            = 0.001
-    config['kernel_initializer']    = 'he_normal'
+    # Retrieve data
+    cpt_exhausive_dataset = read_csv(r'../OneDrive - NGI/Documents/NTNU/MSC_DATA/Database.csv')
 
-    config['use_batch_norm']        = False
-    config['use_layer_norm']        = False
-    config['use_weight_norm']       = True
-
-
-    config['batch_size']            = 20
-    config['epochs']                = 1
-
-    config['seismic_data']          = ['2DUHRS_06_MIG_DEPTH']
-    config['ai_data']               = ['00_AI']
-    config['cpt_data']              = ['']
-    config['group_traces']          = 1
-
-
-    # Retrieving the data
-    seismic_datasets =  list(config['seismic_data'])
-    ai_datasets =       list(config['ai_data'])
-    cpt_datasets =      list(config['cpt_data'])
 
     # Creating the model
+    methods = ['Ensemble_CNN', 'RF', 'LGBM']
+    groups = cpt_exhausive_dataset['ID'].values.flatten()
+    cv = LeaveOneGroupOut()
+
+    X, y = create_sequence_dataset()
+
+    for m in methods:
+
+        rf_scores = None; lgbm_scores = None
+
+        if m == 'Ensemble_CNN':
+            model = Collapse_CNN(latent_features=16, image_width=11)
+            model.compile(optimizer='adam', loss='mse')
+            preds = cross_val_predict(model, X, y, cv=cv, groups=groups, fit_params = NN_param_dict, n_jobs=-1)
+
+            for dec in ['RF', 'LGBM']:
+                encoder = model.cnn_encoder
+                if dec == 'RF':
+                    decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
+                    rf_preds = cross_val_predict(decoder, encoder(X), y, cv=cv, groups=groups, n_jobs=-1)
+                elif dec == 'LGBM':
+                    decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
+                    lgbm_preds = cross_val_predict(decoder, encoder(X), y, cv=cv, groups=groups, n_jobs=-1)
+
+            for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
+                stds = []
+                for k in range(pred.shape[-1]):
+                    _, _, _, _, std, _ = evaluate_modeldist_norm(y[:, k], pred[:, k])
+                    stds.append(std)
+                
 
 
 
+        else:
+            if m == 'RF':
+                decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
+                
+            elif m == 'LGBM':
+                decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
+
+            preds = cross_val_predict(Collapse_tree(decoder), X, y, cv=cv, groups=groups, n_jobs=-1)
+        
+
+        

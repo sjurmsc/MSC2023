@@ -3,7 +3,7 @@ Functions to be used for feature augmentation
 """
 import segyio
 import json
-from numpy import array, row_stack, intersect1d, where, amax, amin
+from numpy import array, row_stack, intersect1d, where, amax, amin, stack
 from pandas import read_csv
 from scipy.interpolate import interp1d
 from sklearn.model_selection import train_test_split, KFold
@@ -11,6 +11,8 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from os import listdir
 from pathlib import Path
 import sys
+import matplotlib.pyplot as plt
+import pickle
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
 # Functions for loading data
@@ -46,8 +48,8 @@ def get_cpt_data_from_file(fp, zrange: tuple = (None, 100)):
 
 from pandas import read_excel
 
-def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100)):
-    distances = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines.xlsx'
+def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_file=''):
+    distances = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx'
     CPT_match = read_excel(distances)
 
 
@@ -57,47 +59,80 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100)):
 
 
     for i, row in CPT_match.iterrows():
-        # For testing
-        if i > 10: break
-
         cpt_loc = int(row['Location no.'])
-        print('Retrieving from TNW{:03d}'.format(cpt_loc))
+
+        # Get CPT name
+        if cpt_loc < 86:
+            cpt_name = f'TNW{cpt_loc:03d}'
+        elif (cpt_loc>85) and (cpt_loc<89):
+            cpt_name = 'TNWTT{}'.format(int(cpt_loc % 85))
+
+        sys.stdout.write('\rRetrieving from {}'.format(cpt_name))
+
         CDP = int(row['CDP'])
         seis_file = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/{}.sgy'.format(row['2D UHR line'])
         with segyio.open(seis_file, ignore_geometry=True) as SEISMIC:
             z = SEISMIC.samples
             a = array(SEISMIC.attributes(segyio.TraceField.CDP)).astype(int)
-            traces = segyio.collect(SEISMIC.trace)[where(abs(a - CDP) <= n_neighboring_traces)[0]]
+            traces = segyio.collect(SEISMIC.trace)[where(abs(a - CDP) <= n_neighboring_traces)]
             traces, z_traces = traces[:, (z>=zrange[0])&(z<zrange[1])], z[(z>=zrange[0])&(z<zrange[1])]
-        cpt_name = f'TNW{cpt_loc:03d}'
+        
         CPT_DATA = cpt_dict[cpt_name].values
         CPT_DEPTH = cpt_dict[cpt_name].index.values
 
         # TEMPORARY
-        SEAFLOOR = 35
+        SEAFLOOR = float(row['Water Depth'])/1000 # Convert from mm to m
+        z_cpt = CPT_DEPTH + SEAFLOOR
 
-        match_dict[cpt_loc] = {'CDP': CDP, 
-                               'CPT_data': CPT_DATA, 
-                               'Seismic_data': traces, 
-                               'z_traces': z_traces, 
-                               'z_cpt': CPT_DEPTH,
-                               'seafloor': SEAFLOOR}
+        match_dict[row['Borehole']] = {'CDP'            : CDP, 
+                                       'CPT_data'       : CPT_DATA, 
+                                       'Seismic_data'   : traces, 
+                                       'z_traces'       : z_traces, 
+                                       'z_cpt'          : z_cpt,
+                                       'seafloor'       : SEAFLOOR}
+    sys.stdout.flush()
+    sys.stdout.write('\nDone!\n')
+    
+
+    if to_file:
+        with open(to_file, 'wb') as file:
+            pickle.dump(match_dict, file)
+        sys.stdout.write('Saved to file: {}\n'.format(to_file))
+
+    sys.stdout.flush()
     return match_dict
         
 
-def create_sequence_dataset(n_neighboring_traces=5, zrange: tuple = (30, 100), random_flip=True, shortest_sequence=5, ran=406):
+def create_sequence_dataset(n_neighboring_traces=5, 
+                            zrange: tuple = (30, 100), 
+                            random_flip=True, 
+                            n_bootstraps=20,
+                            sequence_length=5, 
+                            stride=1):
     """
     Creates a dataset with sections of seismic image and corresponding CPT data where
     none of the CPT data is missing.
     """
-    match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange)
+    match_file = './Data/match_dict{}_z_{}-{}.pkl'.format(n_neighboring_traces, zrange[0], zrange[1])
+    if not Path(match_file).exists():
+        print('Creating match file...')
+        match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange, to_file=match_file)
+    else:
+        with open(match_file, 'rb') as file:
+            match_dict = pickle.load(file)
+    
     X, y = [], []
+
+    print('Bootstrapping CPT data...')
     for key, value in match_dict.items():
-        z_GM = np.arange(0, value['z_cpt'].max(), 0.1)
-        cpt_vals = value['CPT_data']
-        bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, value['z_cpt'], z_GM, n=20)
-        sea_floor_depth = value['seafloor']
-        correlated_cpt_z = z_GM + sea_floor_depth
+        z_GM = np.arange(0, max(value['z_cpt']), 0.1)
+        cpt_vals = array(value['CPT_data'])
+        bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps, plot=False)
+
+        correlated_cpt_z = z_GM # + value['seafloor']
+
+        seismic = array(value['Seismic_data'])
+        seismic_z = array(value['z_traces'])
 
         for bootstrap in bootstraps:
             # Split CPT data by nan values
@@ -108,27 +143,192 @@ def create_sequence_dataset(n_neighboring_traces=5, zrange: tuple = (30, 100), r
             splits_depth = np.split(correlated_cpt_z, split_indices)
 
             for section, z in zip(splits, splits_depth):
-
-                if (section.shape[0]-1) > shortest_sequence:
-                    in_seis = np.where((value['z_traces'] >= z.min()) & (value['z_traces'] < z.max()))
-                    seis_seq = value['Seismic_data'][:, in_seis][:, 0, :]
+                if (section.shape[0]-1) > sequence_length:
+                    in_seis = np.where((seismic_z >= z.min()-1e-6) & (seismic_z < z.max()-1e-6)) # -1e-6 to avoid floating point errors
+                    seis_seq = seismic[:, in_seis][:, 0, :]
                     cpt_seq = section[:-1, :]
-                    assert seis_seq.shape[1] == 2*cpt_seq.shape[0], 'Seismic sequences must represent the same interval as the CPT'
-                    X.append(seis_seq) # .reshape((seis_seq.shape[0], seis_seq.shape[1], 1)))
-                    y.append(cpt_seq) # .reshape((1, cpt_seq.shape[0], cpt_seq.shape[1])))
-            
+                    if not seis_seq.shape[1] == 2*cpt_seq.shape[0]:
+                        print('Seismic sequences must represent the same interval as the CPT: {}'.format(key))
+                        continue
+
+                    # Split the sequence into multiple overlapping sequences of length sequence_length
+
+                    for i, j in zip(range(0, cpt_seq.shape[0]-sequence_length, stride), range(0, seis_seq.shape[1]-2*sequence_length, 2*stride)):
+                        X_val = seis_seq[:, j:j+2*sequence_length]
+                        X.append(X_val)
+                        y_val = cpt_seq[i:i+sequence_length, :]
+                        y.append(y_val)
+
+                # else:
+
+                #     X.append(seis_seq) # .reshape((seis_seq.shape[0], seis_seq.shape[1], 1)))
+                #     y.append(cpt_seq) # .reshape((1, cpt_seq.shape[0], cpt_seq.shape[1])))
+    
+    X = np.array(X)
+    y = np.array(y)   
 
     # Randomly flip the X data about the 1 axis
     if random_flip:
         for i in range(len(X)):
             if np.random.randint(2):
                 X[i] = np.flip(X[i], 0)
-    
-    
+
 
     return X, y
 
 
+def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_width = 11):
+    distances = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_old.xlsx'
+    CPT_match = read_excel(distances)
+
+    img_neighbors = int((image_width-1)/2)
+
+    for i, row in CPT_match.iterrows():
+        well_number = row['Location no.']
+        CDP = row['CDP']
+        seis_file = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/{}.sgy'.format(row['2D UHR line'])
+        with segyio.open(seis_file, ignore_geometry=True) as f:
+            seis = f.trace.raw[:]
+            seis = seis.reshape((seis.shape[0], seis.shape[1], 1))
+            
+            CDP_index = np.where(array(f.attributes(segyio.TraceField.CDP)) == CDP)[0][0]
+        
+        pred_image = array([]).reshape((0, seis.shape[1]//2, 16))
+        img_left = CDP_index-neighbors
+        img_right = min([CDP_index+neighbors, seis.shape[0]-1]) # CDP 79 is close to the edge of the image
+
+        for ii in range(img_left, img_right+1):
+            sys.stdout.write('\rPredicting image {} of {} ({}%)'.format(i+1, len(CPT_match), int((ii-img_left)/(img_right-img_left+1)*100)))
+            sys.stdout.flush()
+            l_loc = ii-img_neighbors
+            r_loc = ii+img_neighbors+1
+            latent_pred = model.predict(seis[l_loc:r_loc, :, 0].reshape((1, image_width, seis.shape[1])))[0]
+            pred_image = row_stack((pred_image, latent_pred))
+
+
+        fig, ax = plt.subplots(2, 8, figsize=(10, 5))
+        fig.tight_layout()
+        fig.subplots_adjust(top=0.85)
+
+        for ii in range(16):
+            ax[ii//8, ii%8].imshow(seis[img_left:img_right+1, :2:-1, 0 ].T, cmap='gray')
+            ax[ii//8, ii%8].imshow(pred_image[:, :, ii].T, cmap='gist_rainbow', alpha=0.4)
+            ax[ii//8, ii%8].axis('off')
+            ax[ii//8, ii%8].set_title('Latent {}'.format(ii+1))
+        fig.suptitle('Latent space prediction for CPT location {}'.format(well_number))
+        fig.savefig('./Assignment Figures/Latent_units/Latent_space_units_{}.png'.format(well_number), dpi=1000)
+        plt.close()
+        print('\nSaved image for CPT location {}'.format(well_number))
+
+def create_sgy_of_latent_predictions(model, seismic_dir, image_width = 11):
+    """Create a SEGY file with the latent space predictions for each CDP location"""
+
+
+    seismic_lines = Path(seismic_dir).glob('*.sgy')
+
+    for line in seismic_lines:
+        with segyio.open(line, 'r') as f:
+            seis = f.trace.raw[:]
+            seis = seis.reshape((seis.shape[0], seis.shape[1], 1))
+            CDPs = array(f.attributes(segyio.TraceField.CDP))
+            CDPs = CDPs.reshape((CDPs.shape[0], 1))
+            print('Creating latent space predictions for {}'.format(line.name))
+            pred_image = array([]).reshape((0, seis.shape[1]//2, 16))
+            img_neighbors = int((image_width-1)/2)
+            for ii in range(seis.shape[0]):
+                sys.stdout.write('\rPredicting image {} of {} ({}%)'.format(ii+1, seis.shape[0], int(ii/seis.shape[0]*100)))
+                sys.stdout.flush()
+                l_loc = ii-img_neighbors
+                r_loc = ii+img_neighbors+1
+                latent_pred = model.predict(seis[l_loc:r_loc, :, 0].reshape((1, image_width, seis.shape[1])))[0]
+                pred_image = row_stack((pred_image, latent_pred))
+
+            # Create a file for every unit of the latent space
+            for i in range(16):
+                with segyio.create('./OpendTect/'+line.name[:-4]+'_latent_unit{}.sgy'.format(i+1), spec=f.spec) as dst:
+                    dst.bin = f.bin
+                    dst.header = f.header
+                    dst.trace = pred_image[:, :, i]
+                    dst.attributes(segyio.TraceField.CDP)[:] = CDPs
+
+    
+
+
+from NGI.GM_BuildDatabase import *
+from openpyxl import load_workbook
+def get_seis_at_cpt_locations(df_NAV, dirpath_sgy, df_CPT_loc=pd.DataFrame([]), n_tr = 1):
+    # def get_seis_at_CPT(df_NAV, dirpath_sgy, df_CPT_loc=pd.DataFrame([]), n_tr = 1):
+    ''' 
+    Extract seismic trace(s) closest to CPT location and add to database
+    df_NAV: dataframe with Navigation data
+    dirpath_sgy: path to directory with corresponding SEGY files
+    df_CPT_loc: dataframe with CPT locations
+    n_tr: number of traces to extract
+    '''
+    # Quadtree decomposition of the Navigation
+    xy = df_NAV[['x','y']]
+    print('\nQuadtree decomposition ...\n')
+    tree = spatial.KDTree(xy)
+
+    xl_path = r'C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx'
+    xl = read_excel(xl_path)
+
+    # Loop over all CPT locations find closest location and add trace to database
+    print('Merging seismic traces')
+    df_seisall = pd.DataFrame()
+    for ind, row in df_CPT_loc.iterrows():
+        distance, index = tree.query(row[['x','y']], k=n_tr)
+        if n_tr>1:
+            indexes = index.flatten()
+            distances = distance.flatten()
+            linenames = df_NAV.iloc[indexes, df_NAV.columns.get_loc('line')]
+            tracls = df_NAV.iloc[indexes, df_NAV.columns.get_loc('tracl')]
+        else:
+            indexes = index
+            distances = [np.array(distance)]
+            linenames = [df_NAV.iloc[indexes, df_NAV.columns.get_loc('line')]]
+            tracls = [df_NAV.iloc[indexes, df_NAV.columns.get_loc('tracl')]]
+            
+        # Extract seismic trace using segyio
+        ii = 0
+        df_seisloc = pd.DataFrame()
+        
+        for line, tracl, dist in zip(linenames, tracls, distances):
+            print('Line: {}, tracl: {}, distance: {}'.format(line, tracl, dist))
+            ii = ii+1
+            path_seis = dirpath_sgy + line + '.sgy'
+            with segyio.open(path_seis, 'r', ignore_geometry=True) as f:
+                # Get basic attributes
+                sample_rate = segyio.tools.dt(f) # in mm
+                n_samples = f.samples.size
+                z_seis = f.samples*1000        # in mm
+
+
+                # Extract CDP number of the trace
+                cdp = f.attributes(segyio.TraceField.CDP)[tracl][0]
+                print('CDP: {}, Tracl: {}'.format(cdp, tracl))
+
+                # Extract CDP X and Y coordinates
+                cdp_x , cdp_y = row[['x','y']]
+
+                # Add row to excel with line, cdp, cdp_x, cdp_y, dist
+                xl = xl.append({'Location no.': row['ID'],
+                                'Borehole': row['borehole'], 
+                                '2D UHR line': line, 
+                                'CDP': cdp, 
+                                'Location Eastings': cdp_x, 
+                                'Location Northings': cdp_y, 
+                                'Distance to CDP': dist,
+                                'Water Depth': row['WD']}, ignore_index=True)
+                
+
+                # Load nearest trace(s)
+                tr = f.trace[tracl]
+        xl.sort_values(by=['Location no.'], inplace=True)
+        xl.to_excel(xl_path, index=False)
+        print('Saved to excel')
+    print('seismic traces merged')
+    return df_seisall
 
 
 def get_traces(fp, mmap=True, zrange: tuple = (None, 100)):
@@ -307,25 +507,6 @@ def match_files(X_folder_loc, y_folder_loc, file_extension='.sgy'):
     return file_pairs
           
 
-def pair_well_and_seismic():
-    """
-    For a given log trace, this function locates the appropriate seismic trace,
-    and allows for adding the neighboring traces to output a seismic image
-    centered at the well position. 
-    """
-    pass
-
-
-class CPT_TRACE:
-
-    def __init__(self, name, coords, trace, z):
-        self.name = name
-        self.lon = coords[0]
-        self.lat = coords[1]
-        self.trace = trace
-        self.z = z
-
-
 import numpy as np
 import pandas as pd
 
@@ -480,7 +661,7 @@ def find_duplicates(m_files):
     return dupes
 
 
-def box_plots_for_dupelicates():
+def box_plots_for_duplicates():
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -566,9 +747,105 @@ def negative_ai_values():
     print('Total minimum is {}'.format(np.min(t_b_z)))
     plt.show()
 
+import pandas as pd
+def get_csv_of_cdp_location_coordinates():
+    seismic_folder = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/'
+    seismic_files = [f for f in os.listdir(seismic_folder) if f.endswith('.sgy')]
+    seismic_files.sort()
+    line = []
+    cdp = []
+    x = []
+    y = []
+    for file in seismic_files:
+        with segyio.open(seismic_folder + file, ignore_geometry=True) as f:
+            cdp.append(f.attributes(segyio.TraceField.CDP_X)[0])
+            x.append(f.attributes(segyio.TraceField.SourceX)[0])
+            y.append(f.attributes(segyio.TraceField.SourceY)[0])
+            line.append(file[0:-4])
+    
+    # Create a dataframe
+    df = pd.DataFrame({'Line': line, 'CDP': cdp, 'X': x, 'Y': y})
+    df.to_csv('../QGIS/CDP_location.csv', index=False)
+
+
+from math import  gcd
+def sequence_length_histogram(val='CPT'):
+    """Creates a histogram plot of the length of the sequences in the dataset"""
+    X, y = create_sequence_dataset()
+
+    idx = 0
+    if val == 'CPT':
+        value = y
+        
+    elif val == 'Seismic':
+        value = X
+        idx = 1
+
+    lengths = []
+    for b in value:
+        if b.shape[idx] < 50:
+            lengths.append(b.shape[idx])
+
+    print('Least common divisor for lengths are {}'.format(gcd(*lengths)))
+
+    plt.hist(lengths, bins=30)
+    plt.title('Length of {} sequences, under 100'.format(val))
+    plt.show()
+
+
+
 # Only used for testing the code
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+
+    # print('Load CPT locations')
+    # df_CPT_loc=pd.DataFrame()
+
+
+    # for path_las_files in ['P:/2019/07/20190798/Calculations/LasFiles/LAS_from_AGS_20210518', 'P:/2019/07/20190798/Calculations/LasFiles/LAS_from_AGS_Tennet_20210518']:
+    #     for filename in os.listdir(path_las_files):
+    #         if filename.endswith(".las" or ".LAS"):
+    #             LAS = lasio.read(os.path.join(path_las_files, filename))
+    #             tmpdict={'borehole':filename[:-4], 
+    #                     'x':float(LAS.header['Well']['LOCX'].descr), 
+    #                     'y':float(LAS.header['Well']['LOCY'].descr),
+    #                     'TotalDepth':np.ceil(float(LAS.header['Well']['STOP'].value))
+    #                     }
+    #             df_CPT_loc=df_CPT_loc.append(tmpdict, ignore_index=True)
+
+
+    # print('CPT locations loaded\n')
+
+
+    # print('Load Water Depth')
+    # df_CPT_loc=get_bathy_at_CPT(df_CPT_loc)
+    # print('Water Depth loaded\n')
+
+    # # Round WaterDepth to 0.02 m (CPT dz) to match dz from resampled seismic data and convert to mm
+    # df_CPT_loc['WD'] = (1000*round(df_CPT_loc['WD']*50)/50).astype(int)
+
+
+    # print('Assign CPT unique location ID')      ####### SPECIFIC TNW ##########
+    # for index, row in df_CPT_loc.iterrows(): 
+    #     if 'TT' in row['borehole']:
+    #         ID = 85 + int(''.join(filter(lambda i: i.isdigit(), row['borehole'])))
+    #     else:
+    #         ID = int(''.join(filter(lambda i: i.isdigit(), row['borehole'])))
+    #     df_CPT_loc.loc[index, 'ID'] = ID
+    # print('CPT unique location ID assigned \n')
+
+    # del index, row, ID, tmpdict, LAS, path_las_files, filename
+
+    # df_CPT_loc=df_CPT_loc[['borehole','x','y','WD','TotalDepth','ID']]
+
+    # dirpath_sgy = 'P:/2019/07/20190798/Background/2DUHRS_06_MIG_DEPTH/'
+    # dirpath_NAV = 'P:/2019/07/20190798/Background/2DUHRS_06_MIG_DEPTH/nav_2DUHRS_06_MIG_DPT/'
+
+    # df_NAV = load_NAV(dirpath_NAV)
+
+    # get_seis_at_cpt_locations(df_NAV, dirpath_sgy, df_CPT_loc, n_tr=1)
+
+
     # import numpy as np
     # from random import randint
     # d_dict = load_data_dict()
@@ -588,43 +865,44 @@ if __name__ == '__main__':
         
         #y_below_zero.append(list(t_b_z))
 
-    # plt.hist(y_below_zero)
-    # print(np.shape(t_b_z))
-    # r = randint(0, len(t_b_z))
-    # plt.plot(t_b_z[r], z_ai)
-    # print('Minimum on the plot is: {}'.format(np.min(t_b_z[r])))
-    # print('Total minimum is {}'.format(np.min(t_b_z)))
-    # plt.show()
-
-    # plt.boxplot(lines)
-    # plt.show()
-    # sgy_to_keras_dataset(['2DUHRS_06_MIG_DEPTH'], ['00_AI'], fraction_data=0.05, group_traces=3, normalize='StandardScaler')
 
     # import numpy as np
     # import matplotlib.pyplot as plt
     # from matplotlib.colors import Normalize
-    # Display seismic traces at cpt locations
-    # traces, z = match_cpt_to_seismic(n_neighboring_traces=500)
-    # plt.imshow(traces.T, cmap='Greys', norm=Normalize(-3, 3))
-    # plt.yticks(np.arange(0, 1400, 200), z[::200])
+    # # Display seismic traces at cpt locations
+
+    # match_dict = match_cpt_to_seismic(n_neighboring_traces=500)
+    # traces = match_dict[1]['Seismic_data']
+    # z = match_dict[1]['z_traces']
+    # plt.imshow(np.array(traces).T, cmap='Greys', norm=Normalize(-3, 3))
+    # plt.yticks(np.arange(0, len(z), 200), z[::200])
     # plt.show()
+
+    
+
+    # match_dict = match_cpt_to_seismic(n_neighboring_traces=n_neighboring_traces)
+    
 
     from Architectures import CNN_collapsing_encoder, Collapse_CNN
     import keras
     from lightgbm import LGBMRegressor
     from sklearn.multioutput import MultiOutputRegressor
     from sklearn.manifold import TSNE
+    from sklearn.model_selection import train_test_split
 
-    X, y = create_sequence_dataset()
+    # get_csv_of_cdp_location_coordinates()
 
-    A, b = create_sequence_dataset(ran=422)
-    
+    # sequence_length_histogram(val='CPT')
 
-    latent_model = CNN_collapsing_encoder(latent_features=16, image_width=11)
+    image_width = 11
+    n_neighboring_traces = (image_width-1)//2
+    # X, y = create_sequence_dataset(n_bootstraps=1, sequence_length=10)
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # X_test, X_val, y_test, y_val = train_test_split(X_test, y_test, test_size=0.5, random_state=42)
+
+    # latent_model = CNN_collapsing_encoder(latent_features=16, image_width=image_width)
 
     # n_models = 1
-
-    # print(latent_model.output)
 
     # models = [keras.Sequential(
     #     [
@@ -642,42 +920,104 @@ if __name__ == '__main__':
     # model.compile(loss='mse', optimizer='adam', metrics=['mse'])
     # model.summary()
 
-    # print(latent_model.predict(X).shape)
-
     # model = Collapse_CNN(latent_features=16, image_width=11, n_members=1)
 
-    ann_decoder = keras.models.Sequential([
-             keras.layers.Conv1D(16, 1, activation='relu', padding='same'),
-             keras.layers.Conv1D(3, 1, activation='relu', padding='same')]
-        )(latent_model.output)
+    # ann_decoder = keras.models.Sequential([
+    #             keras.layers.Conv1D(16, 1, activation='relu', padding='same'),
+    #             keras.layers.Conv1D(32, (1, 1), activation="relu", padding='valid'),
+    #             keras.layers.Conv1D(64, (1, 1), activation="relu", padding='valid'),
+    #             keras.layers.Conv1D(3, 1, activation='relu', padding='same')]
+    #         )(latent_model.output)
     
-    model = keras.Model(inputs=latent_model.input, outputs=ann_decoder)
+    # model = keras.Model(inputs=latent_model.input, outputs=ann_decoder)
 
-    model.compile(loss='mse', optimizer='adam', metrics=['mse'])
+    # model.compile(loss='mse', optimizer='adam', metrics=['mse'])
+    # model.summary()
 
-
-    model.fit(X, y, epochs=400, batch_size=10, verbose=1)
+    # history = model.fit(X_train, y_train, epochs=1, batch_size=10, verbose=1, validation_data=(X_val, y_val))
     
+    # Plot the training history with validation loss
+    # plt.plot(history.history['loss'], label='train')
+    # # plt.plot(history.history['val_loss'], label='validation')
+    # plt.legend()
+    # plt.show()
 
-    LGBM_model = MultiOutputRegressor(LGBMRegressor())
+
+
+    # model.save('model.h5')
+    # latent_model.save('latent_model.h5')
+
+    print('\nLoading model...')
+    model = keras.models.load_model('model.h5')
+    latent_model = keras.models.load_model('latent_model.h5')
+
+    # LGBM_model = MultiOutputRegressor(LGBMRegressor())
 
 
     # Fitting the LGBM model to the output of the latent model
+    # LGBM_model.fit(latent_model.predict(X_train), y_train)
 
+    m_dict_path = r'C:\Users\SjB\MSC2023\Data\match_dict5_z_30-100.pkl'
 
+    with open(m_dict_path, 'rb') as f:
+        match_dict = pickle.load(f)
+
+    X_val = match_dict['TNW054-PCPT']['Seismic_data']
+    y_val = match_dict['TNW054-PCPT']['CPT_data']
+    z_cpt = match_dict['TNW054-PCPT']['z_cpt']
+    z_val = match_dict['TNW054-PCPT']['z_traces']
+    z = match_dict['TNW054-PCPT']['z_traces'][::2]
+
+    bootstraps, z_GM = bootstrap_CPT_by_seis_depth(y_val, z_cpt, z, n=1)
+    bootstrap = bootstraps[0]
+
+    # The indices where no rows of y_val contain nan values
+    valid_indices = np.where(np.all(~np.isnan(bootstrap), axis=1))[0]
+
+    # The indexes of z where the depth matches valid indices of y_val
+    valid_z_indices = np.where(np.isin(z, z_GM[valid_indices]))[0]
+    outside_indices = np.where(~np.isin(np.arange(len(z)), valid_z_indices))[0]
+
+    y_comp = bootstrap[np.where(np.all(~np.isnan(bootstrap), axis=1))[0]]
 
     # Plot TSNE of the latent model
     tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
-    tsne_results = tsne.fit_transform(latent_model.predict(A[0].reshape(1, *A[0].shape)).reshape(b[0].shape[0], 16))
+    prediction = latent_model.predict(X_val.reshape(1, *X_val.shape)).reshape(X_val.shape[1]//2, 16)
+    tsne_results = tsne.fit_transform(prediction)
 
+    
+    cpt_parameters = ['$q_c$', '$f_s$', '$u_2$'] 
     fig, ax = plt.subplots(1, 3, figsize=(15, 5))
     for i in range(3):
-        ax[i].scatter(tsne_results[:, 0], tsne_results[:, 1], c=b[0][:, i])
-        ax[i].set_title('Feature {}'.format(i+1))
+        # Give specific markers to points outside the valid indices
+        ax[i].scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c='k', alpha=0.5)
+        
+        # Plot the valid indices
+        ax[i].scatter(tsne_results[valid_z_indices, 0], tsne_results[valid_z_indices, 1], c=y_comp[:, i])
 
-
+        ax[i].set_title('Latent space colored by {}'.format(cpt_parameters[i]))
 
     plt.show()
+    plt.close()
+
+    create_latent_space_prediction_images(latent_model, neighbors=500)
+
+    # # plot prediction results of the LGBM model in the same plot as a ground truth trace
+    # X_val, y_val = match_dict['TNW054-PCPT']['Seismic_data'], match_dict['TNW054-PCPT']['CPT_data']
+    # z_val = match_dict['TNW054-PCPT']['z_traces'][::2]
+
+    # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+    # y_pred = LGBM_model.predict(latent_model.predict(X_val.reshape(1, *X_val.shape)).reshape(y_val.shape[0], 16))
+
+    # for i in range(3):
+    #     ax[i].plot(y_pred[:, i], z_val)
+    #     ax[i].plot(y_val[:, i], z_val)
+    #     ax[i].set_title('Feature {}'.format(i+1))
+    #     ax[i].invert_yaxis()
+    
+    # plt.show()
+
+
 
     # Make three scatterplots of prediction results of the LGBM model
     # fig, ax = plt.subplots(1, 3, figsize=(15, 5))

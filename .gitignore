@@ -13,6 +13,7 @@ start_model_run.bat
 *.svg
 /QGIS
 .vscode/
+Data/closest_traces.json
 !TEMP/AAO/1_combined_pred.jpg
 !TEMP/ABW/0_combined_pred.jpg
 !TEMP/ACC/9_combined_pred.jpg
