@@ -241,7 +241,7 @@ def CNN_pyramidal_encoder(latent_features, image_width, GM_dz=0.1):
         keras.layers.MaxPooling2D((1, 2)), # Reduce the depth of seismic to GM_len
         keras.layers.BatchNormalization(),
         keras.layers.Dropout(0.1)
-    ])
+    ], name='cnn_encoder')
 
     # Add more layers for shape reduction
     for _ in range((image_width-2*(3-1))//2):
@@ -334,6 +334,8 @@ class Collapse_tree(Model):
 
 def ensemble_CNN_decoder(n_members=5):
     """1D CNN decoder with a committee of n_members."""
+
+    print('More members are not implemented yet')
     ann_decoder = keras.models.Sequential([
         keras.layers.Conv1D(16, 1, activation='relu', padding='same'),
         keras.layers.Conv1D(32, 1, activation='relu', padding='same'),
@@ -343,9 +345,9 @@ def ensemble_CNN_decoder(n_members=5):
     return ann_decoder
 
 
-def ensemble_CNN_model():
+def ensemble_CNN_model(n_members=5):
     encoder = CNN_pyramidal_encoder(latent_features=16, image_width=11)
-    decoder = ensemble_CNN_decoder(n_members=5)(encoder.output)
+    decoder = ensemble_CNN_decoder(n_members=n_members)(encoder.output)
 
     model = Model(encoder.input, decoder)
     model.compile(loss='mse', optimizer='adam')

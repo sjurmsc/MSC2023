@@ -13,6 +13,7 @@ import numpy as np
 
 import numpy as np
 from sklearn.model_selection import LeaveOneGroupOut, cross_val_predict, train_test_split
+from sklearn.utils import shuffle
 from sklearn.ensemble import RandomForestRegressor
 from lightgbm import LGBMRegressor
 from sklearn.manifold import TSNE
@@ -40,8 +41,10 @@ if __name__ == '__main__':
 
     X, y, groups = create_sequence_dataset(n_bootstraps = 20, groupby='cpt_loc') # groupby can be 'cpt_loc' or 'borehole'
 
-    # Split data into training and test set
-    X_train, X_test, y_train, y_test, groups_train, groups_test = train_test_split(X, y, groups, test_size=0.05, random_state=1, stratify=groups)
+    # Shuffle training data
+    X_train, y_train, groups_train = shuffle(X, y, groups, random_state=1)
+
+    # X_train, X_test, y_train, y_test, groups_train, groups_test = train_test_split(X, y, groups, random_state=1, stratify=groups) # Stratify makes it so that the test set has the same distribution of classes as the training set
 
 
     # Configurations for models
@@ -62,18 +65,18 @@ if __name__ == '__main__':
 
     NN_param_dict = {
         'epochs'            : 5,
-        'batch_size'        : 85,
-        'validation_data'   : (X_test, y_test)
+        'batch_size'        : 85
         }
 
  
     rf_scores = None; lgbm_scores = None
     Histories = []
 
-    model = ensemble_CNN_model()
+    model = ensemble_CNN_model(n_members=1)
     model.summary()
 
     for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
+        print('Fold', i+1, 'of', cv.get_n_splits())
         X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
         y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
         groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
