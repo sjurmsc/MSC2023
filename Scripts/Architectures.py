@@ -9,6 +9,7 @@ from keras.layers import Layer
 from numpy import array
 import tensorflow as tf
 from lightgbm import LGBMRegressor
+from sklearn.ensemble import RandomForestRegressor
 
 class TCN_encoder(Model):
     def __init__(self, **kwargs):
@@ -95,10 +96,6 @@ def compiled_tcn_enc_lgbm_dec(trainig_data, **kwargs):
     tcn_enc_lgbm_dec.compile()
     tcn_enc_lgbm_dec.fit(X=X, y=y, **kwargs)
     return tcn_enc_lgbm_dec
-
-
-# import sklearn random forest regressor
-from sklearn.ensemble import RandomForestRegressor
 
 
 class TCN_enc_RF_dec(Model):
@@ -234,7 +231,7 @@ def CNN_pyramidal_encoder(latent_features, image_width, GM_dz=0.1):
 
     image_shape = (image_width, None, 1)
 
-    cnn_encoder = keras.Sequential([        
+    cnn_encoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=image_shape),
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))),
         keras.layers.Conv2D(16, (3, 3), activation='relu'),
@@ -242,7 +239,8 @@ def CNN_pyramidal_encoder(latent_features, image_width, GM_dz=0.1):
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))), # 1, 1 padding because kernel is 3x3
         keras.layers.Conv2D(32, (3, 3), activation='relu'),
         keras.layers.MaxPooling2D((1, 2)), # Reduce the depth of seismic to GM_len
-        keras.layers.BatchNormalization()
+        keras.layers.BatchNormalization(),
+        keras.layers.Dropout(0.1)
     ])
 
     # Add more layers for shape reduction
@@ -250,6 +248,7 @@ def CNN_pyramidal_encoder(latent_features, image_width, GM_dz=0.1):
         cnn_encoder.add(keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))))
         cnn_encoder.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
         cnn_encoder.add(keras.layers.BatchNormalization())
+        cnn_encoder.add(keras.layers.Dropout(0.01))
 
 
     cnn_encoder.add(keras.layers.Conv1D(latent_features, (1), activation='relu'))
