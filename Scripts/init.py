@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
  
     rf_scores = None; lgbm_scores = None
-
+    Histories = []
 
     model = ensemble_CNN_model()
     model.summary()
@@ -79,6 +79,7 @@ if __name__ == '__main__':
         groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
 
         History = model.fit(X_train_cv, y_train_cv, **NN_param_dict)
+        Histories.append(History)
 
         model.save(f'../Models/Ensemble_CNN_{i}.h5')
 

@@ -324,6 +324,19 @@ def plot_history(History, val=True, filename=None):
     plt.savefig(filename)
     plt.close()
 
+def plot_histories(Histories, val=False, filename=None):
+    """Plots the history of the model training"""
+    for i, History in enumerate(Histories):
+        plt.plot(History.history['loss'], label='Train', color='red', linewidth=2)
+        # if val:
+        #     plt.plot(History.history['val_loss'], label=f'Validation {i}', color='k', linewidth=2, linestyle='--')
+        plt.title('Model loss')
+        plt.ylabel('Loss')
+        plt.xlabel('Epoch')
+    plt.legend(loc='upper right')
+    plt.savefig(filename)
+    plt.close()
+
 # Only used for testing the code
 if __name__ == '__main__':
     pass
