@@ -105,11 +105,11 @@ if __name__ == '__main__':
             encoder = model.cnn_encoder
             if dec == 'RF':
                 decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
-                decoder.fit(encoder(X_train_cv), y_train_cv)
+                decoder.fit(encoder(X_train_cv), y_train_cv, verbose=1)
                 rf_preds = decoder.predict(encoder(X_test_cv))
             elif dec == 'LGBM':
                 decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
-                decoder.fit(encoder(X_train_cv), y_train_cv)
+                decoder.fit(encoder(X_train_cv), y_train_cv, verbose=1)
                 lgbm_preds = decoder.predict(encoder(X_test_cv))
 
     # Save the predictions
