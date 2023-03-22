@@ -111,6 +111,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
                             n_bootstraps=20,
                             sequence_length=10, 
                             stride=1,
+                            cumulative_seismic=False,
                             groupby='cpt_loc'):
     """
     Creates a dataset with sections of seismic image and corresponding CPT data where
@@ -135,7 +136,10 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
         correlated_cpt_z = z_GM # + value['seafloor']
 
-        seismic = array(value['Seismic_data'])
+        if cumulative_seismic:
+            seismic = np.cumsum(array(value['Seismic_data']), axis=1)
+        else:
+            seismic = array(value['Seismic_data'])
         seismic_z = array(value['z_traces'])
 
         for bootstrap in bootstraps:

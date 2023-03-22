@@ -312,6 +312,17 @@ def repo_push(fps, message):
     except:
         print('Unable to push to remote repo')
 
+def plot_history(History, val=True, filename=None):
+    """Plots the history of the model training"""
+    plt.plot(History.history['loss'], label='Train', color='red', linewidth=2)
+    if val:
+        plt.plot(History.history['val_loss'], label='Validation', color='k', linewidth=2, linestyle='--')
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(loc='upper right')
+    plt.savefig(filename)
+    plt.close()
 
 # Only used for testing the code
 if __name__ == '__main__':

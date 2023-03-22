@@ -977,7 +977,7 @@ def ensemble_CNN_decoder(n_members=5):
         keras.layers.Conv1D(16, 1, activation='relu', padding='same'),
         keras.layers.Conv1D(32, 1, activation='relu', padding='same'),
         keras.layers.Conv1D(3, 1, activation='relu', padding='same')
-    ])
+    ], name='ann_decoder')
 
     return ann_decoder
 

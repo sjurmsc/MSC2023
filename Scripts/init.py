@@ -10,16 +10,13 @@ over these configurations are also defined in this script.
 from pathlib import Path
 from PIL import Image
 import numpy as np
-from keras.utils.vis_utils import plot_model
 
-from pandas import read_csv
 import numpy as np
-from sklearn.model_selection import LeaveOneGroupOut, cross_validate, cross_val_predict, train_test_split
+from sklearn.model_selection import LeaveOneGroupOut, cross_val_predict, train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from lightgbm import LGBMRegressor
 from sklearn.manifold import TSNE
 from sklearn.multioutput import MultiOutputRegressor
-from keras.losses import mean_squared_error
 
 # My scripts
 from Log import *
@@ -27,21 +24,7 @@ from Architectures import *
 from Feat_aug import *
 from NGI.GM_Toolbox import evaluate_modeldist_norm
 
-# Configurations for the Random Forest model
-RF_param_dict = {
-    'max_depth': 20,
-    'n_estimators': 20,
-    'min_samples_leaf': 1,
-    'min_samples_split': 4,
-    'bootstrap': True,
-    'criterion': 'mse'
-    }
 
-LGBM_param_dict = {
-    'num_leaves': 31,
-    'max_depth': 20,
-    'n_estimators': 100
-    }
 
 
 
@@ -52,88 +35,84 @@ if __name__ == '__main__':
 
 
     # Creating the model
-    methods = ['Ensemble_CNN'] #, 'RF', 'LGBM']
+
     cv = LeaveOneGroupOut()
 
-    X, y, groups = create_sequence_dataset(n_bootstraps = 20, groupby='cpt_loc')
+    X, y, groups = create_sequence_dataset(n_bootstraps = 20, groupby='cpt_loc') # groupby can be 'cpt_loc' or 'borehole'
 
     # Split data into training and test set
     X_train, X_test, y_train, y_test, groups_train, groups_test = train_test_split(X, y, groups, test_size=0.05, random_state=1, stratify=groups)
 
-    NN_param_dict = {
-        'epochs': 5,
-        'batch_size': 85,
-        'validation_data': (X_test, y_test)
 
+    # Configurations for models
+    RF_param_dict = {
+        'max_depth'         : 20,
+        'n_estimators'      : 20,
+        'min_samples_leaf'  : 1,
+        'min_samples_split' : 4,
+        'bootstrap'         : True,
+        'criterion'         : 'mse'
         }
 
-    for m in methods:
+    LGBM_param_dict = {
+        'num_leaves'        : 31,
+        'max_depth'         : 20,
+        'n_estimators'      : 100
+        }
 
-        rf_scores = None; lgbm_scores = None
+    NN_param_dict = {
+        'epochs'            : 5,
+        'batch_size'        : 85,
+        'validation_data'   : (X_test, y_test)
+        }
 
-        if m == 'Ensemble_CNN':
-            model = ensemble_CNN_model()
-            # plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
-            model.summary()
-
-            for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
-                X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
-                y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
-                groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
-
-                History = model.fit(X_train_cv, y_train_cv, **NN_param_dict)
-
-                model.save(f'../Models/Ensemble_CNN_{i}.h5')
-
-                # Plot the training and validation loss
-                plt.plot(History.history['loss'])
-                plt.plot(History.history['val_loss'])
-                plt.title('Model loss')
-                plt.ylabel('Loss')
-                plt.xlabel('Epoch')
-                plt.legend(['Train', 'Test'], loc='upper left')
-                plt.savefig(f'../Models/Ensemble_CNN_{i}.png')
-                plt.close()
-
-                # Adding predictions to a numpy array
-                if i == 0:
-                    preds = model.predict(X_test_cv)
-                else:
-                    preds = np.vstack((preds, model.predict(X_test_cv)))
-
-            # Save the predictions
-            np.save('../Models/Ensemble_CNN_preds.npy', preds)
-
-            for dec in ['RF', 'LGBM']:
-                encoder = model.cnn_encoder
-                if dec == 'RF':
-                    decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
-                    rf_preds = cross_val_predict(decoder, encoder(X), y, cv=cv, groups=groups, n_jobs=-1)
-                elif dec == 'LGBM':
-                    decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
-                    lgbm_preds = cross_val_predict(decoder, encoder(X), y, cv=cv, groups=groups, n_jobs=-1)
-
-            for label, pred in zip(['Ensemble_CNN'], [preds]): # zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
-                stds = []
-                for k in range(pred.shape[-1]):
-                    _, _, _, _, std, _ = evaluate_modeldist_norm(y[:, k], pred[:, k])
-                    stds.append(std)
-
-            with open('results.txt', 'a') as f:
-                f.write(f'{label} stds: {stds}')
-
-                
+ 
+    rf_scores = None; lgbm_scores = None
 
 
+    model = ensemble_CNN_model()
+    model.summary()
 
+    for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
+        X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
+        y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
+        groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
+
+        History = model.fit(X_train_cv, y_train_cv, **NN_param_dict)
+
+        model.save(f'../Models/Ensemble_CNN_{i}.h5')
+
+        # Plot the training and validation loss
+        plot_history(History, val=True, filename=f'../Models/Ensemble_CNN_{i}.png')
+
+        # Adding predictions to a numpy array
+        if i == 0:
+            preds = model.predict(X_test_cv)
         else:
-            if m == 'RF':
-                decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
-                
-            elif m == 'LGBM':
-                decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
+            preds = np.vstack((preds, model.predict(X_test_cv)))
 
-            preds = cross_val_predict(Collapse_tree(decoder), X, y, cv=cv, groups=groups, n_jobs=-1)
+    # Save the predictions
+    np.save('../Models/Ensemble_CNN_preds.npy', preds)
+
+    for dec in ['RF', 'LGBM']:
+        encoder = model.cnn_encoder
+        if dec == 'RF':
+            decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
+            rf_preds = cross_val_predict(decoder, encoder(X), y, cv=cv, groups=groups, n_jobs=-1)
+        elif dec == 'LGBM':
+            decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
+            lgbm_preds = cross_val_predict(decoder, encoder(X), y, cv=cv, groups=groups, n_jobs=-1)
+
+    for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
+        stds = []
+        for k in range(pred.shape[-1]):
+            _, _, _, _, std, _ = evaluate_modeldist_norm(y[:, k], pred[:, k])
+            stds.append(std)
+
+    with open('results.txt', 'a') as f:
+        f.write(f'{label} stds: {stds}')
+
+
         
 
         
