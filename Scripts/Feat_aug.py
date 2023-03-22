@@ -14,6 +14,7 @@ from pathlib import Path
 import sys
 import matplotlib.pyplot as plt
 import pickle
+from sklearn.manifold import TSNE
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
 # Functions for loading data
@@ -351,6 +352,41 @@ def plot_cpt_pred(model, cpt, save = False, image_width = 11):
         plt.show()
 
     plt.close()
+
+
+def plot_latent_space(latent_model, cpt_data, z_GM):
+    """Use t-SNE to plot the latent space"""
+
+    # The indices where no rows of y_val contain nan values
+    valid_indices = np.where(np.all(~np.isnan(cpt_data), axis=1))[0]
+
+    # The indexes of z where the depth matches valid indices of y_val
+    valid_z_indices = np.where(np.isin(z, z_GM[valid_indices]))[0]
+    outside_indices = np.where(~np.isin(np.arange(len(z)), valid_z_indices))[0]
+
+    y_comp = cpt_data[np.where(np.all(~np.isnan(cpt_data), axis=1))[0]]
+
+    # Plot TSNE of the latent model
+    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+    prediction = latent_model.predict(X_val.reshape(1, *X_val.shape)).reshape(X_val.shape[1]//2, 16)
+    tsne_results = tsne.fit_transform(prediction)
+
+    
+    cpt_parameters = ['$q_c$', '$f_s$', '$u_2$'] 
+    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+    for i in range(3):
+        # Give specific markers to points outside the valid indices
+        ax[i].scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c='k', alpha=0.5)
+        
+        # Plot the valid indices
+        ax[i].scatter(tsne_results[valid_z_indices, 0], tsne_results[valid_z_indices, 1], c=y_comp[:, i])
+
+        ax[i].set_title('Latent space colored by {}'.format(cpt_parameters[i]))
+
+    plt.show()
+    plt.close()
+
+
 
 
 # from NGI.GM_BuildDatabase import *
@@ -1021,7 +1057,7 @@ if __name__ == '__main__':
     import keras
     from lightgbm import LGBMRegressor
     from sklearn.multioutput import MultiOutputRegressor
-    from sklearn.manifold import TSNE
+
     from sklearn.model_selection import train_test_split
 
     # get_csv_of_cdp_location_coordinates()
@@ -1069,14 +1105,6 @@ if __name__ == '__main__':
     # model.summary()
 
     # history = model.fit(X_train, y_train, epochs=1, batch_size=10, verbose=1, validation_data=(X_val, y_val))
-    
-    # Plot the training history with validation loss
-    # plt.plot(history.history['loss'], label='train')
-    # # plt.plot(history.history['val_loss'], label='validation')
-    # plt.legend()
-    # plt.show()
-
-
 
     # model.save('model.h5')
     # latent_model.save('latent_model.h5')

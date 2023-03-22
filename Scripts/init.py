@@ -99,17 +99,23 @@ if __name__ == '__main__':
         else:
             preds = np.vstack((preds, model.predict(X_test_cv)))
 
+
+
+        for dec in ['RF', 'LGBM']:
+            encoder = model.cnn_encoder
+            if dec == 'RF':
+                decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
+                decoder.fit(encoder(X_train_cv), y_train_cv)
+                rf_preds = decoder.predict(encoder(X_test_cv))
+            elif dec == 'LGBM':
+                decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
+                decoder.fit(encoder(X_train_cv), y_train_cv)
+                lgbm_preds = decoder.predict(encoder(X_test_cv))
+
     # Save the predictions
     np.save('../Models/Ensemble_CNN_preds.npy', preds)
 
-    for dec in ['RF', 'LGBM']:
-        encoder = model.cnn_encoder
-        if dec == 'RF':
-            decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
-            rf_preds = cross_val_predict(decoder, encoder(X), y, cv=cv, groups=groups, n_jobs=-1)
-        elif dec == 'LGBM':
-            decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
-            lgbm_preds = cross_val_predict(decoder, encoder(X), y, cv=cv, groups=groups, n_jobs=-1)
+        
 
     for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
         stds = []
