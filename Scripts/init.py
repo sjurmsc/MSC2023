@@ -42,6 +42,7 @@ if __name__ == '__main__':
     X, y, groups = create_sequence_dataset(sequence_length=10,
                                            n_bootstraps = 20,
                                            add_noise=0.1,
+                                           max_distance_to_cdp=10,
                                            cumulative_seismic=False,
                                            random_flip=True,
                                            groupby='cpt_loc') # groupby can be 'cpt_loc' or 'borehole'
@@ -103,7 +104,13 @@ if __name__ == '__main__':
             preds = np.vstack((preds, model.predict(X_test_cv)))
 
         encoded_data = encoder.predict(X_test_cv)[:, 0, :, :]
-        print(encoded_data.shape, y_test_cv.shape)
+        test = encoded_data[0, 0, :]
+        encoded_data = encoded_data.reshape(encoded_data.shape[0]*encoded_data.shape[1], 16)
+        flat_y_test = y_test_cv.reshape(y_test_cv.shape[0]*y_test_cv.shape[1], 3)
+
+        print(test, encoded_data[0, :])
+        print(np.all(test==encoded_data[0, :]))
+        
 
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
