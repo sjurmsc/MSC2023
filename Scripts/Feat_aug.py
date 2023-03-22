@@ -657,9 +657,9 @@ def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=Fals
         from these bins to create a new downsampled CPT dataset. This is done to
         increase the number of CPT samples at model depths. The function returns
         a new CPT dataset with the same number of samples as the ground model dataset."""
-    cpt_data = np.array(cpt_data)
-    cpt_depth = np.array(cpt_depth)
-    GM_depth = np.array(GM_depth)
+    cpt_data = np.array(cpt_data, dtype=np.float64)
+    cpt_depth = np.array(cpt_depth, dtype=np.float64)
+    GM_depth = np.array(GM_depth, dtype=np.float64)
 
     # Making sure that GM_depth is evenly spaced, and setting half bin size
     assert np.all(np.isclose(np.sum(np.diff(np.diff(GM_depth))), 0))
