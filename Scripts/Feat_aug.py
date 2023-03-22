@@ -17,6 +17,8 @@ import pickle
 from sklearn.manifold import TSNE
 import numpy as np
 import pandas as pd
+from numba import jit, njit
+import tensorflow as tf
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
 # Functions for loading data
@@ -651,7 +653,7 @@ def match_files(X_folder_loc, y_folder_loc, file_extension='.sgy'):
           
 
 
-
+@njit
 def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=False, to_file=''):
     """ This function creates bins of cpt values at ground model depths, and then samples
         from these bins to create a new downsampled CPT dataset. This is done to
@@ -680,9 +682,6 @@ def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=Fals
             # pick n random rows of samples from b and append to cpt_samples
             cpt_samples = np.append(cpt_samples, b[np.random.choice(b.shape[0], n, replace=True), :].reshape((n, 1, 3)), axis=1)
 
-    # cpt_samples = np.array(cpt_samples)
-    # cpt_samples = cpt_samples.reshape((len(cpt_samples)*n, 1))
-
     if plot:
 
         # plot cpt data in three subplots
@@ -708,10 +707,11 @@ def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=Fals
             plt.savefig(to_file)
         else:
             plt.show()
-    plt.close()
+
+        plt.close()
     return cpt_samples, GM_depth
 
-
+@njit
 def get_max_min_and_mean_for_depth_bins(cpt_data, cpt_depth, GM_depth):
     """ This function creates bins of cpt values at ground model depths, 
         calculates the mean, max, and min which are returned."""
