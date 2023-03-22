@@ -58,7 +58,7 @@ if __name__ == '__main__':
     X, y, groups = create_sequence_dataset(n_bootstraps = 20, groupby='cpt_loc')
 
     # Split data into training and test set
-    X_train, X_test, y_train, y_test, groups_train, groups_test = train_test_split(X, y, groups, test_size=0.1, random_state=1, stratify=groups)
+    X_train, X_test, y_train, y_test, groups_train, groups_test = train_test_split(X, y, groups, test_size=0.05, random_state=1, stratify=groups)
 
     NN_param_dict = {
         'epochs': 200,
@@ -80,7 +80,7 @@ if __name__ == '__main__':
                 y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
                 groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
 
-                model.fit(X_train_cv, y_train_cv, epochs=NN_param_dict['epochs'], batch_size=NN_param_dict['batch_size'], validation_data=NN_param_dict['validation_data'], verbose=0)
+                model.fit(X_train_cv, y_train_cv, epochs=NN_param_dict['epochs'], batch_size=NN_param_dict['batch_size'], verbose = 0) #, validation_data=NN_param_dict['validation_data'], verbose=0)
 
                 if i == 0:
                     preds = model.predict(X_test_cv)
@@ -88,7 +88,6 @@ if __name__ == '__main__':
                     preds = np.vstack((preds, model.predict(X_test_cv)))
 
             
-            # preds = cross_val_predict(model, X_train, y_train, cv=cv, groups=groups_train, fit_params = NN_param_dict, n_jobs=-1)
 
             for dec in ['RF', 'LGBM']:
                 encoder = model.cnn_encoder
@@ -104,7 +103,10 @@ if __name__ == '__main__':
                 for k in range(pred.shape[-1]):
                     _, _, _, _, std, _ = evaluate_modeldist_norm(y[:, k], pred[:, k])
                     stds.append(std)
-            print(f'{label} stds: {stds}')
+
+            with open('results.txt', 'a') as f:
+                f.write(f'{label} stds: {stds}')
+
                 
 
 
