@@ -145,8 +145,9 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
         seismic = array(value['Seismic_data'])
 
-        if add_noise:
-            seismic += np.random.normal(0, add_noise, seismic.shape)
+        # if add_noise:
+        #     seismic += np.random.normal(0, add_noise, seismic.shape)
+
         if cumulative_seismic:
             seismic = np.cumsum(seismic, axis=1)
 
@@ -173,6 +174,11 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
                     for i, j in zip(range(0, cpt_seq.shape[0]-sequence_length, stride), range(0, seis_seq.shape[1]-2*sequence_length, 2*stride)):
                         X_val = seis_seq[:, j:j+2*sequence_length]
+                        if add_noise:
+                            if cumulative_seismic:
+                                X_val += np.cumsum(np.random.normal(0, add_noise, X_val.shape), axis=1)
+                            else:
+                                X_val += np.random.normal(0, add_noise, X_val.shape)
                         X.append(X_val)
                         y_val = cpt_seq[i:i+sequence_length, :]
                         y.append(y_val)
