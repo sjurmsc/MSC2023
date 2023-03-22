@@ -91,7 +91,7 @@ if __name__ == '__main__':
         model.save(f'../Models/Ensemble_CNN_{i}.h5')
 
         # Plot the training and validation loss
-        plot_history(History, val=True, filename=f'../Models/Ensemble_CNN_{i}.png')
+        plot_history(History, filename=f'../Models/Ensemble_CNN_{i}.png')
 
         # Adding predictions to a numpy array
         if i == 0:
