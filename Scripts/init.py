@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)
-    if not Path(f'../Models/{gname}').exists(): Path(f'../Models/{gname}').mkdir()
+    if not Path(f'./Models/{gname}').exists(): Path(f'./Models/{gname}').mkdir()
 
     # Configurations for models
     RF_param_dict = {
@@ -90,11 +90,11 @@ if __name__ == '__main__':
         History = model.fit(X_train_cv, y_train_cv, **NN_param_dict)
         Histories.append(History)
 
-        encoder.save(f'../Models/{gname}/Ensemble_CNN_encoder_{i}.h5')
-        model.save(f'../Models/{gname}/Ensemble_CNN_{i}.h5')
+        encoder.save(f'./Models/{gname}/Ensemble_CNN_encoder_{i}.h5')
+        model.save(f'./Models/{gname}/Ensemble_CNN_{i}.h5')
 
         # Plot the training and validation loss
-        plot_history(History, filename=f'../Models/{gname}/Ensemble_CNN_{i}.png')
+        plot_history(History, filename=f'./Models/{gname}/Ensemble_CNN_{i}.png')
 
         # Adding predictions to a numpy array
         if i == 0:
@@ -117,7 +117,7 @@ if __name__ == '__main__':
                 lgbm_preds = decoder.predict(encoder(X_test_cv))
 
     # Save the predictions
-    np.save(f'../Models/{gname}/Ensemble_CNN_preds.npy', preds)
+    np.save(f'./Models/{gname}/Ensemble_CNN_preds.npy', preds)
 
         
 
@@ -127,7 +127,7 @@ if __name__ == '__main__':
             _, _, _, _, std, _ = evaluate_modeldist_norm(y[:, k], pred[:, k])
             stds.append(std)
 
-    with open(f'../Models/{gname}/std_results.txt', 'a') as f:
+    with open(f'./Models/{gname}/std_results.txt', 'a') as f:
         f.write(f'{label} stds: {stds}')
 
 
