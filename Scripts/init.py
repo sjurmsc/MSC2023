@@ -120,13 +120,13 @@ if __name__ == '__main__':
 
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
-                decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
+                decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict), n_jobs=-1)
                 decoder.fit(encoded_data, flat_y_train)
                 
                 print('RF score:', decoder.score(test_prediction, flat_y_test))
                 rf_preds = decoder.predict(test_prediction)
             elif dec == 'LGBM':
-                decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
+                decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict), n_jobs=-1)
                 decoder.fit(encoded_data, flat_y_train)
                 print('LGBM score:', decoder.score(test_prediction, flat_y_test))
                 lgbm_preds = decoder.predict(test_prediction)
@@ -138,12 +138,16 @@ if __name__ == '__main__':
 
     for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
         stds = []
+        print('Evaluating model stds for {}'.format(label))
         for k in range(pred.shape[-1]):
             _, _, _, _, std, _ = evaluate_modeldist_norm(y[:, k], pred[:, k])
             stds.append(std)
 
     with open(f'./Models/{gname}/std_results.txt', 'a') as f:
         f.write(f'{label} stds: {stds}')
+
+    # Create prediction crossplots
+    
 
 
         
