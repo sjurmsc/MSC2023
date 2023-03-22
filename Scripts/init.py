@@ -105,7 +105,7 @@ if __name__ == '__main__':
         else:
             preds = np.vstack((preds, model.predict(X_test_cv)))
 
-        encoded_data = encoder.predict(X_test_cv)[:, 0, :, :]
+        encoded_data = encoder.predict(X_train_cv)[:, 0, :, :]
         tree_train_input_shape = (encoded_data.shape[0]*encoded_data.shape[1], 16)
         encoded_data = encoded_data.reshape(tree_train_input_shape)
         flat_y_train = y_train_cv.reshape(y_train_cv.shape[0]*y_train_cv.shape[1], 3)
@@ -115,7 +115,7 @@ if __name__ == '__main__':
         tree_test_input_shape = (test_prediction.shape[0]*test_prediction.shape[1], 16)
         test_prediciton = test_prediction.reshape(tree_test_input_shape)
         flat_y_test = y_test_cv.reshape(y_test_cv.shape[0]*y_test_cv.shape[1], 3)
-        
+
         print(encoded_data.shape, flat_y_train.shape, test_prediction.shape, flat_y_test.shape)
 
         for dec in ['RF', 'LGBM']:
