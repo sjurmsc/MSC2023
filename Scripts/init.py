@@ -54,6 +54,8 @@ if __name__ == '__main__':
     gname, _ = next(g_name_gen)
     if not Path(f'./Models/{gname}').exists(): Path(f'./Models/{gname}').mkdir()
 
+    describe_data(X, y, groups, mdir=f'./Models/{gname}/')
+
     # Configurations for models
     RF_param_dict = {
         'max_depth'         : 20,
@@ -105,15 +107,15 @@ if __name__ == '__main__':
 
         encoded_data = encoder.predict(X_test_cv)[:, 0, :, :]
         tree_train_input_shape = (encoded_data.shape[0]*encoded_data.shape[1], 16)
-        encoded_data = encoded_data.reshape(*tree_train_input_shape)
-
+        encoded_data = encoded_data.reshape(tree_train_input_shape)
         flat_y_train = y_train_cv.reshape(y_train_cv.shape[0]*y_train_cv.shape[1], 3)
-        flat_y_test = y_test_cv.reshape(y_test_cv.shape[0]*y_test_cv.shape[1], 3)
+        
         
         test_prediction = encoder.predict(X_test_cv)[:, 0, :, :]
         tree_test_input_shape = (test_prediction.shape[0]*test_prediction.shape[1], 16)
-        test_prediciton = test_prediction.reshape(*tree_test_input_shape)
-
+        test_prediciton = test_prediction.reshape(tree_test_input_shape)
+        flat_y_test = y_test_cv.reshape(y_test_cv.shape[0]*y_test_cv.shape[1], 3)
+        
         print(encoded_data.shape, flat_y_train.shape, test_prediction.shape, flat_y_test.shape)
 
         for dec in ['RF', 'LGBM']:
