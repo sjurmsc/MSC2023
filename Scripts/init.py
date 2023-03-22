@@ -48,8 +48,8 @@ if __name__ == '__main__':
     # Shuffle training data
     X_train, y_train, groups_train = shuffle(X, y, groups, random_state=1)
 
-    # X_train, X_test, y_train, y_test, groups_train, groups_test = train_test_split(X, y, groups, random_state=1, stratify=groups) # Stratify makes it so that the test set has the same distribution of classes as the training set
-
+    gname, _ = give_modelname()
+    if not Path(f'../Models/{gname}').exists(): Path(f'../Models/{gname}').mkdir()
 
     # Configurations for models
     RF_param_dict = {
@@ -76,10 +76,10 @@ if __name__ == '__main__':
     rf_scores = None; lgbm_scores = None
     Histories = []
 
-    model, encoder = ensemble_CNN_model(n_members=1)
-    model.summary()
-
     for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
+        model, encoder = ensemble_CNN_model(n_members=1)
+        if i==0: model.summary()
+
         print('Fold', i+1, 'of', cv.get_n_splits(groups=groups_train))
         X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
         y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
@@ -88,10 +88,11 @@ if __name__ == '__main__':
         History = model.fit(X_train_cv, y_train_cv, **NN_param_dict)
         Histories.append(History)
 
-        model.save(f'../Models/Ensemble_CNN_{i}.h5')
+        encoder.save(f'../Models/{gname}/Ensemble_CNN_encoder_{i}.h5')
+        model.save(f'../Models/{gname}/Ensemble_CNN_{i}.h5')
 
         # Plot the training and validation loss
-        plot_history(History, filename=f'../Models/Ensemble_CNN_{i}.png')
+        plot_history(History, filename=f'../Models/{gname}/Ensemble_CNN_{i}.png')
 
         # Adding predictions to a numpy array
         if i == 0:
@@ -112,7 +113,7 @@ if __name__ == '__main__':
                 lgbm_preds = decoder.predict(encoder(X_test_cv))
 
     # Save the predictions
-    np.save('../Models/Ensemble_CNN_preds.npy', preds)
+    np.save(f'../Models/{gname}/Ensemble_CNN_preds.npy', preds)
 
         
 
@@ -122,7 +123,7 @@ if __name__ == '__main__':
             _, _, _, _, std, _ = evaluate_modeldist_norm(y[:, k], pred[:, k])
             stds.append(std)
 
-    with open('results.txt', 'a') as f:
+    with open(f'../Models/{gname}/std_results.txt', 'a') as f:
         f.write(f'{label} stds: {stds}')
 
 
