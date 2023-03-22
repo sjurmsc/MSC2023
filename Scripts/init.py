@@ -73,7 +73,8 @@ if __name__ == '__main__':
 
         if m == 'Ensemble_CNN':
             model = ensemble_CNN_model()
-            plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
+            # plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
+            model.summary()
 
             for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
                 X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
