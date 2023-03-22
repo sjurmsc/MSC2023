@@ -76,7 +76,7 @@ if __name__ == '__main__':
     rf_scores = None; lgbm_scores = None
     Histories = []
 
-    model = ensemble_CNN_model(n_members=1)
+    model, encoder = ensemble_CNN_model(n_members=1)
     model.summary()
 
     for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
@@ -102,7 +102,6 @@ if __name__ == '__main__':
 
 
         for dec in ['RF', 'LGBM']:
-            encoder = model.cnn_encoder
             if dec == 'RF':
                 decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
                 decoder.fit(encoder(X_train_cv), y_train_cv, verbose=1)
