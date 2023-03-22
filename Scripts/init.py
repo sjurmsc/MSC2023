@@ -120,12 +120,14 @@ if __name__ == '__main__':
 
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
+                print('Fitting RF')
                 decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict), n_jobs=-1)
                 decoder.fit(encoded_data, flat_y_train)
                 
                 print('RF score:', decoder.score(test_prediction, flat_y_test))
                 rf_preds = decoder.predict(test_prediction)
             elif dec == 'LGBM':
+                print('Fitting LGBM')
                 decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict), n_jobs=-1)
                 decoder.fit(encoded_data, flat_y_train)
                 print('LGBM score:', decoder.score(test_prediction, flat_y_test))
@@ -147,7 +149,7 @@ if __name__ == '__main__':
         f.write(f'{label} stds: {stds}')
 
     # Create prediction crossplots
-    
+
 
 
         
