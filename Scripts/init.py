@@ -107,11 +107,13 @@ if __name__ == '__main__':
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
                 decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
-                decoder.fit(encoded_data, y_train_cv, verbose=1)
+                decoder.fit(encoded_data, y_train_cv)
+                print('RF score:', decoder.score(encoder.predict(X_test_cv), y_test_cv))
                 rf_preds = decoder.predict(encoder.predict(X_test_cv))
             elif dec == 'LGBM':
                 decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
-                decoder.fit(encoded_data, y_train_cv, verbose=1)
+                decoder.fit(encoded_data, y_train_cv)
+                print('LGBM score:', decoder.score(encoder.predict(X_test_cv), y_test_cv))
                 lgbm_preds = decoder.predict(encoder(X_test_cv))
 
     # Save the predictions
