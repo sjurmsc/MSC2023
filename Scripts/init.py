@@ -83,12 +83,14 @@ if __name__ == '__main__':
 
                 model.fit(X_train_cv, y_train_cv, epochs=NN_param_dict['epochs'], batch_size=NN_param_dict['batch_size'], validation_data=NN_param_dict['validation_data'])
 
+                model.save(f'../Models/Ensemble_CNN_{i}.h5')
+
                 if i == 0:
                     preds = model.predict(X_test_cv)
                 else:
                     preds = np.vstack((preds, model.predict(X_test_cv)))
 
-            
+            np.save('../Models/Ensemble_CNN_preds.npy', preds)
 
             for dec in ['RF', 'LGBM']:
                 encoder = model.cnn_encoder
