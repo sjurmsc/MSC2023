@@ -651,7 +651,7 @@ def match_files(X_folder_loc, y_folder_loc, file_extension='.sgy'):
         [y_dir.pop(j) for j in j_list]
     return file_pairs
           
-@jit
+
 def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=False, to_file=''):
     """ This function creates bins of cpt values at ground model depths, and then samples
         from these bins to create a new downsampled CPT dataset. This is done to
@@ -709,7 +709,7 @@ def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=Fals
         plt.close()
     return cpt_samples, GM_depth
 
-@njit
+
 def get_max_min_and_mean_for_depth_bins(cpt_data, cpt_depth, GM_depth):
     """ This function creates bins of cpt values at ground model depths, 
         calculates the mean, max, and min which are returned."""
