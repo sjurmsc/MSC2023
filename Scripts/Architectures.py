@@ -982,7 +982,7 @@ def ensemble_CNN_decoder(n_members=5):
     return ann_decoder
 
 
-def ensemble_CNN_model(X, y, **kwargs):
+def ensemble_CNN_model():
     encoder = CNN_collapsing_encoder(latent_features=16, image_width=11)
     decoder = ensemble_CNN_decoder(n_members=5)(encoder.output)
 
