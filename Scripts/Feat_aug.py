@@ -18,7 +18,6 @@ from sklearn.manifold import TSNE
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from numba import njit, jit
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
 # Functions for loading data
@@ -58,11 +57,11 @@ def get_cpt_data_from_file(fp, zrange: tuple = (30, 100)):
 
     return data, z
 
-from pandas import read_excel
+from pandas import read_csv
 
 def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_file=''):
-    distances = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx'
-    CPT_match = read_excel(distances)
+
+    CPT_match = read_csv(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.csv')
 
     cpt_dict = get_cpt_las_files()
 
@@ -71,6 +70,8 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
 
     for i, row in CPT_match.iterrows():
         cpt_loc = int(row['Location no.'])
+
+        distance = row['Distance to CDP']
 
         # Get CPT name
         if cpt_loc < 86:
@@ -95,7 +96,8 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
         SEAFLOOR = float(row['Water Depth'])/1000 # Convert from mm to m
         z_cpt = CPT_DEPTH + SEAFLOOR
 
-        match_dict[row['Borehole']] = {'CDP'            : CDP, 
+        match_dict[row['Borehole']] = {'CDP'            : CDP,
+                                       'distance'       : distance, 
                                        'cpt_loc'        : cpt_loc,
                                        'CPT_data'       : CPT_DATA, 
                                        'Seismic_data'   : traces, 
@@ -120,6 +122,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
                             n_bootstraps=20,
                             sequence_length=10, 
                             stride=1,
+                            max_distance_to_cdp=25, # in meters (largest value in dataset is 21)
                             add_noise=False,
                             cumulative_seismic=False,
                             random_flip=False, 
@@ -141,6 +144,11 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
     print('Bootstrapping CPT data...')
     for key, value in match_dict.items():
+
+        # Skip if distance to CDP is too large
+        if abs(value['distance']) > max_distance_to_cdp:
+            continue
+
         z_GM = np.arange(0, max(value['z_cpt']), 0.1)
         cpt_vals = array(value['CPT_data'])
         bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps, plot=False)
@@ -148,9 +156,6 @@ def create_sequence_dataset(n_neighboring_traces=5,
         correlated_cpt_z = z_GM # + value['seafloor']
 
         seismic = array(value['Seismic_data'])
-
-        # if add_noise:
-        #     seismic += np.random.normal(0, add_noise, seismic.shape)
 
         if cumulative_seismic:
             seismic = np.cumsum(seismic, axis=1)
