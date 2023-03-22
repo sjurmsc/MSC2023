@@ -39,7 +39,8 @@ if __name__ == '__main__':
 
     cv = LeaveOneGroupOut()
 
-    X, y, groups = create_sequence_dataset(n_bootstraps = 20,
+    X, y, groups = create_sequence_dataset(sequence_length=10,
+                                           n_bootstraps = 20,
                                            add_noise=0.1,
                                            cumulative_seismic=False,
                                            random_flip=True,
@@ -101,16 +102,16 @@ if __name__ == '__main__':
         else:
             preds = np.vstack((preds, model.predict(X_test_cv)))
 
-
+        encoded_data = encoder.predict(X_test_cv)
 
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
                 decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
-                decoder.fit(encoder(X_train_cv), y_train_cv, verbose=1)
-                rf_preds = decoder.predict(encoder(X_test_cv))
+                decoder.fit(encoded_data, y_train_cv, verbose=1)
+                rf_preds = decoder.predict(encoder.predict(X_test_cv))
             elif dec == 'LGBM':
                 decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
-                decoder.fit(encoder(X_train_cv), y_train_cv, verbose=1)
+                decoder.fit(encoded_data, y_train_cv, verbose=1)
                 lgbm_preds = decoder.predict(encoder(X_test_cv))
 
     # Save the predictions
