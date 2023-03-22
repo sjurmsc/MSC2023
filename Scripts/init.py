@@ -25,6 +25,7 @@ from Architectures import *
 from Feat_aug import *
 from NGI.GM_Toolbox import evaluate_modeldist_norm
 
+from time import time
 
 
 
@@ -77,6 +78,8 @@ if __name__ == '__main__':
         'batch_size'        : 88
         }
 
+    # Training time dict
+    training_time_dict = {}
  
     rf_scores = None; lgbm_scores = None
     Histories = []
@@ -90,7 +93,12 @@ if __name__ == '__main__':
         y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
         groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
 
+        # Training the model
+        t0 = time()
         History = model.fit(X_train_cv, y_train_cv, **NN_param_dict)
+
+        training_time_dict[i] = {}
+        training_time_dict[i]['CNN'] = time() - t0
         Histories.append(History)
 
         encoder.save(f'./Models/{gname}/Ensemble_CNN_encoder_{i}.h5')
@@ -113,6 +121,7 @@ if __name__ == '__main__':
         
         test_prediction = encoder.predict(X_test_cv)[:, 0, :, :]
         tree_test_input_shape = (test_prediction.shape[0]*test_prediction.shape[1], 16)
+        print(tree_test_input_shape)
         test_prediciton = test_prediction.reshape(tree_test_input_shape)
         flat_y_test = y_test_cv.reshape(y_test_cv.shape[0]*y_test_cv.shape[1], 3)
 
@@ -121,15 +130,22 @@ if __name__ == '__main__':
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
                 print('Fitting RF')
+
+                t0 = time()
                 decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict), n_jobs=-1)
                 decoder.fit(encoded_data, flat_y_train)
+                training_time_dict[i]['RF'] = time() - t0
                 
                 print('RF score:', decoder.score(test_prediction, flat_y_test))
                 rf_preds = decoder.predict(test_prediction)
+    
             elif dec == 'LGBM':
                 print('Fitting LGBM')
+                t0 = time()
                 decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict), n_jobs=-1)
                 decoder.fit(encoded_data, flat_y_train)
+                training_time_dict[i]['LGBM'] = time() - t0
+
                 print('LGBM score:', decoder.score(test_prediction, flat_y_test))
                 lgbm_preds = decoder.predict(test_prediction)
 
