@@ -17,6 +17,7 @@ import numpy as np
 from numpy.linalg import norm
 from matplotlib.colors import Normalize, Colormap
 import matplotlib.pyplot as plt
+from openpyxl import load_workbook
 
 
 
@@ -336,6 +337,20 @@ def plot_histories(Histories, val=False, filename=None):
     plt.legend(loc='upper right')
     plt.savefig(filename)
     plt.close()
+
+
+def create_results_xl():
+    """Creates a new excel file with the results of the model"""
+    xl = "C:/Users/SjB/MSC2023/Results/NGI_stdd_{}.xlsx"
+    wb = load_workbook(xl)
+    # Open the worksheet q_c
+    ws = wb['q_c']
+
+    wb.save('results.xlsx')
+
+
+def describe_data(*args, mdir=''):
+    pass
 
 # Only used for testing the code
 if __name__ == '__main__':
