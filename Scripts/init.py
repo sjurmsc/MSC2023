@@ -48,7 +48,7 @@ LGBM_param_dict = {
 if __name__ == '__main__':
 
     # Retrieve data
-    cpt_exhausive_dataset = read_csv(r'../OneDrive - NGI/Documents/NTNU/MSC_DATA/Database.csv')
+    # cpt_exhausive_dataset = read_csv(r'../OneDrive - NGI/Documents/NTNU/MSC_DATA/Database.csv')
 
 
     # Creating the model
@@ -72,15 +72,15 @@ if __name__ == '__main__':
         rf_scores = None; lgbm_scores = None
 
         if m == 'Ensemble_CNN':
-            model = Collapse_CNN(latent_features=16, image_width=11)
-            model.compile(optimizer='adam', loss=mean_squared_error, metrics=['mse'])
+            model = ensemble_CNN_model()
+            plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=True)
 
             for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
                 X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
                 y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
                 groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
 
-                model.fit(X_train_cv, y_train_cv, epochs=NN_param_dict['epochs'], batch_size=NN_param_dict['batch_size'], verbose = 0) #, validation_data=NN_param_dict['validation_data'], verbose=0)
+                model.fit(X_train_cv, y_train_cv, epochs=NN_param_dict['epochs'], batch_size=NN_param_dict['batch_size'], validation_data=NN_param_dict['validation_data'], verbose=0)
 
                 if i == 0:
                     preds = model.predict(X_test_cv)

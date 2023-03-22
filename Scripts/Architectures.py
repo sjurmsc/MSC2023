@@ -988,5 +988,4 @@ def ensemble_CNN_model(X, y, **kwargs):
 
     model = Model(encoder.input, decoder)
     model.compile(loss='mse', optimizer='adam')
-    model.fit(X, y, **kwargs)
     return model
