@@ -81,15 +81,27 @@ if __name__ == '__main__':
                 y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
                 groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
 
-                model.fit(X_train_cv, y_train_cv, epochs=NN_param_dict['epochs'], batch_size=NN_param_dict['batch_size'], validation_data=NN_param_dict['validation_data'])
+                History = model.fit(X_train_cv, y_train_cv, epochs=NN_param_dict['epochs'], batch_size=NN_param_dict['batch_size'], validation_data=NN_param_dict['validation_data'])
 
                 model.save(f'../Models/Ensemble_CNN_{i}.h5')
 
+                # Plot the training and validation loss
+                plt.plot(History.history['loss'])
+                plt.plot(History.history['val_loss'])
+                plt.title('Model loss')
+                plt.ylabel('Loss')
+                plt.xlabel('Epoch')
+                plt.legend(['Train', 'Test'], loc='upper left')
+                plt.savefig(f'../Models/Ensemble_CNN_{i}.png')
+                plt.close()
+
+                # Adding predictions to a numpy array
                 if i == 0:
                     preds = model.predict(X_test_cv)
                 else:
                     preds = np.vstack((preds, model.predict(X_test_cv)))
 
+            # Save the predictions
             np.save('../Models/Ensemble_CNN_preds.npy', preds)
 
             for dec in ['RF', 'LGBM']:
