@@ -207,12 +207,11 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
             seis = seis.reshape((seis.shape[0], seis.shape[1], 1))
             
             CDP_index = np.where(array(f.attributes(segyio.TraceField.CDP)) == CDP)[0][0]
-        
-        if groupby == 'cpt_loc':
-            pred_image = array([]).reshape((0, seis.shape[1]//2, 16))
+            
+        pred_image = array([]).reshape((0, seis.shape[1]//2, 16))
         
         img_left = CDP_index-neighbors
-        img_right = min([CDP_index+neighbors, seis.shape[0]-1]) # CDP 79 is close to the edge of the image
+        img_right = min([CDP_index+neighbors, seis.shape[0]-(img_neighbors+1)]) # CDP 79 is close to the edge of the image
 
         for ii in range(img_left, img_right+1):
             sys.stdout.write('\rPredicting image {} of {} ({}%)'.format(i+1, len(CPT_match), int((ii-img_left)/(img_right-img_left+1)*100)))
@@ -221,21 +220,49 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
             r_loc = ii+img_neighbors+1
             latent_pred = model.predict(seis[l_loc:r_loc, :, 0].reshape((1, image_width, seis.shape[1])), verbose=0)[0]
             pred_image = row_stack((pred_image, latent_pred))
+        
+        if groupby == 'latent_unit':
+            pred = pred_image.reshape((16, 1, neighbors*2+1, seis.shape[0]))
+            if i == 0:
+                unit_pred = np.array(pred).reshape((16, 0, neighbors*2+1, seis.shape[0]))
+            else:
+                unit_pred = np.concatenate((unit_pred, pred), axis=1)
+            
+
+        if groupby == 'cpt_loc':
+            fig, ax = plt.subplots(2, 8, figsize=(20, 5))
+            fig.tight_layout()
+            fig.subplots_adjust(top=0.85)
+
+            for ii in range(16):
+                ax[ii//8, ii%8].imshow(seis[img_left:img_right+1, :2:-1, 0 ].T, cmap='gray')
+                ax[ii//8, ii%8].imshow(pred_image[:, :, ii].T, cmap='gist_rainbow', alpha=0.4)
+                ax[ii//8, ii%8].axis('off')
+                ax[ii//8, ii%8].set_title('Latent {}'.format(ii+1))
+            fig.suptitle('Latent space prediction for CPT location {}'.format(cpt_loc))
+            fig.savefig('./Assignment Figures/Latent_units/Latent_space_units_{}.png'.format(cpt_loc), dpi=1000)
+            plt.close()
+            print('\nSaved image for CPT location {}'.format(cpt_loc))
+
+    if groupby == 'latent_unit':
+
+        for i in range(16):
+            preds = unit_pred[i, :, :, :]
+            fig, ax = plt.subplots(9, 11, figsize=(20, 15))
+            fig.tight_layout()
+            fig.subplots_adjust(top=0.85)
+            for ii in range(89):
+                ax[ii//11, ii%11].imshow(seis[img_left:img_right+1, :2:-1, 0 ].T, cmap='gray')
+                ax[ii//11, ii%11].imshow(preds[ii, :, :].T, cmap='gist_rainbow', alpha=0.4)
+                ax[ii//11, ii%11].axis('off')
+                ax[ii//11, ii%11].set_title('CPT {}'.format(CPT_match['Location no.'].unique()[ii]))
+            fig.suptitle('Latent space prediction for latent unit {}'.format(i+1))
+            fig.savefig('./Assignment Figures/Latent_units/Latent_space_unit_{}.png'.format(i+1), dpi=1000)
+            plt.close()
+            print('\nSaved image for latent unit {}'.format(i+1))
 
 
-        fig, ax = plt.subplots(2, 8, figsize=(20, 5))
-        fig.tight_layout()
-        fig.subplots_adjust(top=0.85)
 
-        for ii in range(16):
-            ax[ii//8, ii%8].imshow(seis[img_left:img_right+1, :2:-1, 0 ].T, cmap='gray')
-            ax[ii//8, ii%8].imshow(pred_image[:, :, ii].T, cmap='gist_rainbow', alpha=0.4)
-            ax[ii//8, ii%8].axis('off')
-            ax[ii//8, ii%8].set_title('Latent {}'.format(ii+1))
-        fig.suptitle('Latent space prediction for CPT location {}'.format(cpt_loc))
-        fig.savefig('./Assignment Figures/Latent_units/Latent_space_units_{}.png'.format(cpt_loc), dpi=1000)
-        plt.close()
-        print('\nSaved image for CPT location {}'.format(cpt_loc))
 
 def create_sgy_of_latent_predictions(model, seismic_dir, image_width = 11):
     """Create a SEGY file with the latent space predictions for each CDP location"""
