@@ -15,6 +15,8 @@ import sys
 import matplotlib.pyplot as plt
 import pickle
 from sklearn.manifold import TSNE
+import numpy as np
+import pandas as pd
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
 # Functions for loading data
@@ -648,8 +650,7 @@ def match_files(X_folder_loc, y_folder_loc, file_extension='.sgy'):
     return file_pairs
           
 
-import numpy as np
-import pandas as pd
+
 
 def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=False, to_file=''):
     """ This function creates bins of cpt values at ground model depths, and then samples

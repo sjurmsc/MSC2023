@@ -48,7 +48,8 @@ if __name__ == '__main__':
     # Shuffle training data
     X_train, y_train, groups_train = shuffle(X, y, groups, random_state=1)
 
-    gname, _ = give_modelname()
+    g_name_gen = give_modelname()
+    gname, _ = next(g_name_gen)
     if not Path(f'../Models/{gname}').exists(): Path(f'../Models/{gname}').mkdir()
 
     # Configurations for models
