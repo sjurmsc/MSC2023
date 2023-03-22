@@ -39,7 +39,11 @@ if __name__ == '__main__':
 
     cv = LeaveOneGroupOut()
 
-    X, y, groups = create_sequence_dataset(n_bootstraps = 20, groupby='cpt_loc') # groupby can be 'cpt_loc' or 'borehole'
+    X, y, groups = create_sequence_dataset(n_bootstraps = 20,
+                                           add_noise=0.1,
+                                           cumulative_seismic=False,
+                                           random_flip=True,
+                                           groupby='cpt_loc') # groupby can be 'cpt_loc' or 'borehole'
 
     # Shuffle training data
     X_train, y_train, groups_train = shuffle(X, y, groups, random_state=1)
@@ -65,7 +69,7 @@ if __name__ == '__main__':
 
     NN_param_dict = {
         'epochs'            : 5,
-        'batch_size'        : 85
+        'batch_size'        : 88
         }
 
  

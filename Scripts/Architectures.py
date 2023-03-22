@@ -221,7 +221,7 @@ class TCN_enc_ANN_dec(keras.Model):
         return 'TCN_enc_ANN_dec(tcn_encoder={}, ann_decoder={})'.format(self.tcn_encoder, self.ann_decoder)
     
 
-def CNN_pyramidal_encoder(latent_features, image_width, GM_dz=0.1):
+def CNN_pyramidal_encoder(latent_features, image_width):
     """2D CNN encoder collapsing the dimension first dimension down to 1.
     Made to predict features at centered trace from seismic data."""
 
@@ -253,8 +253,6 @@ def CNN_pyramidal_encoder(latent_features, image_width, GM_dz=0.1):
 
     cnn_encoder.add(keras.layers.Conv1D(latent_features, (1), activation='relu'))
     # cnn_encoder.add(keras.layers.Reshape((GM_len, latent_features))) # Reshape to get features in the second dimension
-
-
 
     return cnn_encoder
 

@@ -107,11 +107,12 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
 
 def create_sequence_dataset(n_neighboring_traces=5, 
                             zrange: tuple = (30, 100), 
-                            random_flip=True, 
                             n_bootstraps=20,
                             sequence_length=10, 
                             stride=1,
+                            add_noise=False,
                             cumulative_seismic=False,
+                            random_flip=False, 
                             groupby='cpt_loc'):
     """
     Creates a dataset with sections of seismic image and corresponding CPT data where
@@ -136,10 +137,13 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
         correlated_cpt_z = z_GM # + value['seafloor']
 
+        seismic = array(value['Seismic_data'])
+
+        if add_noise:
+            seismic += np.random.normal(0, add_noise, seismic.shape)
         if cumulative_seismic:
-            seismic = np.cumsum(array(value['Seismic_data']), axis=1)
-        else:
-            seismic = array(value['Seismic_data'])
+            seismic = np.cumsum(seismic, axis=1)
+
         seismic_z = array(value['z_traces'])
 
         for bootstrap in bootstraps:
@@ -185,8 +189,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
     return X, y, groups
 
-
-def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_width = 11):
+def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_width = 11, groupby='cpt_loc'):
     distances = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_old.xlsx'
     CPT_match = read_excel(distances)
 
@@ -215,7 +218,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
             pred_image = row_stack((pred_image, latent_pred))
 
 
-        fig, ax = plt.subplots(2, 8, figsize=(10, 5))
+        fig, ax = plt.subplots(2, 8, figsize=(20, 5))
         fig.tight_layout()
         fig.subplots_adjust(top=0.85)
 
