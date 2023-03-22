@@ -22,8 +22,14 @@ def get_data_loc():
     d_filepath = './Data/data.json'
     return json.loads(d_filepath)
 
+def get_cpt_name(cpt_loc):
+    if cpt_loc < 86:
+        cpt_name = f'TNW{cpt_loc:03d}'
+    elif (cpt_loc>85) and (cpt_loc<=89):
+        cpt_name = 'TNWTT{}'.format(int(cpt_loc % 85))
+    return cpt_name
 
-def get_cpt_data_from_file(fp, zrange: tuple = (None, 100)):
+def get_cpt_data_from_file(fp, zrange: tuple = (30, 100)):
     """
     Function to read in CPT data from a file
     """
@@ -52,7 +58,6 @@ from pandas import read_excel
 def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_file=''):
     distances = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx'
     CPT_match = read_excel(distances)
-
 
     cpt_dict = get_cpt_las_files()
 
@@ -189,6 +194,9 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
     return X, y, groups
 
+
+#### Image creation functions ####
+
 def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_width = 11, groupby='cpt_loc'):
     distances = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_old.xlsx'
     CPT_match = read_excel(distances)
@@ -262,12 +270,8 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
             print('\nSaved image for latent unit {}'.format(i+1))
 
 
-
-
 def create_sgy_of_latent_predictions(model, seismic_dir, image_width = 11):
     """Create a SEGY file with the latent space predictions for each CDP location"""
-
-
     seismic_lines = Path(seismic_dir).glob('*.sgy')
 
     for line in seismic_lines:
@@ -295,7 +299,58 @@ def create_sgy_of_latent_predictions(model, seismic_dir, image_width = 11):
                     dst.trace = pred_image[:, :, i]
                     dst.attributes(segyio.TraceField.CDP)[:] = CDPs
 
+
+def plot_interp_in_discontinuous_cpt(model, image_width = 11):
+
+    print('Plotting predictions for discontinuous CPTs')
+
+    discon_cpts = [7, 11, 16, 30, 34, 38, 39, 41, 42, 48, 49, 54, 69, 76]
+
+    for cpt in discon_cpts:
+        plot_cpt_pred(model, cpt, save=True, image_width=image_width)
+
+
+def plot_cpt_pred(model, cpt, save = False, image_width = 11):
+
+    cpt_dir = r'C:/Users/SjB/OneDrive - NGI/Documents/NTNU/MSC_DATA/combined/'
+
+    distances = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_old.xlsx'
+    CPT_match = read_excel(distances)
+
+    name = get_cpt_name(cpt)
+    cpt_filename = cpt_dir + name + '.las'
+    cpt_data, cpt_z = get_cpt_data_from_file(cpt_filename)
+
+    row = CPT_match.loc[CPT_match['Location no.'] == cpt]
+    line = row['Line'].values[0]
+    seis_file = Path(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Seismic\Seismic_2D').glob(line+'*.sgy')
+    cdp = row['CDP'].values[0]
+
+    with segyio.open(seis_file, 'r') as f:
+        seis = f.trace.raw[where(abs(f.attributes(segyio.TraceField.CDP)-cdp)<(image_width-1)//2)[0][0]]
+    pred = model.predict(seis.reshape((1, image_width, seis.shape[1])))[0]
+    cpt_min, cpt_max, cpt_mean, z = get_max_min_and_mean_for_depth_bins(cpt_data=cpt_data, cpt_depth=cpt_z, 
+                                                                        GM_depth=np.arange(cpt_z.min(), cpt_z.max(), 0.1))
     
+    fig, ax = plt.subplots(1, 3, figsize=(20, 5))
+    
+    fig.tight_layout()
+    for i in range(3):
+        ax[i].scatter(cpt_z, cpt_data[i], 'k', label='CPT data', s=1, alpha=0.5)
+        ax[i].fill_betweenx(z, cpt_min[i], cpt_max[i], color='gray', alpha=0.5)
+        ax[i].plot(z, cpt_mean[i],'k', linestyle='--')
+        ax[i].plot(z, pred, 'r')
+
+    if save:
+        # Create Interpolation directory if it doesn't exist
+        if not Path('./Assignment Figures/Interpolation').exists():
+            Path('./Assignment Figures/Interpolation').mkdir()
+        fig.savefig('./Assignment Figures/Interpolation/Interpolation_{}.png'.format(cpt), dpi=1000)
+    
+    else:
+        plt.show()
+
+    plt.close()
 
 
 # from NGI.GM_BuildDatabase import *
@@ -612,7 +667,42 @@ def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=Fals
             plt.show()
     plt.close()
     return cpt_samples, GM_depth
-    
+
+
+def get_max_min_and_mean_for_depth_bins(cpt_data, cpt_depth, GM_depth):
+    """ This function creates bins of cpt values at ground model depths, 
+        calculates the mean, max, and min which are returned."""
+    cpt_data = np.array(cpt_data)
+    cpt_depth = np.array(cpt_depth)
+    GM_depth = np.array(GM_depth)
+
+    # Making sure that GM_depth is evenly spaced, and setting half bin size
+    assert np.all(np.isclose(np.sum(np.diff(np.diff(GM_depth))), 0))
+    half_bin = np.diff(GM_depth)[0]/2
+
+    assert cpt_data.shape[0]==cpt_depth.shape[0]
+
+    # Create bins of CPT values at GM depths
+    cpt_bins = []
+    for i, d in enumerate(GM_depth):
+        cpt_bins.append(cpt_data[np.where((cpt_depth>=d-half_bin)&(cpt_depth<d+half_bin))])
+
+    bin_min = np.array([])
+    bin_max = np.array([])
+    bin_mean = np.array([])
+    for i, b in enumerate(cpt_bins):
+        if not b.size: 
+            bin_min = np.append(bin_min, np.nan)
+            bin_max = np.append(bin_max, np.nan)
+            bin_mean = np.append(bin_mean, np.nan)
+        else: 
+            bin_min = np.append(bin_min, np.min(b, axis=1))
+            bin_max = np.append(bin_max, np.max(b, axis=1))
+            bin_mean = np.append(bin_mean, np.mean(b, axis=1))
+
+    return bin_min, bin_max, bin_mean, GM_depth
+
+
 import lasio
 def get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/combined'):
     """
