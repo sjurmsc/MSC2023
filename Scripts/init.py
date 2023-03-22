@@ -103,6 +103,7 @@ if __name__ == '__main__':
             preds = np.vstack((preds, model.predict(X_test_cv)))
 
         encoded_data = encoder.predict(X_test_cv)
+        print(encoded_data.shape, y_test_cv.shape)
 
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
