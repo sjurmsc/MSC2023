@@ -105,24 +105,31 @@ if __name__ == '__main__':
 
         encoded_data = encoder.predict(X_test_cv)[:, 0, :, :]
         test = encoded_data[0, 0, :]
-        encoded_data = encoded_data.reshape(encoded_data.shape[0]*encoded_data.shape[1], 16)
+        tree_train_input_shape = (encoded_data.shape[0]*encoded_data.shape[1], 16)
+        encoded_data = encoded_data.reshape(*tree_train_input_shape)
+
+        flat_y_train = y_train_cv.reshape(y_train_cv.shape[0]*y_train_cv.shape[1], 3)
         flat_y_test = y_test_cv.reshape(y_test_cv.shape[0]*y_test_cv.shape[1], 3)
 
         print(test, encoded_data[0, :])
         print(np.all(test==encoded_data[0, :]))
         
+        test_prediction = encoder.predict(X_test_cv)[:, 0, :, :]
+        tree_test_input_shape = (test_prediction.shape[0]*test_prediction.shape[1], 16)
+        test_prediciton = test_prediction.reshape(*tree_test_input_shape)
 
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
                 decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
-                decoder.fit(encoded_data, y_train_cv)
-                print('RF score:', decoder.score(encoder.predict(X_test_cv), y_test_cv))
-                rf_preds = decoder.predict(encoder.predict(X_test_cv))
+                decoder.fit(encoded_data, flat_y_train)
+                
+                print('RF score:', decoder.score(test_prediction, flat_y_test))
+                rf_preds = decoder.predict(test_prediction)
             elif dec == 'LGBM':
                 decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
-                decoder.fit(encoded_data, y_train_cv)
-                print('LGBM score:', decoder.score(encoder.predict(X_test_cv), y_test_cv))
-                lgbm_preds = decoder.predict(encoder(X_test_cv))
+                decoder.fit(encoded_data, flat_y_train)
+                print('LGBM score:', decoder.score(test_prediction, flat_y_test))
+                lgbm_preds = decoder.predict(test_prediction)
 
     # Save the predictions
     np.save(f'./Models/{gname}/Ensemble_CNN_preds.npy', preds)
