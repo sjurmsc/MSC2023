@@ -349,5 +349,5 @@ def ensemble_CNN_model(n_members=5):
     decoder = ensemble_CNN_decoder(n_members=n_members)(encoder.output)
 
     model = Model(encoder.input, decoder)
-    model.compile(loss='mae', optimizer='adam', metrics=['mse', 'mae', 'accuracy'])
+    model.compile(loss='mae', optimizer='adam', metrics=['mse', 'mae'])
     return model, encoder
