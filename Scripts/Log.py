@@ -349,9 +349,14 @@ def create_results_xl():
     wb.save('results.xlsx')
 
 
-def describe_data(*args, mdir=''):
+def describe_data(X, y, groups, mdir=''):
+    """Creates a text file with the description of the data"""
     pass
-
+    
+    
+    # Create the text file
+    # with open(mdir + 'data_description.txt', 'w') as f:
+    #     f.
 # Only used for testing the code
 if __name__ == '__main__':
     pass
