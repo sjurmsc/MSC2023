@@ -6,7 +6,7 @@ from keras import Model, Input
 from keras.layers import Layer
 
 # from tensorflow_addons.layers import WeightNormalization
-from tensorflow_addons.metrics import RSquare
+# from tensorflow_addons.metrics import RSquare
 from numpy import array
 import tensorflow as tf
 from lightgbm import LGBMRegressor
