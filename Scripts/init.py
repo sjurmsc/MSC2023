@@ -44,7 +44,7 @@ if __name__ == '__main__':
     dataset_params = {
         'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
-        'n_bootstraps'          : 20,
+        'n_bootstraps'          : 5,
         'add_noise'             : 0.1,
         'max_distance_to_cdp'   : 10,
         'cumulative_seismic'    : False,
@@ -135,8 +135,6 @@ if __name__ == '__main__':
             preds = model.predict(X_test_cv)
         else:
             preds = np.vstack((preds, model.predict(X_test_cv)))
-
-        print(y_train_full.shape, X_train_full.shape, y_test_full.shape, X_test_full.shape)
 
         encoded_data = encoder.predict(X_train_full)[:, 0, :, :]
         tree_train_input_shape = (encoded_data.shape[0]*encoded_data.shape[1], 16)
