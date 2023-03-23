@@ -75,10 +75,7 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
         distance = row['Distance to CDP']
 
         # Get CPT name
-        if cpt_loc < 86:
-            cpt_name = f'TNW{cpt_loc:03d}'
-        elif (cpt_loc>85) and (cpt_loc<=89):
-            cpt_name = 'TNWTT{}'.format(int(cpt_loc % 85))
+        cpt_name = get_cpt_name(cpt_loc)
 
         sys.stdout.write('\rRetrieving from {}'.format(cpt_name))
 
@@ -128,7 +125,8 @@ def create_sequence_dataset(n_neighboring_traces=5,
                             cumulative_seismic=False,
                             random_flip=False,
                             random_state=0,
-                            groupby='cpt_loc'):
+                            groupby='cpt_loc',
+                            y_scaler=None):
     """
     Creates a dataset with sections of seismic image and corresponding CPT data where
     none of the CPT data is missing.
@@ -144,6 +142,9 @@ def create_sequence_dataset(n_neighboring_traces=5,
     X, y = [], []
     groups = []
 
+    if y_scaler is not None:
+        scaler = get_cpt_data_scaler()
+
     print('Bootstrapping sequence CPT data...')
     for key, value in match_dict.items():
 
@@ -153,9 +154,11 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
         z_GM = np.arange(zrange[0], zrange[1], 0.1)
         cpt_vals = array(value['CPT_data'])
-        bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps, plot=False)
 
-        correlated_cpt_z = z_GM # + value['seafloor']
+        if y_scaler is not None:
+            cpt_vals = y_scaler.transform(cpt_vals)
+
+        bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps, plot=False)
 
         seismic = array(value['Seismic_data'])
 
@@ -170,7 +173,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
             nan_idx = np.apply_along_axis(row_w_nan, axis=1, arr=bootstrap)
             split_indices = np.unique([(i+1)*b for i, b in enumerate(nan_idx)])[1:]
             splits = np.split(bootstrap, split_indices)
-            splits_depth = np.split(correlated_cpt_z, split_indices)
+            splits_depth = np.split(z_GM, split_indices)
 
             for section, z in zip(splits, splits_depth):
                 if (section.shape[0]-1) > sequence_length:
@@ -226,7 +229,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                               cumulative_seismic=False,
                               random_flip=False,
                               random_state=0,
-                              groupby='cpt_loc'):
+                              groupby='cpt_loc',
+                              y_scaler=None):
     """ Creates a dataset with full seismic traces and corresponding CPT data with an array
         containing the indices where there are nan values in a row and one where are no nan values in a row.
     """
@@ -245,6 +249,10 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     extrapolated_idxs = []
     groups = []
 
+    if y_scaler is not None:
+        scaler = get_cpt_data_scaler()
+
+
     print('Bootstrapping Full trace CPT data...')
     for key, value in match_dict.items():
     
@@ -256,6 +264,11 @@ def create_full_trace_dataset(n_neighboring_traces=5,
 
         z_GM = np.arange(z_min, z_max, 0.1)
         cpt_vals = array(value['CPT_data'])
+
+        # Normalize CPT data
+        if y_scaler is not None:
+            cpt_vals = scaler.transform(cpt_vals)
+
         bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps)
 
         seismic = array(value['Seismic_data'])
@@ -1086,6 +1099,38 @@ def sequence_length_histogram(val='CPT'):
     plt.title('Length of {} sequences, under 100'.format(val))
     plt.show()
 
+
+def get_cpt_data_scaler(t='minmax'):
+    """Gets the scaler for the CPT data"""
+    
+    scale_fpath = './Data/Scaler/CPT_scaler_{}.pkl'.format(t)
+    if Path(scale_fpath).exists():
+        with open(scale_fpath, 'rb') as f:
+            scaler = pickle.load(f)
+        return scaler
+    else:
+
+        # Load CPT data
+        cpt_dict = get_cpt_las_files()
+
+        # concatenate all data values
+
+        cpt_data = array(cpt_dict.values).reshape(-1, 3)
+
+        if type == 'minmax':
+            scaler = MinMaxScaler()
+        else:
+            raise ValueError('Scaler type not supported')
+        
+        scaler.fit(cpt_data)
+
+        # Save scaler
+        with open(scale_fpath, 'wb') as f:
+            pickle.dump(scaler, f)
+
+        print('Saved scaler to {}'.format(scale_fpath))
+
+        return scaler
 
 
 # Only used for testing the code
