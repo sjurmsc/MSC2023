@@ -57,7 +57,8 @@ if __name__ == '__main__':
 
     # Shuffle training data
     X_train, y_train, groups_train = shuffle(X, y, groups, random_state=1)
-    del X, y, groups
+
+    
 
     X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx = create_full_trace_dataset(**dataset_params)
 
@@ -66,7 +67,8 @@ if __name__ == '__main__':
     if not Path(f'./Models/{gname}').exists(): Path(f'./Models/{gname}').mkdir()
 
     describe_data(X, y, groups, mdir=f'./Models/{gname}/')
-
+    del X, y, groups
+    
     # Configurations for models
     RF_param_dict = {
         'max_depth'         : 20,
