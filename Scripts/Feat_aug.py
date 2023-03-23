@@ -253,7 +253,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
 
         z_min, z_max = zrange[0], zrange[1]
 
-        seismic_z = array(value['z_traces'])[where((seismic_z >= z_min) & (seismic_z < z_max))]
+        seismic_z = array(value['z_traces'])
+        seismic_z = seismic_z[where((seismic_z >= z_min) & (seismic_z < z_max))]
         cpt_z = z_GM[where((z_GM >= z_min) & (z_GM < z_max))]
 
         for bootstrap in bootstraps:
