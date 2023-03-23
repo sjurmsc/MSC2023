@@ -41,22 +41,25 @@ if __name__ == '__main__':
 
     cv = LeaveOneGroupOut()
 
+    scaler = get_cpt_data_scaler(t='minmax')
+
     dataset_params = {
         'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
-        'n_bootstraps'          : 5,
+        'n_bootstraps'          : 2,
         'add_noise'             : 0.1,
         'max_distance_to_cdp'   : 10,
         'cumulative_seismic'    : False,
         'random_flip'           : True,
         'random_state'          : 1,
-        'groupby'               : 'cpt_loc'
+        'groupby'               : 'cpt_loc',
+        'y_scaler'              : scaler
         }
 
     X_train, y_train, groups_train = create_sequence_dataset(sequence_length=10,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
-    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx = create_full_trace_dataset(**dataset_params)
+    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, scaler = create_full_trace_dataset(**dataset_params)
 
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)
@@ -137,20 +140,22 @@ if __name__ == '__main__':
             preds = np.vstack((preds, model.predict(X_test_cv)))
 
         encoded_data = encoder.predict(X_train_full)[:, 0, :, :]
-        tree_train_input_shape = (encoded_data.shape[0]*encoded_data.shape[1], 16)
+        tree_train_input_shape = (-1, encoded_data.shape[-1])
         idx_train = full_no_nan_idx_train.flatten()
         idx_nan_train = full_nan_idx_train.flatten()
         encoded_data = encoded_data.reshape(tree_train_input_shape)
-        flat_y_train = y_train_full.reshape(y_train_full.shape[0]*y_train_full.shape[1], 3)
+        flat_y_train = y_train_full.reshape(-1, y_train_full.shape[-1])
         
         
         test_prediction = encoder.predict(X_test_full)[:, 0, :, :]
-        tree_test_input_shape = (test_prediction.shape[0]*test_prediction.shape[1], 16)
+        tree_test_input_shape = (-1, test_prediction.shape[-1])
         idx_test = full_no_nan_idx_test.flatten()
         idx_nan_test = full_nan_idx_test.flatten()
         test_prediction = test_prediction.reshape(tree_test_input_shape)
-        flat_y_test = y_test_full.reshape(y_test_full.shape[0]*y_test_full.shape[1], 3)
+        flat_y_test = y_test_full.reshape(-1, y_test_full.shape[-1])
 
+        t_train_pred = encoded_data[idx_train]
+        t_flat_y_train = flat_y_train[idx_train]
         t_test_pred = test_prediction[idx_test]
         t_flat_y = flat_y_test[idx_test]
 
@@ -160,7 +165,7 @@ if __name__ == '__main__':
 
                 t0 = time()
                 decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict), n_jobs=-1)
-                decoder.fit(encoded_data[idx_train], flat_y_train[idx_train])
+                decoder.fit(t_train_pred, t_flat_y_train)
                 training_time_dict[i]['RF'] = time() - t0
                 
                 s = decoder.score(t_test_pred, t_flat_y)
@@ -171,7 +176,7 @@ if __name__ == '__main__':
                 print('Fitting LGBM')
                 t0 = time()
                 decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict), n_jobs=-1)
-                decoder.fit(encoded_data[idx_train], flat_y_train[idx_train])
+                decoder.fit(t_train_pred, t_flat_y_train)
                 training_time_dict[i]['LGBM'] = time() - t0
 
                 s = decoder.score(t_test_pred, t_flat_y)
