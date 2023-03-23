@@ -12,6 +12,7 @@ from PIL import Image
 import numpy as np
 
 import numpy as np
+import json
 from sklearn.model_selection import LeaveOneGroupOut, cross_val_predict, train_test_split
 from sklearn.utils import shuffle
 from sklearn.ensemble import RandomForestRegressor
@@ -40,16 +41,25 @@ if __name__ == '__main__':
 
     cv = LeaveOneGroupOut()
 
+    dataset_params = {
+        'n_neighboring_traces'  : 5,
+        'zrange'                : (30, 100),
+        'n_bootstraps'          : 20,
+        'add_noise'             : 0.1,
+        'max_distance_to_cdp'   : 10,
+        'cumulative_seismic'    : False,
+        'random_flip'           : True,
+        'groupby'               : 'cpt_loc'
+        }
+
     X, y, groups = create_sequence_dataset(sequence_length=10,
-                                           n_bootstraps = 20,
-                                           add_noise=0.1,
-                                           max_distance_to_cdp=10,
-                                           cumulative_seismic=False,
-                                           random_flip=True,
-                                           groupby='cpt_loc') # groupby can be 'cpt_loc' or 'borehole'
+                                           **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
     # Shuffle training data
     X_train, y_train, groups_train = shuffle(X, y, groups, random_state=1)
+    del X, y, groups
+
+    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx = create_full_trace_dataset(**dataset_params)
 
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)
@@ -85,6 +95,20 @@ if __name__ == '__main__':
     Histories = []
 
     for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
+        Train_groups = groups_train[train_index]
+        Test_group = groups_train[test_index]
+
+        # Creating full trace cv dataset
+        X_train_full = X_full[np.isin(groups_full, Train_groups)]
+        y_train_full = y_full[np.isin(groups_full, Train_groups)]
+        X_test_full = X_full[np.isin(groups_full, Test_group)]
+        y_test_full = y_full[np.isin(groups_full, Test_group)]
+        full_nan_idx_train = full_nan_idx[np.isin(groups_full, Train_groups)]
+        full_nan_idx_test = full_nan_idx[np.isin(groups_full, Test_group)]
+        full_no_nan_idx_train = full_no_nan_idx[np.isin(groups_full, Train_groups)]
+        full_no_nan_idx_test = full_no_nan_idx[np.isin(groups_full, Test_group)]
+
+
         model, encoder = ensemble_CNN_model(n_members=1)
         if i==0: model.summary()
 
@@ -93,12 +117,14 @@ if __name__ == '__main__':
         y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
         groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
 
-        # Training the model
-        t0 = time()
-        History = model.fit(X_train_cv, y_train_cv, **NN_param_dict)
-
+        # Timing the model
         training_time_dict[i] = {}
+        t0 = time()
+
+        # Training the model
+        History = model.fit(X_train_cv, y_train_cv, **NN_param_dict)
         training_time_dict[i]['CNN'] = time() - t0
+
         Histories.append(History)
 
         encoder.save(f'./Models/{gname}/Ensemble_CNN_encoder_{i}.h5')
@@ -113,16 +139,20 @@ if __name__ == '__main__':
         else:
             preds = np.vstack((preds, model.predict(X_test_cv)))
 
-        encoded_data = encoder.predict(X_train_cv)[:, 0, :, :]
+        encoded_data = encoder.predict(X_train_full)[:, 0, :, :]
         tree_train_input_shape = (encoded_data.shape[0]*encoded_data.shape[1], 16)
+        idx_train = full_no_nan_idx_train.flatten()
+        idx_nan_train = full_nan_idx_train.flatten()
         encoded_data = encoded_data.reshape(tree_train_input_shape)
-        flat_y_train = y_train_cv.reshape(y_train_cv.shape[0]*y_train_cv.shape[1], 3)
+        flat_y_train = y_train_full.reshape(y_train_full.shape[0]*y_train_full.shape[1], 3)
         
         
-        test_prediction = encoder.predict(X_test_cv)[:, 0, :, :]
+        test_prediction = encoder.predict(X_test_full)[:, 0, :, :]
         tree_test_input_shape = (test_prediction.shape[0]*test_prediction.shape[1], 16)
+        idx_test = full_no_nan_idx_test.flatten()
+        idx_nan_test = full_nan_idx_test.flatten()
         test_prediction = test_prediction.reshape(tree_test_input_shape)
-        flat_y_test = y_test_cv.reshape(y_test_cv.shape[0]*y_test_cv.shape[1], 3)
+        flat_y_test = y_test_full.reshape(y_test_full.shape[0]*y_test_full.shape[1], 3)
 
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
@@ -130,21 +160,25 @@ if __name__ == '__main__':
 
                 t0 = time()
                 decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict), n_jobs=-1)
-                decoder.fit(encoded_data, flat_y_train)
+                decoder.fit(encoded_data[idx_train], flat_y_train[idx_train])
                 training_time_dict[i]['RF'] = time() - t0
                 
-                print('RF score:', decoder.score(test_prediction, flat_y_test))
+                print('RF score:', decoder.score(test_prediction[idx_test], flat_y_test[idx_test]))
                 rf_preds = decoder.predict(test_prediction)
     
             elif dec == 'LGBM':
                 print('Fitting LGBM')
                 t0 = time()
                 decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict), n_jobs=-1)
-                decoder.fit(encoded_data, flat_y_train)
+                decoder.fit(encoded_data[idx_train], flat_y_train[idx_train])
                 training_time_dict[i]['LGBM'] = time() - t0
 
-                print('LGBM score:', decoder.score(test_prediction, flat_y_test))
+                print('LGBM score:', decoder.score(test_prediction[idx_test], flat_y_test[idx_test]))
                 lgbm_preds = decoder.predict(test_prediction)
+
+    # Save the training times
+    with open(f'./Models/{gname}/training_times.txt', 'w') as f:
+        f.write(json.dumps(training_time_dict))
 
     # Save the predictions
     np.save(f'./Models/{gname}/Ensemble_CNN_preds.npy', preds)

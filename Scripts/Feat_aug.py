@@ -211,6 +211,92 @@ def create_sequence_dataset(n_neighboring_traces=5,
     return X, y, groups
 
 
+def create_full_trace_dataset(n_neighboring_traces=5,
+                              zrange: tuple = (30, 100), 
+                              n_bootstraps=5,
+                              max_distance_to_cdp=25, # in meters (largest value in dataset is 21)
+                              add_noise=False,
+                              cumulative_seismic=False,
+                              random_flip=False,
+                              groupby='cpt_loc'):
+    """ Creates a dataset with full seismic traces and corresponding CPT data with an array
+        containing the indices where there are nan values in a row and one where are no nan values in a row.
+    """
+    match_file = './Data/match_dict{}_z_{}-{}.pkl'.format(n_neighboring_traces, zrange[0], zrange[1])
+    if not Path(match_file).exists():
+        print('Creating match file...')
+        match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange, to_file=match_file)
+    else:
+        with open(match_file, 'rb') as file:
+            match_dict = pickle.load(file)
+    
+    X, y = [], []
+    nan_idxs = []
+    no_nan_idxs = []
+    groups = []
+
+    print('Bootstrapping CPT data...')
+    for key, value in match_dict.items():
+    
+        # Skip if distance to CDP is too large
+        if abs(value['distance']) > max_distance_to_cdp:
+            continue
+
+        z_GM = np.arange(0, max(value['z_cpt']), 0.1)
+        cpt_vals = array(value['CPT_data'])
+        bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps)
+
+        seismic = array(value['Seismic_data'])
+
+        if cumulative_seismic:
+            seismic = np.cumsum(seismic, axis=1)
+
+        z_min, z_max = zrange[0], zrange[1]
+
+        seismic_z = array(value['z_traces'])[where((seismic_z >= z_min) & (seismic_z < z_max))]
+        cpt_z = z_GM[where((z_GM >= z_min) & (z_GM < z_max))]
+
+        for bootstrap in bootstraps:
+            # List the indices of the CPT data that are not nan
+            nan_idx = np.where(np.isnan(bootstrap[:, 0]))[0]
+            nan_idxs.append(nan_idx)
+            no_nan_idx = np.where(~np.isnan(bootstrap[:, 0]))[0]
+            no_nan_idxs.append(no_nan_idx)
+
+            seis = seismic.copy()
+
+            if add_noise:
+                if cumulative_seismic:
+                    seis += np.cumsum(np.random.normal(0, add_noise, seis.shape), axis=1)
+                else:
+                    seis += np.random.normal(0, add_noise, seis.shape)
+            
+            X.append(seis)
+            y.append(bootstrap)
+
+            # Adding the group value
+            if groupby == 'cpt_loc':
+                groups.append(int(value['cpt_loc']))
+            elif groupby == 'borehole':
+                raise ValueError('Grouping by borehole is not supported for full trace dataset')
+    
+    X = np.array(X)
+    y = np.array(y)
+    nan_idxs = np.array(nan_idxs)
+    no_nan_idxs = np.array(no_nan_idxs)
+    groups = np.array(groups)
+
+    # Randomly flip the X data about the 1 axis
+    if random_flip:
+        for i in range(len(X)):
+            if np.random.randint(2):
+                X[i] = np.flip(X[i], 0)
+
+    return X, y, groups, nan_idxs, no_nan_idxs
+            
+
+
+
 #### Image creation functions ####
 
 def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_width = 11, groupby='cpt_loc'):
