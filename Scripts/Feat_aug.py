@@ -233,6 +233,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     X, y = [], []
     nan_idxs = []
     no_nan_idxs = []
+    sw_idxs = []
     groups = []
 
     print('Bootstrapping CPT data...')
@@ -242,7 +243,9 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         if abs(value['distance']) > max_distance_to_cdp:
             continue
 
-        z_GM = np.arange(0, max(value['z_cpt']), 0.1)
+        z_min, z_max = zrange[0], zrange[1]
+
+        z_GM = np.arange(z_min, z_max, 0.1)
         cpt_vals = array(value['CPT_data'])
         bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps)
 
@@ -251,7 +254,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         if cumulative_seismic:
             seismic = np.cumsum(seismic, axis=1)
 
-        z_min, z_max = zrange[0], zrange[1]
+        
 
         seismic_z = array(value['z_traces'])
         seismic_z = seismic_z[where((seismic_z >= z_min) & (seismic_z < z_max))]
@@ -259,9 +262,12 @@ def create_full_trace_dataset(n_neighboring_traces=5,
 
         for bootstrap in bootstraps:
             # List the indices of the CPT data that are not nan
-            nan_idx = np.where(np.isnan(bootstrap[:, 0]))[0]
+            row_w_nan = lambda x: np.any(np.isnan(x))
+            nan_idx = np.apply_along_axis(row_w_nan, axis=1, arr=bootstrap)
             nan_idxs.append(nan_idx)
-            no_nan_idx = np.where(~np.isnan(bootstrap[:, 0]))[0]
+
+            row_wo_nan = lambda x: np.all(~np.isnan(x))
+            no_nan_idx = np.apply_along_axis(row_wo_nan, axis=1, arr=bootstrap)
             no_nan_idxs.append(no_nan_idx)
 
             seis = seismic.copy()
@@ -271,6 +277,11 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                     seis += np.cumsum(np.random.normal(0, add_noise, seis.shape), axis=1)
                 else:
                     seis += np.random.normal(0, add_noise, seis.shape)
+
+            if seis.shape[1] != 2*bootstrap.shape[0]:
+                print(seis.shape[1], 2*bootstrap.shape[0])
+                print('Seismic and CPT data do not match in length: {}'.format(key))
+                continue
             
             X.append(seis)
             y.append(bootstrap)
@@ -1150,7 +1161,6 @@ if __name__ == '__main__':
     # match_dict = match_cpt_to_seismic(n_neighboring_traces=n_neighboring_traces)
     
 
-    from Architectures import CNN_collapsing_encoder #, Collapse_CNN
     import keras
     from lightgbm import LGBMRegressor
     from sklearn.multioutput import MultiOutputRegressor
