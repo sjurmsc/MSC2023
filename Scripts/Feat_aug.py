@@ -144,7 +144,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
     X, y = [], []
     groups = []
 
-    print('Bootstrapping CPT data...')
+    print('Bootstrapping sequence CPT data...')
     for key, value in match_dict.items():
 
         # Skip if distance to CDP is too large
@@ -213,6 +213,8 @@ def create_sequence_dataset(n_neighboring_traces=5,
     if random_state:
         X, y, groups = shuffle(X, y, groups, random_state=random_state)
 
+    print('Done!')
+
     return X, y, groups
 
 
@@ -243,7 +245,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     extrapolated_idxs = []
     groups = []
 
-    print('Bootstrapping CPT data...')
+    print('Bootstrapping Full trace CPT data...')
     for key, value in match_dict.items():
     
         # Skip if distance to CDP is too large
@@ -281,10 +283,13 @@ def create_full_trace_dataset(n_neighboring_traces=5,
             no_nan_idx = np.apply_along_axis(row_wo_nan, axis=1, arr=bootstrap)
             no_nan_idxs.append(no_nan_idx)
 
+            # Adding sea water indices
             sw_idxs.append(sw_idx)
 
-            seis = seismic.copy()
+            # Adding extrapolated indices
+            extr = np.where(nan_idx)
 
+            seis = seismic.copy()
             if add_noise:
                 if cumulative_seismic:
                     seis += np.cumsum(np.random.normal(0, add_noise, seis.shape), axis=1)
@@ -319,6 +324,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     
     if random_state:
         X, y, groups, nan_idxs, no_nan_idxs = shuffle(X, y, groups, nan_idxs, no_nan_idxs, random_state=random_state)
+
+    print('Done!')
 
     return X, y, groups, nan_idxs, no_nan_idxs
             
@@ -483,36 +490,29 @@ def plot_cpt_pred(model, cpt, save = False, image_width = 11):
     plt.close()
 
 
-def plot_latent_space(latent_model, cpt_data, z_GM):
+def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, filename=''):
     """Use t-SNE to plot the latent space"""
-
-    # The indices where no rows of y_val contain nan values
-    valid_indices = np.where(np.all(~np.isnan(cpt_data), axis=1))[0]
-
-    # The indexes of z where the depth matches valid indices of y_val
-    valid_z_indices = np.where(np.isin(z, z_GM[valid_indices]))[0]
-    outside_indices = np.where(~np.isin(np.arange(len(z)), valid_z_indices))[0]
-
-    y_comp = cpt_data[np.where(np.all(~np.isnan(cpt_data), axis=1))[0]]
 
     # Plot TSNE of the latent model
     tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
-    prediction = latent_model.predict(X_val.reshape(1, *X_val.shape)).reshape(X_val.shape[1]//2, 16)
+    prediction = latent_model.predict(X.reshape(1, *X.shape)).reshape(X.shape[1]//2, 16)
     tsne_results = tsne.fit_transform(prediction)
 
     
-    cpt_parameters = ['$q_c$', '$f_s$', '$u_2$'] 
-    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    for i in range(3):
-        # Give specific markers to points outside the valid indices
-        ax[i].scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c='k', alpha=0.5)
-        
-        # Plot the valid indices
-        ax[i].scatter(tsne_results[valid_z_indices, 0], tsne_results[valid_z_indices, 1], c=y_comp[:, i])
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
 
-        ax[i].set_title('Latent space colored by {}'.format(cpt_parameters[i]))
+    # Give specific markers to points outside the valid indices
+    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], alpha=0.5)
+    
+    # Plot the valid indices
+    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], c=GGM[valid_indices])
 
-    plt.show()
+    ax.set_title('Latent space colored by Ground model units')
+
+    if filename:
+        fig.savefig(filename, dpi=1000)
+    else:
+        plt.show()
     plt.close()
 
 
@@ -776,9 +776,9 @@ def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=Fals
         from these bins to create a new downsampled CPT dataset. This is done to
         increase the number of CPT samples at model depths. The function returns
         a new CPT dataset with the same number of samples as the ground model dataset."""
-    cpt_data = np.array(cpt_data, dtype=np.float64)
-    cpt_depth = np.array(cpt_depth, dtype=np.float64)
-    GM_depth = np.array(GM_depth, dtype=np.float64)
+    cpt_data = np.array(cpt_data)
+    cpt_depth = np.array(cpt_depth)
+    GM_depth = np.array(GM_depth)
 
     # Making sure that GM_depth is evenly spaced, and setting half bin size
     assert np.all(np.isclose(np.sum(np.diff(np.diff(GM_depth))), 0))
