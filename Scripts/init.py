@@ -68,7 +68,7 @@ if __name__ == '__main__':
 
     describe_data(X, y, groups, mdir=f'./Models/{gname}/')
     del X, y, groups
-    
+
     # Configurations for models
     RF_param_dict = {
         'max_depth'         : 20,
@@ -140,6 +140,8 @@ if __name__ == '__main__':
             preds = model.predict(X_test_cv)
         else:
             preds = np.vstack((preds, model.predict(X_test_cv)))
+
+        print(y_train_full.shape, X_train_full.shape, y_test_full.shape, X_test_full.shape)
 
         encoded_data = encoder.predict(X_train_full)[:, 0, :, :]
         tree_train_input_shape = (encoded_data.shape[0]*encoded_data.shape[1], 16)
