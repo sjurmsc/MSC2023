@@ -153,6 +153,9 @@ if __name__ == '__main__':
         test_prediction = test_prediction.reshape(tree_test_input_shape)
         flat_y_test = y_test_full.reshape(y_test_full.shape[0]*y_test_full.shape[1], 3)
 
+        t_test_pred = test_prediction[idx_test]
+        t_flat_y = flat_y_test[idx_test]
+
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
                 print('Fitting RF')
@@ -162,7 +165,8 @@ if __name__ == '__main__':
                 decoder.fit(encoded_data[idx_train], flat_y_train[idx_train])
                 training_time_dict[i]['RF'] = time() - t0
                 
-                print('RF score:', decoder.score(test_prediction[idx_test], flat_y_test[idx_test]))
+                s = decoder.score(t_test_pred, t_flat_y)
+                print('RF score: {}'.format(s))
                 rf_preds = decoder.predict(test_prediction)
     
             elif dec == 'LGBM':
@@ -172,7 +176,8 @@ if __name__ == '__main__':
                 decoder.fit(encoded_data[idx_train], flat_y_train[idx_train])
                 training_time_dict[i]['LGBM'] = time() - t0
 
-                print('LGBM score:', decoder.score(test_prediction[idx_test], flat_y_test[idx_test]))
+                s = decoder.score(t_test_pred, t_flat_y)
+                print('LGBM score: {}'.format(s))
                 lgbm_preds = decoder.predict(test_prediction)
 
     # Save the training times
@@ -182,7 +187,8 @@ if __name__ == '__main__':
     # Save the predictions
     np.save(f'./Models/{gname}/Ensemble_CNN_preds.npy', preds)
 
-        
+    # plot the latent space, colored by structural model
+    # plot_latent_space(encoder, X_t, y_train, groups_train, filename=f'./Models/{gname}/Ensemble_CNN_latent_space.png')
 
     for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
         stds = []
