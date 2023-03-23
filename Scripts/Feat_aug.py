@@ -9,6 +9,7 @@ import pandas as pd
 from scipy.interpolate import interp1d
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.utils import shuffle
 from os import listdir
 from pathlib import Path
 import sys
@@ -125,7 +126,8 @@ def create_sequence_dataset(n_neighboring_traces=5,
                             max_distance_to_cdp=25, # in meters (largest value in dataset is 21)
                             add_noise=False,
                             cumulative_seismic=False,
-                            random_flip=False, 
+                            random_flip=False,
+                            random_state=0,
                             groupby='cpt_loc'):
     """
     Creates a dataset with sections of seismic image and corresponding CPT data where
@@ -149,7 +151,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
         if abs(value['distance']) > max_distance_to_cdp:
             continue
 
-        z_GM = np.arange(0, max(value['z_cpt']), 0.1)
+        z_GM = np.arange(zrange[0], zrange[1], 0.1)
         cpt_vals = array(value['CPT_data'])
         bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps, plot=False)
 
@@ -188,7 +190,8 @@ def create_sequence_dataset(n_neighboring_traces=5,
                                 X_val += np.cumsum(np.random.normal(0, add_noise, X_val.shape), axis=1)
                             else:
                                 X_val += np.random.normal(0, add_noise, X_val.shape)
-                        X.append(X_val)
+                        
+                        X.append(X_val.reshape(X_val.shape[0], X_val.shape[1], 1))
                         y_val = cpt_seq[i:i+sequence_length, :]
                         y.append(y_val)
                         if groupby == 'cpt_loc':
@@ -207,6 +210,8 @@ def create_sequence_dataset(n_neighboring_traces=5,
             if np.random.randint(2):
                 X[i] = np.flip(X[i], 0)
 
+    if random_state:
+        X, y, groups = shuffle(X, y, groups, random_state=random_state)
 
     return X, y, groups
 
@@ -218,6 +223,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                               add_noise=False,
                               cumulative_seismic=False,
                               random_flip=False,
+                              random_state=0,
                               groupby='cpt_loc'):
     """ Creates a dataset with full seismic traces and corresponding CPT data with an array
         containing the indices where there are nan values in a row and one where are no nan values in a row.
@@ -234,6 +240,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     nan_idxs = []
     no_nan_idxs = []
     sw_idxs = []
+    extrapolated_idxs = []
     groups = []
 
     print('Bootstrapping CPT data...')
@@ -254,11 +261,15 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         if cumulative_seismic:
             seismic = np.cumsum(seismic, axis=1)
 
-        
-
         seismic_z = array(value['z_traces'])
         seismic_z = seismic_z[where((seismic_z >= z_min) & (seismic_z < z_max))]
         cpt_z = z_GM[where((z_GM >= z_min) & (z_GM < z_max))]
+
+        # Indices for sea water
+        sf = value['seafloor']
+        is_sw = lambda z: z<sf
+        sw_idx = np.apply_along_axis(is_sw, axis=0, arr=z_GM)
+        
 
         for bootstrap in bootstraps:
             # List the indices of the CPT data that are not nan
@@ -269,6 +280,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
             row_wo_nan = lambda x: np.all(~np.isnan(x))
             no_nan_idx = np.apply_along_axis(row_wo_nan, axis=1, arr=bootstrap)
             no_nan_idxs.append(no_nan_idx)
+
+            sw_idxs.append(sw_idx)
 
             seis = seismic.copy()
 
@@ -283,7 +296,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                 print('Seismic and CPT data do not match in length: {}'.format(key))
                 continue
             
-            X.append(seis)
+            X.append(seis.reshape(seis.shape[0], seis.shape[1], 1))
             y.append(bootstrap)
 
             # Adding the group value
@@ -303,6 +316,9 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         for i in range(len(X)):
             if np.random.randint(2):
                 X[i] = np.flip(X[i], 0)
+    
+    if random_state:
+        X, y, groups, nan_idxs, no_nan_idxs = shuffle(X, y, groups, nan_idxs, no_nan_idxs, random_state=random_state)
 
     return X, y, groups, nan_idxs, no_nan_idxs
             
