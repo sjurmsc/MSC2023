@@ -6,6 +6,7 @@ from keras import Model, Input
 from keras.layers import Layer
 
 # from tensorflow_addons.layers import WeightNormalization
+from tensorflow_addons.metrics import RSquare
 from numpy import array
 import tensorflow as tf
 from lightgbm import LGBMRegressor
@@ -348,5 +349,5 @@ def ensemble_CNN_model(n_members=5):
     decoder = ensemble_CNN_decoder(n_members=n_members)(encoder.output)
 
     model = Model(encoder.input, decoder)
-    model.compile(loss='mse', optimizer='adam')
+    model.compile(loss='mae', optimizer='adam', metrics=['mse', 'mae', 'accuracy', RSquare()])
     return model, encoder
