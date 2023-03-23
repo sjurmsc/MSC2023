@@ -49,16 +49,12 @@ if __name__ == '__main__':
         'max_distance_to_cdp'   : 10,
         'cumulative_seismic'    : False,
         'random_flip'           : True,
+        'random_state'          : 1,
         'groupby'               : 'cpt_loc'
         }
 
-    X, y, groups = create_sequence_dataset(sequence_length=10,
-                                           **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
-
-    # Shuffle training data
-    X_train, y_train, groups_train = shuffle(X, y, groups, random_state=1)
-
-    
+    X_train, y_train, groups_train = create_sequence_dataset(sequence_length=10,
+                                                             **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
     X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx = create_full_trace_dataset(**dataset_params)
 
@@ -66,8 +62,7 @@ if __name__ == '__main__':
     gname, _ = next(g_name_gen)
     if not Path(f'./Models/{gname}').exists(): Path(f'./Models/{gname}').mkdir()
 
-    describe_data(X, y, groups, mdir=f'./Models/{gname}/')
-    del X, y, groups
+    describe_data(X_train, y_train, groups_train, mdir=f'./Models/{gname}/')
 
     # Configurations for models
     RF_param_dict = {
@@ -97,8 +92,8 @@ if __name__ == '__main__':
     Histories = []
 
     for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
-        Train_groups = groups_train[train_index]
-        Test_group = groups_train[test_index]
+        Train_groups = np.unique(groups_train[train_index])
+        Test_group = np.unique(groups_train[test_index])
 
         # Creating full trace cv dataset
         X_train_full = X_full[np.isin(groups_full, Train_groups)]
