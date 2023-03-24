@@ -538,12 +538,12 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
 def create_loo_trace_prediction(model, test_X, test_y, zrange):
 
     # Create predictions for the test set
-    for i in range(3):
-        if i == 0:
-            predictions = model.predict(test_X)[:, 0, :, :]
-        else:
-            encoder, model = model
-            predictions = predict_encoded_tree(encoder, model, test_X)
+
+    if len(model) != 2:
+        predictions = model.predict(test_X)[:, 0, :, :]
+    else:
+        encoder, model = model
+        predictions = predict_encoded_tree(encoder, model, test_X)
     
     z = np.arange(zrange[0], zrange[1], 0.1)
 
