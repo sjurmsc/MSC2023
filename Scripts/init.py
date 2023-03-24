@@ -60,7 +60,7 @@ if __name__ == '__main__':
     X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs = full_trace
     del full_trace
 
-    GGM = np.ones(y_full.shape[0])
+    GGM = array(sw_idxs) + 1
 
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)
@@ -87,8 +87,8 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 2,
-        'batch_size'        : 20
+        'epochs'            : 200,
+        'batch_size'        : 25
         }
 
     # Training time dict
