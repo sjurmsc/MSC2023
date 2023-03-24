@@ -224,7 +224,12 @@ if __name__ == '__main__':
     for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
         stds = []
         print('Evaluating model stds for {}'.format(label))
-        print(trues.shape, pred.shape)
+
+        # Inverse transform the data
+        for i in range(trues):
+            trues[i] = scaler.inverse_transform(trues[i])
+            pred[i] = scaler.inverse_transform(pred[i])
+
         for k in range(pred.shape[-1]):
             _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, :, k].flatten(), pred[:, :, k].flatten())
             print('std for {} is: {}'.format(label, std))
