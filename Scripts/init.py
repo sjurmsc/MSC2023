@@ -42,8 +42,8 @@ if __name__ == '__main__':
     dataset_params = {
         'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
-        'n_bootstraps'          : 2,
-        'add_noise'             : 0.005,
+        'n_bootstraps'          : 5,
+        'add_noise'             : 0.01,
         'max_distance_to_cdp'   : 10,
         'cumulative_seismic'    : False,
         'random_flip'           : True,
@@ -52,8 +52,8 @@ if __name__ == '__main__':
         'y_scaler'              : scaler
         }
 
-    X_train, y_train, groups_train = create_sequence_dataset(sequence_length=30,
-                                                             stride=5,
+    X_train, y_train, groups_train = create_sequence_dataset(sequence_length=10,
+                                                             stride=1,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
     full_trace = create_full_trace_dataset(**dataset_params)
