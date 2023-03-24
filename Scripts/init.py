@@ -47,7 +47,7 @@ if __name__ == '__main__':
     dataset_params = {
         'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
-        'n_bootstraps'          : 1,
+        'n_bootstraps'          : 2,
         'add_noise'             : 0.1,
         'max_distance_to_cdp'   : 10,
         'cumulative_seismic'    : True,
