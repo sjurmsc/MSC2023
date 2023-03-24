@@ -549,7 +549,7 @@ def create_loo_trace_prediction(model, test_X, test_y):
     for i in range(3):
         for t in range(predictions.shape[0]):
             ax[i].plot(predictions[t, :, i], 'k', alpha=0.1)
-            ax[i].scatter(test_y[:, :, i], 'b')
+            ax[i].scatter(test_y[t, :, i], 'b')
         ax[i].set_title(units[i])
         ax[i].invert_yaxis()
 
