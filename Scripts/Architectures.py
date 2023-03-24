@@ -351,3 +351,12 @@ def ensemble_CNN_model(n_members=5):
     model = Model(encoder.input, decoder)
     model.compile(loss='mae', optimizer='adam', metrics=['mse', 'mae'])
     return model, encoder
+
+
+def predict_encoded_tree(encoder, tree, X):
+    """Predicts the target variable from encoded data using a tree based
+    multi attribute regressor."""
+    dshape = X.shape
+    encoded = encoder(X)[:, 0, :, :].numpy().flatten()
+    pred = tree.predict(encoded)
+    return pred.reshape(X.shape[0], -1, 3)

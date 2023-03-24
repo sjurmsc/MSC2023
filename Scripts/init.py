@@ -204,7 +204,7 @@ if __name__ == '__main__':
 
         # Plotting the predictions
         encoded_X = encoder(X_test_full)[:, 0, :, :].numpy()
-        for model, X in zip([model, rf_decoder, lgbm_decoder], [X_test_full, encoded_X, encoded_X]):
+        for model, X in zip([model, [encoder, rf_decoder], [encoder, lgbm_decoder]], [X_test_full, encoded_X, encoded_X]):
             create_loo_trace_prediction(model, X, y_test_full, zrange=dataset_params['zrange'])
 
 
