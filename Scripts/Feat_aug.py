@@ -541,13 +541,17 @@ def create_loo_trace_prediction(model, test_X, test_y):
     predictions = model.predict(test_X)
     print(predictions.shape)
 
+    units = ['$q_c$', '$f_s$', '$u_2$']
+
     # Create a figure for the predictions
     fig, ax = plt.subplots(1, 3, figsize=(20, 5))
     fig.tight_layout()
     for i in range(3):
-        ax[i].plot(predictions[:, i], 'k')
-        ax[i].scatter(test_y[:, i], 'b')
-        ax[i].set_title('Unit {}'.format(i+1))
+        for t in range(predictions.shape[0]):
+            ax[i].plot(predictions[t, :, i], 'k', alpha=0.1)
+            ax[i].scatter(test_y[:, :, i], 'b')
+        ax[i].set_title(units[i])
+        ax[i].invert_yaxis()
 
     plt.show()
     plt.close()
