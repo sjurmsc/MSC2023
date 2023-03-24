@@ -85,7 +85,7 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 1,
+        'epochs'            : 100,
         'batch_size'        : 20
         }
 
@@ -138,11 +138,11 @@ if __name__ == '__main__':
 
         Histories.append(History)
 
-        encoder.save(f'./Models/{gname}/Ensemble_CNN_encoder_{i}.h5')
-        model.save(f'./Models/{gname}/Ensemble_CNN_{i}.h5')
+        encoder.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_encoder_{i}.h5')
+        model.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.h5')
 
         # Plot the training and validation loss
-        plot_history(History, filename=f'./Models/{gname}/Ensemble_CNN_{i}.png')
+        plot_history(History, filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.png')
 
         # Plotting the models
         # plot_model(model, to_file=f'./Models/{gname}/Ensemble_CNN_{i}.png', show_shapes=True, show_layer_names=True)
@@ -211,10 +211,9 @@ if __name__ == '__main__':
                           full_no_nan_idx_test, 
                           full_nan_idx_test, 
                           GGM,
-                          filename=f'./Models/{gname}/Ensemble_CNN_latent_space_{i}.png')
+                          filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_latent_space_{i}.png')
         
         
-        break # Quit after first iteration
 
 
     # Save the training times
