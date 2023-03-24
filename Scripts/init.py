@@ -47,7 +47,7 @@ if __name__ == '__main__':
     dataset_params = {
         'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
-        'n_bootstraps'          : 1,
+        'n_bootstraps'          : 5,
         'add_noise'             : 0.1,
         'max_distance_to_cdp'   : 10,
         'cumulative_seismic'    : True,
@@ -57,8 +57,8 @@ if __name__ == '__main__':
         'y_scaler'              : scaler
         }
 
-    X_train, y_train, groups_train = create_sequence_dataset(sequence_length=20,
-                                                             stride=20,
+    X_train, y_train, groups_train = create_sequence_dataset(sequence_length=30,
+                                                             stride=30,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
     full_trace = create_full_trace_dataset(**dataset_params)
@@ -208,6 +208,7 @@ if __name__ == '__main__':
 
         for model in [model, [encoder, rf_decoder], [encoder, lgbm_decoder]]:
             create_loo_trace_prediction(model, X_test_full, y_test_full, zrange=dataset_params['zrange'])
+        break
 
 
     # Save the training times
