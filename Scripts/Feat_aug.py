@@ -538,7 +538,7 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
 def create_loo_trace_prediction(model, test_X, test_y):
 
     # Create predictions for the test set
-    predictions = model.predict(test_X)
+    predictions = model.predict(test_X)[:, 0; :, :]
     print(predictions.shape)
 
     units = ['$q_c$', '$f_s$', '$u_2$']
