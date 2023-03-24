@@ -45,7 +45,7 @@ if __name__ == '__main__':
     scaler = get_cpt_data_scaler()
 
     dataset_params = {
-        'n_neighboring_traces'  : 12,
+        'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
         'n_bootstraps'          : 1,
         'add_noise'             : 0.1,
@@ -57,7 +57,8 @@ if __name__ == '__main__':
         'y_scaler'              : scaler
         }
 
-    X_train, y_train, groups_train = create_sequence_dataset(sequence_length=20,
+    X_train, y_train, groups_train = create_sequence_dataset(sequence_length=10,
+                                                             stride=3,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
     full_trace = create_full_trace_dataset(**dataset_params)
