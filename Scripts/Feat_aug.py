@@ -546,6 +546,7 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
 
     outside_indices = outside_indices.flatten()
     valid_indices = valid_indices.flatten()
+    GGM = GGM.flatten()
     
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
 
