@@ -101,19 +101,23 @@ if __name__ == '__main__':
         Train_groups    = np.unique(groups_train[train_index])
         Test_group      = np.unique(groups_train[test_index])
 
+        # Getting the indices of the train and test data for the current cv split
+        in_train = np.isin(groups_full, Train_groups)
+        in_test = np.isin(groups_full, Test_group)
+
         # Creating full trace cv dataset
-        X_train_full    = X_full[np.isin(groups_train, Train_groups)]
-        y_train_full    = y_full[np.isin(groups_train, Train_groups)]
-        X_test_full     = X_full[np.isin(groups_train, Test_group)]
-        y_test_full     = y_full[np.isin(groups_train, Test_group)]
+        X_train_full    = X_full[in_train]
+        y_train_full    = y_full[in_train]
+        X_test_full     = X_full[in_test]
+        y_test_full     = y_full[in_test]
 
         # Getting the indices of the nan values for coloring plots
-        full_nan_idx_train = full_nan_idx[np.isin(groups_train, Train_groups)]
-        full_nan_idx_test = full_nan_idx[np.isin(groups_train, Test_group)]
+        full_nan_idx_train = full_nan_idx[in_train]
+        full_nan_idx_test = full_nan_idx[in_test]
 
         # Getting the indices of the non-nan values for training trees
-        full_no_nan_idx_train = full_no_nan_idx[np.isin(groups_train, Train_groups)]
-        full_no_nan_idx_test = full_no_nan_idx[np.isin(groups_train, Test_group)]
+        full_no_nan_idx_train = full_no_nan_idx[in_train]
+        full_no_nan_idx_test = full_no_nan_idx[in_test]
 
         # Setting up the model
         model, encoder = ensemble_CNN_model(n_members=1)
