@@ -88,7 +88,7 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 100,
+        'epochs'            : 1,
         'batch_size'        : 20
         }
 
@@ -226,7 +226,7 @@ if __name__ == '__main__':
         print('Evaluating model stds for {}'.format(label))
 
         # Inverse transform the data
-        for i in range(trues):
+        for i in range(trues.shape[0]):
             trues[i] = scaler.inverse_transform(trues[i])
             pred[i] = scaler.inverse_transform(pred[i])
 
