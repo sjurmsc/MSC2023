@@ -75,7 +75,7 @@ if __name__ == '__main__':
         'min_samples_leaf'  : 1,
         'min_samples_split' : 4,
         'bootstrap'         : True,
-        'criterion'         : 'mse'
+        'criterion'         : 'mse',
         'n_jobs'            : -1
         }
 
