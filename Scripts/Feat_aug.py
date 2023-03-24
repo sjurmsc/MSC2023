@@ -539,7 +539,7 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange):
 
     # Create predictions for the test set
 
-    if len(model) != 2:
+    if not type(model) == list:
         predictions = model.predict(test_X)[:, 0, :, :]
     else:
         encoder, model = model
