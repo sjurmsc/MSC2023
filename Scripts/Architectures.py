@@ -274,15 +274,15 @@ def LSTM_decoder(latent_features=16):
 def ensemble_CNN_decoder(n_members=5, latent_features=16):
     """1D CNN decoder with a committee of n_members."""
     print('More members are not implemented yet')
-    ann_decoder = keras.models.Sequential([
+    cnn_decoder = keras.models.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
         keras.layers.Conv1D(64, 3, activation='relu', padding='same'),
         keras.layers.Conv1D(32, 3, activation='relu', padding='same'),
         keras.layers.Conv1D(16, 3, activation='relu', padding='same'),
-        keras.layers.Conv1D(3, 3, activation='relu', padding='same')
-    ], name='ann_decoder')
+        keras.layers.Dense(3)
+    ], name='cnn_decoder')
 
-    return ann_decoder
+    return cnn_decoder
 
 
 def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001):
