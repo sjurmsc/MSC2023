@@ -149,12 +149,12 @@ if __name__ == '__main__':
         # Adding predictions to a numpy array
         if i == 0:
             trues = y_test_cv
-            preds = model.predict(X_test_cv)[:, 0, :, :]
+            preds = model.predict(X_test_cv)
         else:
             trues = np.vstack((trues, y_test_cv))
-            preds = np.vstack((preds, model.predict(X_test_cv))[:, 0, :, :])
+            preds = np.vstack((preds, model.predict(X_test_cv)))
 
-        encoded_data = encoder(X_train_full)[:, 0, :, :].numpy()
+        encoded_data = encoder(X_train_full).numpy()
         tree_train_input_shape = (-1, encoded_data.shape[-1])
         idx_train = full_no_nan_idx_train.flatten()
         idx_nan_train = full_nan_idx_train.flatten()
@@ -162,7 +162,7 @@ if __name__ == '__main__':
         flat_y_train = y_train_full.reshape(-1, y_train_full.shape[-1])
         
         
-        test_prediction = encoder(X_test_full)[:, 0, :, :].numpy()
+        test_prediction = encoder(X_test_full).numpy()
         tree_test_input_shape = (-1, test_prediction.shape[-1])
         idx_test = full_no_nan_idx_test.flatten()
         idx_nan_test = full_nan_idx_test.flatten()

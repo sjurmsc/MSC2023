@@ -373,7 +373,7 @@ def predict_encoded_tree(encoder, tree, X):
     """Predicts the target variable from encoded data using a tree based
     multi attribute regressor."""
     dshape = X.shape
-    encoded = encoder(X)[:, 0, :, :].numpy()
+    encoded = encoder(X).numpy()
     encoded = encoded.reshape(-1, encoded.shape[-1])
     pred = tree.predict(encoded)
     return pred.reshape(X.shape[0], -1, 3)
