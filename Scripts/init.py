@@ -227,6 +227,7 @@ if __name__ == '__main__':
         print(trues.shape, pred.shape)
         for k in range(pred.shape[-1]):
             _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, :, k].flatten(), pred[:, :, k].flatten())
+            print('std for {} is: {}'.format(label, std))
             stds.append(std)
 
     with open(f'./Models/{gname}/std_results.txt', 'a') as f:
