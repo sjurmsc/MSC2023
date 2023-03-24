@@ -589,6 +589,7 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange, filename='', titl
         ax[i].invert_yaxis()
     # Add super title
     fig.suptitle(title, fontsize=16)
+    fig.subplots_adjust(top=0.85)
 
     if filename:
         fig.savefig(filename, dpi=500)
