@@ -303,8 +303,8 @@ def predict_encoded_tree(encoder, tree, X): #, mask=None):
 
     encoded = encoder(X).numpy()
     encoded = encoded.reshape(-1, encoded.shape[-1])
-    pred = tree.predict(encoded)
-    return pred.reshape(X.shape[0], -1, 3)
+    pred = tree.predict(encoded).reshape(X.shape[0], -1, 3)
+    return pred
 
 
     

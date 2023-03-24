@@ -190,6 +190,7 @@ if __name__ == '__main__':
                 s = rf_decoder.score(t_test_pred, t_flat_y)
                 print('RF score: {}'.format(s))
                 rf_preds = predict_encoded_tree(encoder, rf_decoder, X_test_cv)
+                print(rf_preds.shape)
     
             elif dec == 'LGBM':
                 print('Fitting LGBM')
