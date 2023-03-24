@@ -139,6 +139,8 @@ def create_sequence_dataset(n_neighboring_traces=5,
         with open(match_file, 'rb') as file:
             match_dict = pickle.load(file)
     
+    image_width = 2*n_neighboring_traces + 1
+
     X, y = [], []
     groups = []
 
@@ -161,6 +163,9 @@ def create_sequence_dataset(n_neighboring_traces=5,
         bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps, plot=False)
 
         seismic = array(value['Seismic_data'])
+        if not seismic.shape[0] == image_width:
+            print('Seismic sequences must conform with image width: {}'.format(key))
+            continue
 
         if cumulative_seismic:
             seismic = np.cumsum(seismic, axis=1)
@@ -265,6 +270,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         z_GM = np.arange(z_min, z_max, 0.1)
         cpt_vals = array(value['CPT_data'])
 
+        image_width = 2*n_neighboring_traces+1
+
         # Normalize CPT data
         if y_scaler is not None:
             cpt_vals = scaler.transform(cpt_vals)
@@ -272,6 +279,9 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps)
 
         seismic = array(value['Seismic_data'])
+        if not seismic.shape[0] == image_width:
+            print('Seismic image must conform with image width: {}'.format(key))
+            continue
 
         if cumulative_seismic:
             seismic = np.cumsum(seismic, axis=1)

@@ -87,8 +87,8 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 5,
-        'batch_size'        : 88
+        'epochs'            : 10,
+        'batch_size'        : 20
         }
 
     # Training time dict
