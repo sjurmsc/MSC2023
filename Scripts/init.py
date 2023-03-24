@@ -45,7 +45,7 @@ if __name__ == '__main__':
     scaler = get_cpt_data_scaler()
 
     dataset_params = {
-        'n_neighboring_traces'  : 5,
+        'n_neighboring_traces'  : 12,
         'zrange'                : (30, 100),
         'n_bootstraps'          : 2,
         'add_noise'             : 0.1,
@@ -224,6 +224,7 @@ if __name__ == '__main__':
     for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
         stds = []
         print('Evaluating model stds for {}'.format(label))
+        print(trues.shape, pred.shape)
         for k in range(pred.shape[-1]):
             _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, :, k].flatten(), pred[:, :, k].flatten())
             stds.append(std)
