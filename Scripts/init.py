@@ -120,7 +120,8 @@ if __name__ == '__main__':
         full_no_nan_idx_test = full_no_nan_idx[in_test]
 
         # Setting up the model
-        model, encoder = ensemble_CNN_model(n_members=1)
+        image_width = 2*dataset_params['n_neighboring_traces'] + 1
+        model, encoder = ensemble_CNN_model(n_members=1, image_width=image_width)
         if i==0: model.summary()
 
         # Preparing the data to train the CNN
