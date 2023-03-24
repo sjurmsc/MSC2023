@@ -153,12 +153,11 @@ if __name__ == '__main__':
 
         # Adding predictions to a numpy array
         if i == 0:
-            trues = y_test_cv[np.random.randint(0, len(y_test_cv))]
-            preds = model.predict(X_test_cv)
-            print(trues.shape, preds.shape)
+            trues = y_test_cv
+            preds = model.predict(X_test_cv)[:, 0, :, :]
         else:
             trues = np.vstack((trues, y_test_cv))
-            preds = np.vstack((preds, model.predict(X_test_cv)))
+            preds = np.vstack((preds, model.predict(X_test_cv))[:, 0, :, :])
 
         encoded_data = encoder(X_train_full)[:, 0, :, :].numpy()
         tree_train_input_shape = (-1, encoded_data.shape[-1])
