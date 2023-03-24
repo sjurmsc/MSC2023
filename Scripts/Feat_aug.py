@@ -540,7 +540,7 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
 
     # Plot TSNE of the latent model
     tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
-    prediction = latent_model.predict(X)
+    prediction = latent_model.predict(X).reshape((-1, 16))
     tsne_results = tsne.fit_transform(prediction)
 
     
