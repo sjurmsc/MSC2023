@@ -80,7 +80,7 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
         # Get CPT name
         cpt_name = get_cpt_name(cpt_loc)
 
-        sys.stdout.write('\rRetrieving from {}'.format(row['Borehole']))
+        sys.stdout.write('\rRetrieving from {} \t\t'.format(row['Borehole']))
 
         CDP = int(row['CDP'])
         seis_file = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/{}.sgy'.format(row['2D UHR line'])
