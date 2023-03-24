@@ -535,6 +535,21 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
     plt.close()
 
 
+def create_loo_trace_prediction(model, test_X, test_y):
+
+    # Create predictions for the test set
+    predictions = model.predict(test_X.reshape(1, *test_X.shape)).reshape(test_X.shape[1]//2, 16)
+
+    # Create a figure for the predictions
+    fig, ax = plt.subplots(1, 3, figsize=(20, 5))
+    fig.tight_layout()
+    for i in range(3):
+        ax[i].plot(predictions[:, i], 'k')
+        ax[i].scatter(test_y[:, i], 'b')
+        ax[i].set_title('Unit {}'.format(i+1))
+
+    plt.show()
+    plt.close()
 
 
 # from NGI.GM_BuildDatabase import *

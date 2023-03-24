@@ -19,6 +19,7 @@ from sklearn.ensemble import RandomForestRegressor
 from lightgbm import LGBMRegressor
 from sklearn.manifold import TSNE
 from sklearn.multioutput import MultiOutputRegressor
+from keras.utils import plot_model
 
 # My scripts
 from Log import *
@@ -59,7 +60,9 @@ if __name__ == '__main__':
     X_train, y_train, groups_train = create_sequence_dataset(sequence_length=10,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
-    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs = create_full_trace_dataset(**dataset_params)
+    full_trace = create_full_trace_dataset(**dataset_params)
+    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs = full_trace
+    del full_trace
 
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)
@@ -95,23 +98,32 @@ if __name__ == '__main__':
     Histories = []
 
     for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
-        Train_groups = np.unique(groups_train[train_index])
-        Test_group = np.unique(groups_train[test_index])
+        Train_groups    = np.unique(groups_train[train_index])
+        Test_group      = np.unique(groups_train[test_index])
+
+        # Getting the indices of the train and test data for the current cv split
+        in_train = np.isin(groups_train, Train_groups)
+        in_test = np.isin(groups_train, Test_group)
 
         # Creating full trace cv dataset
-        X_train_full = X_full[np.isin(groups_full, Train_groups)]
-        y_train_full = y_full[np.isin(groups_full, Train_groups)]
-        X_test_full = X_full[np.isin(groups_full, Test_group)]
-        y_test_full = y_full[np.isin(groups_full, Test_group)]
-        full_nan_idx_train = full_nan_idx[np.isin(groups_full, Train_groups)]
-        full_nan_idx_test = full_nan_idx[np.isin(groups_full, Test_group)]
-        full_no_nan_idx_train = full_no_nan_idx[np.isin(groups_full, Train_groups)]
-        full_no_nan_idx_test = full_no_nan_idx[np.isin(groups_full, Test_group)]
+        X_train_full    = X_full[in_train]
+        y_train_full    = y_full[in_train]
+        X_test_full     = X_full[in_test]
+        y_test_full     = y_full[in_test]
 
+        # Getting the indices of the nan values for coloring plots
+        full_nan_idx_train = full_nan_idx[in_train]
+        full_nan_idx_test = full_nan_idx[in_test]
 
+        # Getting the indices of the non-nan values for training trees
+        full_no_nan_idx_train = full_no_nan_idx[in_train]
+        full_no_nan_idx_test = full_no_nan_idx[in_test]
+
+        # Setting up the model
         model, encoder = ensemble_CNN_model(n_members=1)
         if i==0: model.summary()
 
+        # Preparing the data to train the CNN
         print('Fold', i+1, 'of', cv.get_n_splits(groups=groups_train))
         X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
         y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
@@ -133,13 +145,17 @@ if __name__ == '__main__':
         # Plot the training and validation loss
         plot_history(History, filename=f'./Models/{gname}/Ensemble_CNN_{i}.png')
 
+        # Plotting the models
+        plot_model(model, to_file=f'./Models/{gname}/Ensemble_CNN_{i}.png', show_shapes=True, show_layer_names=True)
+        plot_model(encoder, to_file=f'./Models/{gname}/Ensemble_CNN_encoder_{i}.png', show_shapes=True, show_layer_names=True)
+
         # Adding predictions to a numpy array
         if i == 0:
             preds = model.predict(X_test_cv)
         else:
             preds = np.vstack((preds, model.predict(X_test_cv)))
 
-        encoded_data = encoder.predict(X_train_full)[:, 0, :, :]
+        encoded_data = encoder(X_train_full)[:, 0, :, :]
         tree_train_input_shape = (-1, encoded_data.shape[-1])
         idx_train = full_no_nan_idx_train.flatten()
         idx_nan_train = full_nan_idx_train.flatten()
@@ -147,7 +163,7 @@ if __name__ == '__main__':
         flat_y_train = y_train_full.reshape(-1, y_train_full.shape[-1])
         
         
-        test_prediction = encoder.predict(X_test_full)[:, 0, :, :]
+        test_prediction = encoder(X_test_full)[:, 0, :, :]
         tree_test_input_shape = (-1, test_prediction.shape[-1])
         idx_test = full_no_nan_idx_test.flatten()
         idx_nan_test = full_nan_idx_test.flatten()
@@ -156,6 +172,7 @@ if __name__ == '__main__':
 
         t_train_pred = encoded_data[idx_train]
         t_flat_y_train = flat_y_train[idx_train]
+
         t_test_pred = test_prediction[idx_test]
         t_flat_y = flat_y_test[idx_test]
 
@@ -164,24 +181,29 @@ if __name__ == '__main__':
                 print('Fitting RF')
 
                 t0 = time()
-                decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict), n_jobs=-1)
-                decoder.fit(t_train_pred, t_flat_y_train)
+                rf_decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict), n_jobs=-1)
+                rf_decoder.fit(t_train_pred, t_flat_y_train)
                 training_time_dict[i]['RF'] = time() - t0
                 
-                s = decoder.score(t_test_pred, t_flat_y)
+                s = rf_decoder.score(t_test_pred, t_flat_y)
                 print('RF score: {}'.format(s))
-                rf_preds = decoder.predict(test_prediction)
+                rf_preds = rf_decoder.predict(test_prediction)
     
             elif dec == 'LGBM':
                 print('Fitting LGBM')
                 t0 = time()
-                decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict), n_jobs=-1)
-                decoder.fit(t_train_pred, t_flat_y_train)
+                lgbm_decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict), n_jobs=-1)
+                lgbm_decoder.fit(t_train_pred, t_flat_y_train)
                 training_time_dict[i]['LGBM'] = time() - t0
 
-                s = decoder.score(t_test_pred, t_flat_y)
+                s = lgbm_decoder.score(t_test_pred, t_flat_y)
                 print('LGBM score: {}'.format(s))
-                lgbm_preds = decoder.predict(test_prediction)
+                lgbm_preds = lgbm_decoder.predict(test_prediction)
+
+        # Plotting the predictions
+        for model, X in zip([model, rf_decoder, lgbm_decoder], [X_test_full, encoder(X_test_full), encoder(X_test_full)]):
+            create_loo_trace_prediction(model, X, y_test_full)
+
 
     # Save the training times
     with open(f'./Models/{gname}/training_times.txt', 'w') as f:
