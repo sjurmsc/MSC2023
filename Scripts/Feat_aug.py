@@ -543,6 +543,8 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
     prediction = latent_model.predict(X).reshape((-1, 16))
     tsne_results = tsne.fit_transform(prediction)
 
+    outside_indices = outside_indices.reshape((-1, 1))
+    valid_indices = valid_indices.reshape((-1, 1))
     
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
 
