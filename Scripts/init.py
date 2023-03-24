@@ -228,12 +228,13 @@ if __name__ == '__main__':
         stds = []
         print('Evaluating model stds for {}'.format(label))
 
+        trans_pred = np.zeros(pred.shape)
         # Inverse transform the data
         for i in range(pred.shape[0]):
-            pred[i] = scaler.inverse_transform(pred[i])
-
+            trans_pred[i] = scaler.inverse_transform(pred[i])
+        print(trans_pred)
         for k in range(pred.shape[-1]):
-            _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, :, k].flatten(), pred[:, :, k].flatten())
+            _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, :, k].flatten(), trans_pred[:, :, k].flatten())
             stds.append(std)
         print('std for {} is: {}'.format(label, stds))
 
