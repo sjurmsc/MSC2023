@@ -64,7 +64,7 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
 
     CPT_match = read_excel(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx')
 
-    cpt_dict = get_cpt_las_files()
+    cpt_dict = get_cpt_las_files(cpt_folder_loc = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/FE_CPT')
 
 
     match_dict = {}
