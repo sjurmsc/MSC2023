@@ -19,7 +19,7 @@ from sklearn.ensemble import RandomForestRegressor
 from lightgbm import LGBMRegressor
 from sklearn.manifold import TSNE
 from sklearn.multioutput import MultiOutputRegressor
-from keras.utils import plot_model
+from tensorflow.compat.v1.keras.utils import plot_model
 
 # My scripts
 from Log import *
