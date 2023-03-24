@@ -538,7 +538,8 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
 def create_loo_trace_prediction(model, test_X, test_y):
 
     # Create predictions for the test set
-    predictions = model.predict(test_X.reshape(1, *test_X.shape)).reshape(test_X.shape[1]//2, 16)
+    predictions = model.predict(test_X)
+    print(predictions.shape)
 
     # Create a figure for the predictions
     fig, ax = plt.subplots(1, 3, figsize=(20, 5))
