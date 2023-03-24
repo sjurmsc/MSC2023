@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     cv = LeaveOneGroupOut()
 
-    scaler = get_cpt_data_scaler(t='minmax')
+    scaler = get_cpt_data_scaler()
 
     dataset_params = {
         'n_neighboring_traces'  : 5,
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     X_train, y_train, groups_train = create_sequence_dataset(sequence_length=10,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
-    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, scaler = create_full_trace_dataset(**dataset_params)
+    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs = create_full_trace_dataset(**dataset_params)
 
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)

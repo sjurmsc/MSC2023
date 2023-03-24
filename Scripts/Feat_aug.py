@@ -300,7 +300,12 @@ def create_full_trace_dataset(n_neighboring_traces=5,
             sw_idxs.append(sw_idx)
 
             # Adding extrapolated indices
-            extr = np.where(nan_idx)
+            extrapolated_idx = np.zeros(bootstrap.shape[0], dtype=bool)
+            for i in range(bootstrap.shape[0]):
+                if nan_idx[i]:
+                    extrapolated_idx[i:] = True
+                    break
+            extrapolated_idxs.append(extrapolated_idx)
 
             seis = seismic.copy()
             if add_noise:
@@ -327,6 +332,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     y = np.array(y)
     nan_idxs = np.array(nan_idxs)
     no_nan_idxs = np.array(no_nan_idxs)
+    sw_idxs = np.array(sw_idxs)
     groups = np.array(groups)
 
     # Randomly flip the X data about the 1 axis
@@ -340,7 +346,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
 
     print('Done!')
 
-    return X, y, groups, nan_idxs, no_nan_idxs
+    return X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs
             
 
 
@@ -891,7 +897,6 @@ def get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/
             las = lasio.read(lasfile)
             df = las.df().iloc[:, :3]
             df_dict[key] = df.copy()
-            # bootstrap_CPT_by_seis_depth(df.values, df.index.values, np.arange(0, df.index.values.argmax(), 0.1), n=10, plot=True, to_file=f'./Assignment figures/Bootstrap_figs/{key}.png')
 
     return df_dict
 
@@ -1104,6 +1109,10 @@ def get_cpt_data_scaler(t='minmax'):
     """Gets the scaler for the CPT data"""
     
     scale_fpath = './Data/Scaler/CPT_scaler_{}.pkl'.format(t)
+
+    if not Path('./Data/Scaler/').exists():
+        Path('./Data/Scaler/').mkdir(parents=True)
+
     if Path(scale_fpath).exists():
         with open(scale_fpath, 'rb') as f:
             scaler = pickle.load(f)
@@ -1113,11 +1122,14 @@ def get_cpt_data_scaler(t='minmax'):
         # Load CPT data
         cpt_dict = get_cpt_las_files()
 
-        # concatenate all data values
+        # Stack all data values
+        cpt_data = array([]).reshape(0, 3)
+        for _, val in cpt_dict.items():
+            cpt_data = row_stack((cpt_data, val.values))
+        cpt_data = array(cpt_data)
 
-        cpt_data = array(cpt_dict.values).reshape(-1, 3)
 
-        if type == 'minmax':
+        if t == 'minmax':
             scaler = MinMaxScaler()
         else:
             raise ValueError('Scaler type not supported')
@@ -1126,6 +1138,7 @@ def get_cpt_data_scaler(t='minmax'):
 
         # Save scaler
         with open(scale_fpath, 'wb') as f:
+            
             pickle.dump(scaler, f)
 
         print('Saved scaler to {}'.format(scale_fpath))
