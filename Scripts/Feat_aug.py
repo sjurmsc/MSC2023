@@ -78,7 +78,7 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
         # Get CPT name
         cpt_name = get_cpt_name(cpt_loc)
 
-        sys.stdout.write('\rRetrieving from {}'.format(cpt_name))
+        sys.stdout.write('\rRetrieving from {}'.format(row['Borehole']))
 
         CDP = int(row['CDP'])
         seis_file = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/{}.sgy'.format(row['2D UHR line'])
@@ -88,8 +88,8 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
             traces = segyio.collect(SEISMIC.trace)[where(abs(a - CDP) <= n_neighboring_traces)]
             traces, z_traces = traces[:, (z>=zrange[0])&(z<zrange[1])], z[(z>=zrange[0])&(z<zrange[1])]
         
-        CPT_DATA = cpt_dict[cpt_name].values
-        CPT_DEPTH = cpt_dict[cpt_name].index.values
+        CPT_DATA = cpt_dict[row['Borehole']].values
+        CPT_DEPTH = cpt_dict[row['Borehole']].index.values
 
         # TEMPORARY
         SEAFLOOR = float(row['Water Depth'])/1000 # Convert from mm to m
@@ -650,183 +650,7 @@ def get_seis_at_cpt_locations(df_NAV, dirpath_sgy, df_CPT_loc=pd.DataFrame([]), 
         print('Saved to excel')
     print('seismic traces merged')
     return df_seisall
-
-
-def get_traces(fp, mmap=True, zrange: tuple = (None, 100)):
-    """
-    This function should conserve some information about the domain (time or depth) of
-    the data.
-    """
-    with segyio.open(fp, ignore_geometry=True) as seis_data:
-        z = seis_data.samples
-        if mmap:
-            seis_data.mmap()  # Only to be used if the file size is small compared to available memory
-        traces = segyio.collect(seis_data.trace)
-    
-    traces, z = traces[:, z<zrange[1]], z[z<zrange[1]]
-    return traces, z
-
-
-def get_matching_traces(fp_X, fp_y, mmap = True, zrange: tuple = (25, 100), group_traces: int = 1, trunc = False):
-    """
-    Function to assist in maintaining cardinality of the dataset
-    %%%%%%%%%%%%%%%% Can add overlap here
-    """
-    assert group_traces%2, 'Amount of traces must be odd to have a center trace'
-
-    with segyio.open(fp_X, ignore_geometry=True) as X_data:
-        with segyio.open(fp_y, ignore_geometry=True) as y_data:
-            # retrieving depth values for target and input data
-            z_X = X_data.samples
-            z_y = y_data.samples
-
-            # getting index of max depth for truncation
-            X_max_idx = amax(where(z_X < zrange[1])) + 1
-            y_max_idx = amax(where(z_y < zrange[1])) + 1
-
-            # The acoustic impedance starts at depth 25m
-            X_min_idx = amin(where(z_X >= z_y[0]))
-
-
-            if mmap: X_data.mmap(); y_data.mmap() # initiate mmap mode for large datasets
-
-            # get information about what traces are overlapping
-            nums_X = segyio.collect(X_data.attributes(segyio.TraceField.CDP))
-            nums_y = segyio.collect(y_data.attributes(segyio.TraceField.CDP))
-            CDP, idx_X, idx_y = intersect1d(nums_X, nums_y, return_indices=True)
-            assert len(idx_X) == len(idx_y)
-
-            # collect the data
-            X_traces = segyio.collect(X_data.trace)[idx_X, X_min_idx:X_max_idx]
-            y_traces = segyio.collect(y_data.trace)[idx_y, :y_max_idx]
-
-            X_func = interp1d(z_X[X_min_idx:X_max_idx], X_traces, kind='cubic', axis=1)
-            X_traces = X_func(z_y[:y_max_idx])
- 
-            # y_refl, slope = ai_to_reflectivity(y_traces)
-            # y_interp = interp1d(z_y[:y_max_idx], y_refl, kind='nearest', axis=1)
-            # y_interp_refl = array(y_interp(z_X[X_min_idx:X_max_idx]))
-            # y_traces = reflectivity_to_ai(y_interp_refl, slope)
-
-    if not group_traces == 1:
-        num_traces = X_traces.shape[0]
-        len_traces = X_traces.shape[1]
-        num_images = num_traces//group_traces
-        indices_truncated = num_images*group_traces
-        discarded_images = num_traces-indices_truncated
-        l_indices = (discarded_images//2); r_indices = indices_truncated + l_indices + discarded_images%2
-        X_traces = X_traces[l_indices:r_indices].reshape((num_images, group_traces, len_traces))
-        y_traces = y_traces[l_indices:r_indices].reshape((num_images, group_traces, len_traces))
-    
-    if trunc:  # Done as a quick way to remove bad data, as it is most often at the ends
-        X_traces = X_traces[trunc:-trunc]
-        y_traces = y_traces[trunc:-trunc]
-    
-    return X_traces, y_traces, (z_X, z_y)
-
-
-def sgy_to_keras_dataset(X_data_label_list,
-                         y_data_label_list,
-                         test_size=0.2, 
-                         group_traces = 1,
-                         zrange: tuple = (None, 100), 
-                         reconstruction = True,
-                         validation = False, 
-                         X_normalize = None,
-                         y_normalize = 'MinMaxScaler',
-                         random_state=1,
-                         shuffle=True,
-                         min_y = 0.,
-                         fraction_data=False,
-                         truncate_data=False):
-    """
-    random_state may be passed for recreating results
-    """
-    data_dict = load_data_dict()
-
-    # Something to evaluate that z is same for all in a feature
-    X = array([]); y = array([])
-
-    for i, key in enumerate(X_data_label_list):
-        x_dir = Path(data_dict[key])
-        y_dir = Path(data_dict[y_data_label_list[i]])
-        matched = match_files(x_dir, y_dir)
-        if fraction_data: matched = matched[:int(len(matched)*fraction_data)] # %%%%%%%%%%%%%%%%%%%%%quickfix
-        m_len = len(matched)
-        for i, (xm, ym) in enumerate(matched):
-            # Giving feedback to how the collection is going
-            sys.stdout.write('\rCollecting trace data into dataset {}/{}'.format(i+1, m_len))
-            sys.stdout.flush()
-
-            try: x_traces, y_traces, z = get_matching_traces(xm, ym, zrange=zrange, group_traces=group_traces, trunc=truncate_data)
-            except: print('\nCould not load file {}\n'.format(xm)); continue
-
-            if not len(X):
-                X = array(x_traces)
-                y = array(y_traces)
-            else:
-                X = row_stack((X, x_traces))
-                y = row_stack((y, y_traces))
-    sys.stdout.write('\n'); sys.stdout.flush()
-    
-    y[where(y<min_y)] = min_y
-
-    X_scaler = None
-    y_scaler = None
-    # Normalization
-    if X_normalize == 'MinMaxScaler':
-        X_scaler = MinMaxScaler()
-        X_new = X_scaler.fit_transform(X.reshape(-1, 1))
-        X = X_new.reshape(X.shape)
-    elif X_normalize == 'StandardScaler':
-        X_scaler = StandardScaler()
-        X_new = X_scaler.fit_transform(X.reshape(-1, 1))
-        X = X_new.reshape(X.shape)
-    if y_normalize == 'MinMaxScaler':
-        y_scaler = MinMaxScaler()
-        y_new = y_scaler.fit_transform(y.reshape(-1, 1))
-        y = y_new.reshape(y.shape)
-
-
-    train_X, test_X, train_y, test_y = train_test_split(X, y, 
-                                                        test_size=test_size, 
-                                                        random_state=random_state,
-                                                        shuffle=shuffle)  # dataset must be np.array
-    
-    if validation:
-        test_X, val_X, test_y, val_y = train_test_split(test_X, test_y, test_size=test_size, random_state=random_state, shuffle=shuffle)
-        if reconstruction:
-            train_y = [train_y, train_X]
-            test_y = [test_y, test_X]
-            val_y = [val_y, val_X]
-        return (train_X, train_y), (test_X, test_y), (val_X, val_y)
-    
-    if reconstruction:
-        train_y = [train_y, train_X]
-        test_y = [test_y, test_X]
-    return (train_X, train_y), (test_X, test_y), (X_scaler, y_scaler)
-
-
-def match_files(X_folder_loc, y_folder_loc, file_extension='.sgy'):
-    """
-    Matches the features from two seperate traces by filename
-    Filenames corresponding to each other are returned as a list
-    of tuples in the form [(X_file, y_file)]
-    """
-    X_dir = list(Path(X_folder_loc).glob('*'+file_extension)); y_dir = list(Path(y_folder_loc).glob('*'+file_extension))
-
-    file_pairs = []
-    for i, fname in enumerate(X_dir):
-        X_name = fname.name[:fname.name.find('_MIG_DPT.sgy')]
-        j_list = []
-        for j, yfile in enumerate(y_dir):
-            y_name = yfile.name[:yfile.name.find('_MIG.Abs_Zp.sgy')]
-            if X_name == y_name:
-                file_pairs.append((str(fname), str(yfile)))
-                j_list.append(j)
-        [y_dir.pop(j) for j in j_list]
-    return file_pairs
-          
+  
 
 def bootstrap_CPT_by_seis_depth(cpt_data, cpt_depth, GM_depth, n=1000, plot=False, to_file=''):
     """ This function creates bins of cpt values at ground model depths, and then samples
@@ -937,58 +761,6 @@ def get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/
             df_dict[key] = df.copy()
 
     return df_dict
-
-
-def get_seismic_where_there_is_cpt(cpt, z_cpt, seis, z_seis):
-    """
-    For a given cpt trace, this function gives a pair of seismic image and cpt for a continuous range where all cpt parameters are defined.
-    """
-    # Get the indices of the cpt trace where all parameters are defined
-    idx = np.where(~np.isnan(cpt).any(axis=1))[0]
-    # Get the corresponding cpt depth
-    z_cpt = z_cpt[idx]
-    # Get the corresponding cpt trace
-    cpt = cpt[idx]
-    # Get the corresponding seismic trace
-    seis = seis[idx]
-    # Get the corresponding seismic depth
-    z_seis = z_seis[idx]
-
-    return cpt, z_cpt, seis, z_seis
-
-
-def load_data_dict():
-    data_json = './Data/data.json'
-    with open(data_json, 'r') as readfile:
-        data_dict = json.loads(readfile.read())
-    return data_dict
-
-
-def update_data_dict():
-    """ Edit this funciton to change the filepaths to the relevant data
-        Filepaths must be relative to the repository, which is in user folder.
-        Double dot (..) steps outside of this folder to access the OneDrive
-        folder
-    """
-    data_json = './Data/data.json'
-    root = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/'
-    data_dict = {
-        '00_AI'                 : root + '00_AI',
-        '2DUHRS_06_MIG_DEPTH'   : root + '2DUHRS_06_MIG_DEPTH'
-    }
-    with open(data_json, 'w') as writefile:
-        writefile.write(json.dumps(data_dict, indent=2))
-
-
-def find_nth(haystack, needle, n : int):
-    n = abs(n); assert n > 0
-    max_needle_amount = len(haystack.split(needle)); assert n < max_needle_amount
-    if n-1:
-        intermed = haystack.find(needle) + 1
-        loc = intermed + find_nth(haystack[intermed:], needle, n-1)
-    else:
-        return haystack.find(needle)
-    return loc
 
 
 def find_duplicates(m_files):
