@@ -221,19 +221,21 @@ if __name__ == '__main__':
     # plot the latent space, colored by structural model
     # plot_latent_space(encoder, X_t, y_train, groups_train, filename=f'./Models/{gname}/Ensemble_CNN_latent_space.png')
 
+    for i in range(trues.shape[0]):
+        trues[i] = scaler.inverse_transform(trues[i])
+
     for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
         stds = []
         print('Evaluating model stds for {}'.format(label))
 
         # Inverse transform the data
-        for i in range(trues.shape[0]):
-            trues[i] = scaler.inverse_transform(trues[i])
+        for i in range(pred.shape[0]):
             pred[i] = scaler.inverse_transform(pred[i])
 
         for k in range(pred.shape[-1]):
             _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, :, k].flatten(), pred[:, :, k].flatten())
-            print('std for {} is: {}'.format(label, std))
             stds.append(std)
+        print('std for {} is: {}'.format(label, stds))
 
     with open(f'./Models/{gname}/std_results.txt', 'a') as f:
         f.write(f'{label} stds: {stds}')
