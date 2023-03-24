@@ -252,7 +252,7 @@ def CNN_pyramidal_encoder(latent_features, image_width):
         cnn_encoder.add(keras.layers.Dropout(0.01))
 
 
-    cnn_encoder.add(keras.layers.Conv1D(latent_features, (1), activation='relu'))
+    cnn_encoder.add(keras.layers.Conv2D(latent_features, (1), activation='relu'))
     cnn_encoder.add(keras.layers.Reshape((-1, latent_features))) # Reshape to get features in the second dimension
 
     return cnn_encoder
