@@ -88,7 +88,7 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 10,
+        'epochs'            : 100,
         'batch_size'        : 20
         }
 
@@ -225,7 +225,7 @@ if __name__ == '__main__':
         stds = []
         print('Evaluating model stds for {}'.format(label))
         for k in range(pred.shape[-1]):
-            _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, k], pred[:, k])
+            _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, :, k].flatten(), pred[:, :, k].flatten())
             stds.append(std)
 
     with open(f'./Models/{gname}/std_results.txt', 'a') as f:
