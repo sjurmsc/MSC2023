@@ -60,27 +60,40 @@ def get_cpt_data_from_file(fp, zrange: tuple = (30, 100)):
 
 from pandas import read_excel
 
-def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_file=''):
+def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_file='', data_folder = 'FE_CPT'):
 
     CPT_match = read_excel(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx')
 
-    cpt_dict = get_cpt_las_files(cpt_folder_loc = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/FE_CPT')
+    cpt_dict = get_cpt_las_files(cpt_folder_loc = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/{}'.format(data_folder))
 
 
     match_dict = {}
 
 
     for i, row in CPT_match.iterrows():
-        if not row['Borehole'] in cpt_dict.keys():
-            continue
-        cpt_loc = int(row['Location no.'])
+        
 
-        distance = row['Distance to CDP']
+        # if not row['Borehole'] in cpt_dict.keys():
+        #     continue
+
+        cpt_loc = int(row['Location no.'])
 
         # Get CPT name
         cpt_name = get_cpt_name(cpt_loc)
 
-        sys.stdout.write('\rRetrieving from {} \t\t'.format(row['Borehole']))
+        # Combined is joined at cpt location
+        if data_folder == 'combined':
+            cpt_key = cpt_name
+        elif data_folder == 'FE_CPT':
+            cpt_key = row['Borehole']
+
+        distance = row['Distance to CDP']
+
+        
+
+
+
+        sys.stdout.write('\rRetrieving from {} \t\t'.format(cpt_key))
 
         CDP = int(row['CDP'])
         seis_file = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/{}.sgy'.format(row['2D UHR line'])
@@ -90,8 +103,8 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
             traces = segyio.collect(SEISMIC.trace)[where(abs(a - CDP) <= n_neighboring_traces)]
             traces, z_traces = traces[:, (z>=zrange[0])&(z<zrange[1])], z[(z>=zrange[0])&(z<zrange[1])]
         
-        CPT_DATA = cpt_dict[row['Borehole']].values
-        CPT_DEPTH = cpt_dict[row['Borehole']].index.values
+        CPT_DATA = cpt_dict[cpt_key].values
+        CPT_DEPTH = cpt_dict[cpt_key].index.values
 
         # TEMPORARY
         SEAFLOOR = float(row['Water Depth'])/1000 # Convert from mm to m
