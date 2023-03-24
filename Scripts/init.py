@@ -191,7 +191,7 @@ if __name__ == '__main__':
                 
                 s = rf_decoder.score(t_test_pred, t_flat_y)
                 print('RF score: {}'.format(s))
-                rf_preds = predict_encoded_tree(encoder, rf_decoder, X_test_full)
+                rf_preds = predict_encoded_tree(encoder, rf_decoder, X_test_cv)
     
             elif dec == 'LGBM':
                 print('Fitting LGBM')
@@ -202,7 +202,7 @@ if __name__ == '__main__':
 
                 s = lgbm_decoder.score(t_test_pred, t_flat_y)
                 print('LGBM score: {}'.format(s))
-                lgbm_preds = predict_encoded_tree(encoder, lgbm_decoder, X_test_full)
+                lgbm_preds = predict_encoded_tree(encoder, lgbm_decoder, X_test_cv)
 
         # Plotting the predictions
 
