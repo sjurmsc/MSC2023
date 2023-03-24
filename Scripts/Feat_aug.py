@@ -543,8 +543,6 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
     prediction = latent_model.predict(X).reshape((-1, 16))
     tsne_results = tsne.fit_transform(prediction)
 
-
-    print(outside_indices.shape, valid_indices.shape, GGM.shape)
     outside_indices = outside_indices.flatten()
     valid_indices = valid_indices.flatten()
     GGM = GGM.flatten()
