@@ -44,7 +44,7 @@ if __name__ == '__main__':
         'zrange'                : (30, 100),
         'n_bootstraps'          : 10,
         'add_noise'             : 0.01,
-        'max_distance_to_cdp'   : 25,
+        'max_distance_to_cdp'   : 20,
         'cumulative_seismic'    : False,
         'random_flip'           : True,
         'random_state'          : 1,
@@ -202,8 +202,8 @@ if __name__ == '__main__':
                 lgbm_preds = predict_encoded_tree(encoder, lgbm_decoder, X_test_cv)
 
         # Plotting the predictions
-        for model in [model, [encoder, rf_decoder], [encoder, lgbm_decoder]]:
-            create_loo_trace_prediction(model, X_test_full, y_test_full, zrange=dataset_params['zrange'])
+        for m in [model, [encoder, rf_decoder], [encoder, lgbm_decoder]]:
+            create_loo_trace_prediction(m, X_test_full, y_test_full, zrange=dataset_params['zrange'], sw=sw_idxs)
         
         # Plotting the latent space
         plot_latent_space(encoder, 
