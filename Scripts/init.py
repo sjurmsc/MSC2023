@@ -33,15 +33,10 @@ from time import time
 
 
 if __name__ == '__main__':
-
-    # Retrieve data
-    # cpt_exhausive_dataset = read_csv(r'../OneDrive - NGI/Documents/NTNU/MSC_DATA/Database.csv')
-
-
-    # Creating the model
-
+    # Setting up the cross validation
     cv = LeaveOneGroupOut()
 
+    # Getting scaler for the data
     scaler = get_cpt_data_scaler()
 
     dataset_params = {
@@ -50,7 +45,7 @@ if __name__ == '__main__':
         'n_bootstraps'          : 2,
         'add_noise'             : 0.005,
         'max_distance_to_cdp'   : 10,
-        'cumulative_seismic'    : True,
+        'cumulative_seismic'    : False,
         'random_flip'           : True,
         'random_state'          : 1,
         'groupby'               : 'cpt_loc',
@@ -88,7 +83,7 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 1,
+        'epochs'            : 5,
         'batch_size'        : 20
         }
 
