@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     cv = LeaveOneGroupOut()
 
-    scaler = get_cpt_data_scaler()
+    scaler = get_cpt_data_scaler(cpt_folder_loc = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/FE_CPT')
 
     dataset_params = {
         'n_neighboring_traces'  : 12,

@@ -31,7 +31,7 @@ def get_cpt_name(cpt_loc):
     if cpt_loc < 86:
         cpt_name = f'TNW{cpt_loc:03d}'
     elif (cpt_loc>85) and (cpt_loc<=89):
-        cpt_name = 'TNWTT{}'.format(int(cpt_loc % 85))
+        cpt_name = 'TNWTT{:02d}'.format(int(cpt_loc % 85))
     return cpt_name
 
 def get_cpt_data_from_file(fp, zrange: tuple = (30, 100)):
@@ -65,6 +65,7 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
     CPT_match = read_excel(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx')
 
     cpt_dict = get_cpt_las_files()
+
 
     match_dict = {}
 
