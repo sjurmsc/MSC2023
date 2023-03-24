@@ -260,7 +260,6 @@ def CNN_pyramidal_encoder(latent_features, image_width):
 def LSTM_encoder(latent_features, image_width):
     """LSTM encoder collapsing the dimension first dimension down to 1.
     Made to predict features at centered trace from seismic data."""
-
     assert image_width % 2 == 1, 'width % 2 != 1'
 
     image_shape = (image_width, None, 1) # None, because length is variable, 1 because monochromatic seismic
@@ -321,6 +320,8 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
 
     model = Model(encoder.input, decoder)
     model.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
+
+
     return model, encoder
 
 

@@ -564,11 +564,11 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
     plt.close()
 
 
-def create_loo_trace_prediction(model, test_X, test_y, zrange, sw):
+def create_loo_trace_prediction(model, test_X, test_y, zrange):
 
     # Create predictions for the test set
     if not type(model) == list:
-        predictions = model.predict(test_X, mask=sw)
+        predictions = model.predict(test_X)
     else:
         encoder, model = model
         predictions = predict_encoded_tree(encoder, model, test_X)

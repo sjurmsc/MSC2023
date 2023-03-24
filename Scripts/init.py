@@ -123,7 +123,7 @@ if __name__ == '__main__':
         model, encoder = ensemble_CNN_model(n_members=1, 
                                             image_width=image_width, 
                                             learning_rate=learning_rate,
-                                            enc = 'lstm',
+                                            enc = 'cnn',
                                             dec = 'lstm')
         if i==0: model.summary()
 
