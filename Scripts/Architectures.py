@@ -235,7 +235,7 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     cnn_encoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=image_shape),
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))),
-        keras.layers.Conv2D(16, (3, 3), activation='relu'),
+        keras.layers.Conv2D(32, (3, 3), activation='relu'),
         keras.layers.LayerNormalization(),
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))), # 1, 1 padding because kernel is 3x3
         keras.layers.Conv2D(32, (3, 3), activation='relu'),

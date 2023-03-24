@@ -150,7 +150,6 @@ if __name__ == '__main__':
         if i == 0:
             trues = y_test_cv
             preds = model.predict(X_test_cv)[:, 0, :, :]
-            print(preds)
         else:
             trues = np.vstack((trues, y_test_cv))
             preds = np.vstack((preds, model.predict(X_test_cv))[:, 0, :, :])
