@@ -62,7 +62,7 @@ from pandas import read_excel
 
 def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_file=''):
 
-    CPT_match = read_excel(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xls')
+    CPT_match = read_excel(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx')
 
     cpt_dict = get_cpt_las_files()
 
