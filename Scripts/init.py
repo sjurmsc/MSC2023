@@ -45,7 +45,7 @@ if __name__ == '__main__':
     scaler = get_cpt_data_scaler()
 
     dataset_params = {
-        'n_neighboring_traces'  : 5,
+        'n_neighboring_traces'  : 12,
         'zrange'                : (30, 100),
         'n_bootstraps'          : 1,
         'add_noise'             : 0.1,
@@ -203,9 +203,9 @@ if __name__ == '__main__':
                 lgbm_preds = lgbm_decoder.predict(test_prediction)
 
         # Plotting the predictions
-        encoded_X = encoder(X_test_full)[:, 0, :, :].numpy()
-        for model, X in zip([model, [encoder, rf_decoder], [encoder, lgbm_decoder]], [X_test_full, encoded_X, encoded_X]):
-            create_loo_trace_prediction(model, X, y_test_full, zrange=dataset_params['zrange'])
+
+        for model in [model, [encoder, rf_decoder], [encoder, lgbm_decoder]]:
+            create_loo_trace_prediction(model, X_test_full, y_test_full, zrange=dataset_params['zrange'])
 
 
     # Save the training times
