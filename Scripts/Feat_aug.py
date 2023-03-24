@@ -543,17 +543,17 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
     prediction = latent_model.predict(X).reshape((-1, 16))
     tsne_results = tsne.fit_transform(prediction)
 
-    print(outside_indices.shape, valid_indices.shape, GGM.shape, tsne_results.shape, prediction.shape)
+
     outside_indices = outside_indices.flatten()
     valid_indices = valid_indices.flatten()
     
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
 
     # Give specific markers to points outside the valid indices
-    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], alpha=0.5)
+    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', alpha = 0.5) #c=GGM[outside_indices], alpha=0.5)
     
     # Plot the valid indices
-    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], c=GGM[valid_indices])
+    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1]) # , c=GGM[valid_indices])
 
     ax.set_title('Latent space colored by Ground model units')
 
