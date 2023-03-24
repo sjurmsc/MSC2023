@@ -157,7 +157,7 @@ if __name__ == '__main__':
             trues = np.vstack((trues, y_test_cv))
             preds = np.vstack((preds, model.predict(X_test_cv)))
 
-        encoded_data = encoder(X_train_full)[:, 0, :, :]
+        encoded_data = encoder(X_train_full)[:, 0, :, :].numpy()
         tree_train_input_shape = (-1, encoded_data.shape[-1])
         idx_train = full_no_nan_idx_train.flatten()
         idx_nan_train = full_nan_idx_train.flatten()
@@ -165,7 +165,7 @@ if __name__ == '__main__':
         flat_y_train = y_train_full.reshape(-1, y_train_full.shape[-1])
         
         
-        test_prediction = encoder(X_test_full)[:, 0, :, :]
+        test_prediction = encoder(X_test_full)[:, 0, :, :].numpy()
         tree_test_input_shape = (-1, test_prediction.shape[-1])
         idx_test = full_no_nan_idx_test.flatten()
         idx_nan_test = full_nan_idx_test.flatten()
@@ -203,7 +203,8 @@ if __name__ == '__main__':
                 lgbm_preds = lgbm_decoder.predict(test_prediction)
 
         # Plotting the predictions
-        for model, X in zip([model, rf_decoder, lgbm_decoder], [X_test_full, encoder(X_test_full), encoder(X_test_full)]):
+        encoded_X = encoder(X_test_full).numpy()
+        for model, X in zip([model, rf_decoder, lgbm_decoder], [X_test_full, encoded_X, encoded_X]):
             create_loo_trace_prediction(model, X, y_test_full)
 
 
