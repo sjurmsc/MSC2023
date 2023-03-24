@@ -47,7 +47,7 @@ if __name__ == '__main__':
     dataset_params = {
         'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
-        'n_bootstraps'          : 5,
+        'n_bootstraps'          : 1,
         'add_noise'             : 0.1,
         'max_distance_to_cdp'   : 10,
         'cumulative_seismic'    : True,
@@ -153,7 +153,7 @@ if __name__ == '__main__':
 
         # Adding predictions to a numpy array
         if i == 0:
-            trues = y_test_cv
+            trues = y_test_cv[np.random.randint(0, len(y_test_cv))]
             preds = model.predict(X_test_cv)
         else:
             trues = np.vstack((trues, y_test_cv))
