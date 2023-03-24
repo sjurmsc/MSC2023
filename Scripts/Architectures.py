@@ -360,8 +360,8 @@ def ensemble_CNN_decoder(n_members=5):
 
 def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001):
     encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
-    # decoder = ensemble_CNN_decoder(n_members=n_members)(encoder.output)
-    decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
+    decoder = ensemble_CNN_decoder(n_members=n_members)(encoder.output)
+    # decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
