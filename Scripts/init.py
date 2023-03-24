@@ -101,23 +101,19 @@ if __name__ == '__main__':
         Train_groups    = np.unique(groups_train[train_index])
         Test_group      = np.unique(groups_train[test_index])
 
-        # Getting the indices of the train and test data for the current cv split
-        in_train = np.isin(groups_train, Train_groups)
-        in_test = np.isin(groups_train, Test_group)
-
         # Creating full trace cv dataset
-        X_train_full    = X_full[in_train]
-        y_train_full    = y_full[in_train]
-        X_test_full     = X_full[in_test]
-        y_test_full     = y_full[in_test]
+        X_train_full    = X_full[np.isin(groups_train, Train_groups)]
+        y_train_full    = y_full[np.isin(groups_train, Train_groups)]
+        X_test_full     = X_full[np.isin(groups_train, Test_group)]
+        y_test_full     = y_full[np.isin(groups_train, Test_group)]
 
         # Getting the indices of the nan values for coloring plots
-        full_nan_idx_train = full_nan_idx[in_train]
-        full_nan_idx_test = full_nan_idx[in_test]
+        full_nan_idx_train = full_nan_idx[np.isin(groups_train, Train_groups)]
+        full_nan_idx_test = full_nan_idx[np.isin(groups_train, Test_group)]
 
         # Getting the indices of the non-nan values for training trees
-        full_no_nan_idx_train = full_no_nan_idx[in_train]
-        full_no_nan_idx_test = full_no_nan_idx[in_test]
+        full_no_nan_idx_train = full_no_nan_idx[np.isin(groups_train, Train_groups)]
+        full_no_nan_idx_test = full_no_nan_idx[np.isin(groups_train, Test_group)]
 
         # Setting up the model
         model, encoder = ensemble_CNN_model(n_members=1)
@@ -151,8 +147,10 @@ if __name__ == '__main__':
 
         # Adding predictions to a numpy array
         if i == 0:
+            trues = y_test_cv
             preds = model.predict(X_test_cv)
         else:
+            trues = np.vstack((trues, y_test_cv))
             preds = np.vstack((preds, model.predict(X_test_cv)))
 
         encoded_data = encoder(X_train_full)[:, 0, :, :]
@@ -219,7 +217,7 @@ if __name__ == '__main__':
         stds = []
         print('Evaluating model stds for {}'.format(label))
         for k in range(pred.shape[-1]):
-            _, _, _, _, std, _ = evaluate_modeldist_norm(y[:, k], pred[:, k])
+            _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, k], pred[:, k])
             stds.append(std)
 
     with open(f'./Models/{gname}/std_results.txt', 'a') as f:
