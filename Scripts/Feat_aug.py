@@ -540,6 +540,7 @@ def create_loo_trace_prediction(model, test_X, test_y):
     # Create predictions for the test set
     predictions = model.predict(test_X)[:, 0, :, :]
     print(predictions.shape)
+    print(test_y.shape)
 
     units = ['$q_c$', '$f_s$', '$u_2$']
 
