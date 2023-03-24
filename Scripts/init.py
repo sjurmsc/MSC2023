@@ -60,6 +60,8 @@ if __name__ == '__main__':
     X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs = full_trace
     del full_trace
 
+    GGM = np.ones(y_full.shape[0])
+
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)
     if not Path(f'./Models/{gname}').exists(): Path(f'./Models/{gname}').mkdir()
@@ -200,10 +202,19 @@ if __name__ == '__main__':
                 lgbm_preds = predict_encoded_tree(encoder, lgbm_decoder, X_test_cv)
 
         # Plotting the predictions
-
         for model in [model, [encoder, rf_decoder], [encoder, lgbm_decoder]]:
             create_loo_trace_prediction(model, X_test_full, y_test_full, zrange=dataset_params['zrange'])
-        break
+        
+        # Plotting the latent space
+        plot_latent_space(encoder, 
+                          X_test_full, 
+                          full_no_nan_idx_test, 
+                          full_nan_idx_test, 
+                          GGM,
+                          filename=f'./Models/{gname}/Ensemble_CNN_latent_space_{i}.png')
+        
+        
+        break # Quit after first iteration
 
 
     # Save the training times
