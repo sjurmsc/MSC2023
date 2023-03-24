@@ -76,12 +76,14 @@ if __name__ == '__main__':
         'min_samples_split' : 4,
         'bootstrap'         : True,
         'criterion'         : 'mse'
+        'n_jobs'            : -1
         }
 
     LGBM_param_dict = {
         'num_leaves'        : 31,
         'max_depth'         : 20,
-        'n_estimators'      : 100
+        'n_estimators'      : 100,
+        'n_jobs'            : -1
         }
 
     NN_param_dict = {
@@ -187,7 +189,7 @@ if __name__ == '__main__':
                 print('Fitting RF')
 
                 t0 = time()
-                rf_decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict), n_jobs=-1)
+                rf_decoder = MultiOutputRegressor(RandomForestRegressor(**RF_param_dict))
                 rf_decoder.fit(t_train_pred, t_flat_y_train)
                 training_time_dict[i]['RF'] = time() - t0
                 
@@ -199,7 +201,7 @@ if __name__ == '__main__':
             elif dec == 'LGBM':
                 print('Fitting LGBM')
                 t0 = time()
-                lgbm_decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict), n_jobs=-1)
+                lgbm_decoder = MultiOutputRegressor(LGBMRegressor(**LGBM_param_dict))
                 lgbm_decoder.fit(t_train_pred, t_flat_y_train)
                 training_time_dict[i]['LGBM'] = time() - t0
 
