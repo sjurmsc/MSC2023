@@ -71,6 +71,8 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
 
 
     for i, row in CPT_match.iterrows():
+        if not row['Borehole'] in cpt_dict.keys():
+            continue
         cpt_loc = int(row['Location no.'])
 
         distance = row['Distance to CDP']
