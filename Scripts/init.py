@@ -58,7 +58,7 @@ if __name__ == '__main__':
         }
 
     X_train, y_train, groups_train = create_sequence_dataset(sequence_length=10,
-                                                             stride=3,
+                                                             stride=10,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
     full_trace = create_full_trace_dataset(**dataset_params)
