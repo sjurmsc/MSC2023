@@ -85,7 +85,6 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'learning_rate'     : 0.01,
         'epochs'            : 2,
         'batch_size'        : 20
         }
@@ -120,7 +119,7 @@ if __name__ == '__main__':
 
         # Setting up the model
         image_width = 2*dataset_params['n_neighboring_traces'] + 1
-        learning_rate = NN_param_dict['learning_rate']
+        learning_rate = 0.01
         model, encoder = ensemble_CNN_model(n_members=1, image_width=image_width, learning_rate=learning_rate)
         if i==0: model.summary()
 
