@@ -535,23 +535,23 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
     plt.close()
 
 
-def create_loo_trace_prediction(model, test_X, test_y):
+def create_loo_trace_prediction(model, test_X, test_y, zrange):
 
     # Create predictions for the test set
     predictions = model.predict(test_X)[:, 0, :, :]
-    print(predictions.shape)
-    print(test_y.shape)
+    
+    z = np.arange(zrange[0], zrange[1], 0.1)
 
     units = ['$q_c$', '$f_s$', '$u_2$']
 
-    # Create a figure for the predictions
+    # Create a figure for the predictions 
     fig, ax = plt.subplots(1, 3, figsize=(20, 5))
     fig.tight_layout()
     for i in range(3):
         for t in range(predictions.shape[0]):
-            ax[i].plot(predictions[t, :, i], 'k')
+            ax[i].plot(z, predictions[t, :, i], 'k')
             # Plot test_y using only markers
-            ax[i].plot(test_y[t, :, i], 'r', marker='.', alpha=0.1)
+            ax[i].plot(z, test_y[t, :, i], 'r', marker='.', alpha=0.1)
         ax[i].set_title(units[i])
         ax[i].invert_yaxis()
 
