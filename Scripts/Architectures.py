@@ -230,18 +230,18 @@ def CNN_pyramidal_encoder(latent_features, image_width):
 
     # input = keras.layers.Input(shape=(None, image_width, 1), ragged=True)
 
-    image_shape = (image_width, None, 1)
+    image_shape = (image_width, None, 1) # None, because length is variable, 1 because monochromatic seismic
 
     cnn_encoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=image_shape),
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))),
-        keras.layers.Conv2D(32, (3, 3), activation='relu'),
+        keras.layers.Conv2D(16, (3, 3), activation='relu'),
         keras.layers.LayerNormalization(),
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))), # 1, 1 padding because kernel is 3x3
         keras.layers.Conv2D(32, (3, 3), activation='relu'),
         keras.layers.MaxPooling2D((1, 2)), # Reduce the depth of seismic to GM_len
         keras.layers.LayerNormalization(),
-        keras.layers.Dropout(0.1)
+        keras.layers.Dropout(0.01)
     ], name='cnn_encoder')
 
     # Add more layers for shape reduction
@@ -258,6 +258,20 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     return cnn_encoder
 
 
+def LSTM_decoder(latent_features=16):
+    """LSTM decoder predicting CPT response from latent features."""
+    lstm_decoder = keras.Sequential([
+        keras.layers.InputLayer(input_shape=(None, latent_features)),
+        keras.layers.LSTM(64, return_sequences=True),
+        keras.layers.LSTM(32, return_sequences=True),
+        keras.layers.LSTM(16, return_sequences=True),
+        keras.layers.Dense(3)
+    ], name='lstm_decoder')
+
+    return lstm_decoder
+
+
+    
 
     
 class Collapse_CNN(Model):
@@ -346,7 +360,8 @@ def ensemble_CNN_decoder(n_members=5):
 
 def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11):
     encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
-    decoder = ensemble_CNN_decoder(n_members=n_members)(encoder.output)
+    # decoder = ensemble_CNN_decoder(n_members=n_members)(encoder.output)
+    decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
 
     model = Model(encoder.input, decoder)
     model.compile(loss='mae', optimizer='adam', metrics=['mse', 'mae'])
