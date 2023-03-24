@@ -45,10 +45,10 @@ if __name__ == '__main__':
     scaler = get_cpt_data_scaler()
 
     dataset_params = {
-        'n_neighboring_traces'  : 12,
+        'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
         'n_bootstraps'          : 2,
-        'add_noise'             : 0.1,
+        'add_noise'             : 0.005,
         'max_distance_to_cdp'   : 10,
         'cumulative_seismic'    : True,
         'random_flip'           : True,
@@ -58,7 +58,7 @@ if __name__ == '__main__':
         }
 
     X_train, y_train, groups_train = create_sequence_dataset(sequence_length=30,
-                                                             stride=30,
+                                                             stride=5,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
     full_trace = create_full_trace_dataset(**dataset_params)
@@ -232,14 +232,14 @@ if __name__ == '__main__':
         # Inverse transform the data
         for i in range(pred.shape[0]):
             trans_pred[i] = scaler.inverse_transform(pred[i])
-        print(trans_pred)
+
         for k in range(pred.shape[-1]):
             _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, :, k].flatten(), trans_pred[:, :, k].flatten())
             stds.append(std)
         print('std for {} is: {}'.format(label, stds))
 
-    with open(f'./Models/{gname}/std_results.txt', 'a') as f:
-        f.write(f'{label} stds: {stds}')
+    # with open(f'./Models/{gname}/std_results.txt', 'a') as f:
+    #     f.write(f'{label} stds: {stds}')
 
     # Create prediction crossplots
 
