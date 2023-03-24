@@ -350,9 +350,9 @@ def ensemble_CNN_decoder(n_members=5):
 
     print('More members are not implemented yet')
     ann_decoder = keras.models.Sequential([
-        keras.layers.Conv1D(16, 5, activation='relu', padding='same'),
-        keras.layers.Conv1D(32, 5, activation='relu', padding='same'),
-        keras.layers.Conv1D(3, 5, activation='relu', padding='same')
+        keras.layers.Conv1D(16, 3, activation='relu', padding='same'),
+        keras.layers.Conv1D(32, 3, activation='relu', padding='same'),
+        keras.layers.Conv1D(3, 3, activation='relu', padding='same')
     ], name='ann_decoder')
 
     return ann_decoder
