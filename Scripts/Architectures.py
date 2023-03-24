@@ -257,6 +257,25 @@ def CNN_pyramidal_encoder(latent_features, image_width):
 
     return cnn_encoder
 
+def LSTM_encoder(latent_features, image_width):
+    """LSTM encoder collapsing the dimension first dimension down to 1.
+    Made to predict features at centered trace from seismic data."""
+
+    assert image_width % 2 == 1, 'width % 2 != 1'
+
+    image_shape = (image_width, None, 1) # None, because length is variable, 1 because monochromatic seismic
+
+    lstm_encoder = keras.Sequential([
+        keras.layers.InputLayer(input_shape=image_shape),
+        keras.layers.LSTM(64, return_sequences=True),
+        keras.layers.LSTM(32, return_sequences=True),
+        keras.layers.LSTM(16, return_sequences=True),
+        keras.layers.Dense(latent_features)
+    ], name='lstm_encoder')
+
+    return lstm_encoder
+
+
 
 def LSTM_decoder(latent_features=16):
     """LSTM decoder predicting CPT response from latent features."""
@@ -285,10 +304,18 @@ def ensemble_CNN_decoder(n_members=5, latent_features=16):
     return cnn_decoder
 
 
-def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001):
-    encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
-    decoder = ensemble_CNN_decoder(n_members=n_members)(encoder.output)
-    # decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
+def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001, enc='cnn', dec='cnn'):
+    # 
+    if enc == 'cnn':
+        encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
+    elif enc == 'lstm':
+        encoder = LSTM_encoder(latent_features=latent_features, image_width=image_width)
+   
+   
+    if dec == 'cnn':
+        decoder = ensemble_CNN_decoder(n_members=n_members, latent_features=latent_features)(encoder.output)
+    elif dec == 'lstm':
+        decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 

@@ -120,7 +120,11 @@ if __name__ == '__main__':
         # Setting up the model
         image_width = 2*dataset_params['n_neighboring_traces'] + 1
         learning_rate = 0.001
-        model, encoder = ensemble_CNN_model(n_members=1, image_width=image_width, learning_rate=learning_rate)
+        model, encoder = ensemble_CNN_model(n_members=1, 
+                                            image_width=image_width, 
+                                            learning_rate=learning_rate,
+                                            enc = 'lstm',
+                                            dec = 'lstm')
         if i==0: model.summary()
 
         # Preparing the data to train the CNN
