@@ -350,9 +350,9 @@ def ensemble_CNN_decoder(n_members=5):
 
     print('More members are not implemented yet')
     ann_decoder = keras.models.Sequential([
-        keras.layers.Conv1D(16, 1, activation='relu', padding='same'),
-        keras.layers.Conv1D(32, 1, activation='relu', padding='same'),
-        keras.layers.Conv1D(3, 1, activation='relu', padding='same')
+        keras.layers.Conv1D(16, 5, activation='relu', padding='same'),
+        keras.layers.Conv1D(32, 5, activation='relu', padding='same'),
+        keras.layers.Conv1D(3, 5, activation='relu', padding='same')
     ], name='ann_decoder')
 
     return ann_decoder
@@ -365,14 +365,14 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11):
     decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
 
     model = Model(encoder.input, decoder)
-    model.compile(loss='mae', optimizer='adam', metrics=['mse', 'mae'])
+    model.compile(loss='mse', optimizer='adam', metrics=['mse', 'mae'])
     return model, encoder
 
 
-def predict_encoded_tree(encoder, tree, X):
+def predict_encoded_tree(encoder, tree, X): #, mask=None):
     """Predicts the target variable from encoded data using a tree based
     multi attribute regressor."""
-    dshape = X.shape
+
     encoded = encoder(X).numpy()
     encoded = encoded.reshape(-1, encoded.shape[-1])
     pred = tree.predict(encoded)
