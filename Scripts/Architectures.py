@@ -271,6 +271,42 @@ def LSTM_decoder(latent_features=16):
     return lstm_decoder
 
 
+def ensemble_CNN_decoder(n_members=5, latent_features=16):
+    """1D CNN decoder with a committee of n_members."""
+    print('More members are not implemented yet')
+    ann_decoder = keras.models.Sequential([
+        keras.layers.InputLayer(input_shape=(None, latent_features)),
+        keras.layers.Conv1D(64, 3, activation='relu', padding='same'),
+        keras.layers.Conv1D(32, 3, activation='relu', padding='same'),
+        keras.layers.Conv1D(16, 3, activation='relu', padding='same'),
+        keras.layers.Conv1D(3, 3, activation='relu', padding='same')
+    ], name='ann_decoder')
+
+    return ann_decoder
+
+
+def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001):
+    encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
+    decoder = ensemble_CNN_decoder(n_members=n_members)(encoder.output)
+    # decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
+
+    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+
+    model = Model(encoder.input, decoder)
+    model.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
+    return model, encoder
+
+
+def predict_encoded_tree(encoder, tree, X): #, mask=None):
+    """Predicts the target variable from encoded data using a tree based
+    multi attribute regressor."""
+
+    encoded = encoder(X).numpy()
+    encoded = encoded.reshape(-1, encoded.shape[-1])
+    pred = tree.predict(encoded)
+    return pred.reshape(X.shape[0], -1, 3)
+
+
     
 
     
@@ -345,36 +381,3 @@ class Collapse_tree(Model):
         return loss
 
 
-def ensemble_CNN_decoder(n_members=5):
-    """1D CNN decoder with a committee of n_members."""
-
-    print('More members are not implemented yet')
-    ann_decoder = keras.models.Sequential([
-        keras.layers.Conv1D(16, 3, activation='relu', padding='same'),
-        keras.layers.Conv1D(32, 3, activation='relu', padding='same'),
-        keras.layers.Conv1D(3, 3, activation='relu', padding='same')
-    ], name='ann_decoder')
-
-    return ann_decoder
-
-
-def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001):
-    encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
-    decoder = ensemble_CNN_decoder(n_members=n_members)(encoder.output)
-    # decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
-
-    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
-
-    model = Model(encoder.input, decoder)
-    model.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
-    return model, encoder
-
-
-def predict_encoded_tree(encoder, tree, X): #, mask=None):
-    """Predicts the target variable from encoded data using a tree based
-    multi attribute regressor."""
-
-    encoded = encoder(X).numpy()
-    encoded = encoded.reshape(-1, encoded.shape[-1])
-    pred = tree.predict(encoded)
-    return pred.reshape(X.shape[0], -1, 3)
