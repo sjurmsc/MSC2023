@@ -430,7 +430,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
                 ax[ii//8, ii%8].axis('off')
                 ax[ii//8, ii%8].set_title('Latent {}'.format(ii+1))
             fig.suptitle('Latent space prediction for CPT location {}'.format(cpt_loc))
-            fig.savefig('./Assignment Figures/Latent_units/Latent_space_units_{}.png'.format(cpt_loc), dpi=1000)
+            fig.savefig('./Assignment Figures/Latent_units/Latent_space_units_{}.png'.format(cpt_loc), dpi=500)
             plt.close()
             print('\nSaved image for CPT location {}'.format(cpt_loc))
 
@@ -447,7 +447,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
                 ax[ii//11, ii%11].axis('off')
                 ax[ii//11, ii%11].set_title('CPT {}'.format(CPT_match['Location no.'].unique()[ii]))
             fig.suptitle('Latent space prediction for latent unit {}'.format(i+1))
-            fig.savefig('./Assignment Figures/Latent_units/Latent_space_unit_{}.png'.format(i+1), dpi=1000)
+            fig.savefig('./Assignment Figures/Latent_units/Latent_space_unit_{}.png'.format(i+1), dpi=500)
             plt.close()
             print('\nSaved image for latent unit {}'.format(i+1))
 
@@ -527,7 +527,7 @@ def plot_cpt_pred(model, cpt, save = False, image_width = 11):
         # Create Interpolation directory if it doesn't exist
         if not Path('./Assignment Figures/Interpolation').exists():
             Path('./Assignment Figures/Interpolation').mkdir()
-        fig.savefig('./Assignment Figures/Interpolation/Interpolation_{}.png'.format(cpt), dpi=1000)
+        fig.savefig('./Assignment Figures/Interpolation/Interpolation_{}.png'.format(cpt), dpi=500)
     
     else:
         plt.show()
@@ -560,7 +560,7 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
     ax.set_title('Latent space colored by Ground model units')
 
     if filename:
-        fig.savefig(filename, dpi=1000)
+        fig.savefig(filename, dpi=500)
     else:
         plt.show()
     plt.close()

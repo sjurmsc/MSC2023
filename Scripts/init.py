@@ -110,6 +110,7 @@ if __name__ == '__main__':
         y_train_full    = y_full[in_train]
         X_test_full     = X_full[in_test]
         y_test_full     = y_full[in_test]
+        GGM_test_full   = GGM[in_test]
 
         # Getting the indices of the nan values for coloring plots
         full_nan_idx_train = full_nan_idx[in_train]
@@ -222,7 +223,7 @@ if __name__ == '__main__':
                           X_test_full, 
                           full_no_nan_idx_test, 
                           full_nan_idx_test, 
-                          GGM,
+                          GGM_test_full,
                           filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_latent_space_{i}.png')
         
         
