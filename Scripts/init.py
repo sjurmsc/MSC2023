@@ -50,7 +50,7 @@ if __name__ == '__main__':
         'n_bootstraps'          : 2,
         'add_noise'             : 0.1,
         'max_distance_to_cdp'   : 10,
-        'cumulative_seismic'    : False,
+        'cumulative_seismic'    : True,
         'random_flip'           : True,
         'random_state'          : 1,
         'groupby'               : 'cpt_loc',
