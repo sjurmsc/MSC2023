@@ -210,8 +210,13 @@ if __name__ == '__main__':
                 lgbm_preds = predict_encoded_tree(encoder, lgbm_decoder, X_test_cv)
 
         # Plotting the predictions
-        for m in [model, [encoder, rf_decoder], [encoder, lgbm_decoder]]:
-            create_loo_trace_prediction(m, X_test_full, y_test_full, zrange=dataset_params['zrange'])
+        for m, title in zip([model, [encoder, rf_decoder], [encoder, lgbm_decoder]], ['CNN', 'RF', 'LGBM']):
+            create_loo_trace_prediction(m, 
+                                        X_test_full, 
+                                        y_test_full, 
+                                        zrange=dataset_params['zrange'],
+                                        filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_{i}.png',
+                                        title=title)
         
         # Plotting the latent space
         plot_latent_space(encoder, 

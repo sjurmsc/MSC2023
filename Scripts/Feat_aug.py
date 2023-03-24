@@ -564,7 +564,7 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
     plt.close()
 
 
-def create_loo_trace_prediction(model, test_X, test_y, zrange):
+def create_loo_trace_prediction(model, test_X, test_y, zrange, filename='', title=''):
 
     # Create predictions for the test set
     if not type(model) == list:
@@ -587,8 +587,13 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange):
             ax[i].plot(test_y[t, :, i], z, 'r', marker='.', alpha=0.1)
         ax[i].set_title(units[i])
         ax[i].invert_yaxis()
+    # Add super title
+    fig.suptitle(title, fontsize=16)
 
-    plt.show()
+    if filename:
+        fig.savefig(filename, dpi=500)
+    else:
+        plt.show()
     plt.close()
 
 
