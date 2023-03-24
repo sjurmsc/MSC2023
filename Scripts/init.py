@@ -211,7 +211,7 @@ if __name__ == '__main__':
 
         # Plotting the predictions
         for m in [model, [encoder, rf_decoder], [encoder, lgbm_decoder]]:
-            create_loo_trace_prediction(m, X_test_full, y_test_full, zrange=dataset_params['zrange'], sw=sw_idxs)
+            create_loo_trace_prediction(m, X_test_full, y_test_full, zrange=dataset_params['zrange'])
         
         # Plotting the latent space
         plot_latent_space(encoder, 
