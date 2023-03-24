@@ -253,7 +253,7 @@ def CNN_pyramidal_encoder(latent_features, image_width):
 
 
     cnn_encoder.add(keras.layers.Conv1D(latent_features, (1), activation='relu'))
-    # cnn_encoder.add(keras.layers.Reshape((GM_len, latent_features))) # Reshape to get features in the second dimension
+    cnn_encoder.add(keras.layers.Reshape((-1, latent_features))) # Reshape to get features in the second dimension
 
     return cnn_encoder
 
@@ -361,6 +361,7 @@ def ensemble_CNN_decoder(n_members=5):
 def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11):
     encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
     # decoder = ensemble_CNN_decoder(n_members=n_members)(encoder.output)
+
     decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
 
     model = Model(encoder.input, decoder)
