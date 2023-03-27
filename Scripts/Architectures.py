@@ -313,9 +313,9 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
     decoders = []
     for _ in range(n_members):
         if dec == 'cnn':
-            decoders.append(ensemble_CNN_decoder(n_members=n_members, latent_features=latent_features))(encoder.output)
+            decoders.append(ensemble_CNN_decoder(n_members=n_members, latent_features=latent_features)(encoder.output))
         elif dec == 'lstm':
-            decoders.append(LSTM_decoder(latent_features=latent_features))(encoder.output)
+            decoders.append(LSTM_decoder(latent_features=latent_features)(encoder.output))
     # if dec == 'cnn':
     #     decoder = ensemble_CNN_decoder(n_members=n_members, latent_features=latent_features)(encoder.output)
     # elif dec == 'lstm':
