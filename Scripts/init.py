@@ -75,7 +75,7 @@ if __name__ == '__main__':
         'min_samples_leaf'  : 1,
         'min_samples_split' : 4,
         'bootstrap'         : True,
-        'criterion'         : 'mse',
+        'criterion'         : 'squared_error',
         'n_jobs'            : -1
         }
 
@@ -87,9 +87,13 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 200,
+        'epochs'            : 2,
         'batch_size'        : 25
         }
+    
+    encoder_type = 'cnn'
+    decoder_type = 'cnn'
+    n_members    = 5
 
     # Training time dict
     training_time_dict = {}
@@ -123,11 +127,11 @@ if __name__ == '__main__':
         # Setting up the model
         image_width = 2*dataset_params['n_neighboring_traces'] + 1
         learning_rate = 0.001
-        model, encoder = ensemble_CNN_model(n_members=1, 
+        model, encoder = ensemble_CNN_model(n_members=n_members, 
                                             image_width=image_width, 
                                             learning_rate=learning_rate,
-                                            enc = 'cnn',
-                                            dec = 'lstm')
+                                            enc = encoder_type,
+                                            dec = decoder_type)
         if i==0: model.summary()
 
         # Preparing the data to train the CNN
@@ -210,7 +214,7 @@ if __name__ == '__main__':
                 lgbm_preds = predict_encoded_tree(encoder, lgbm_decoder, X_test_cv)
 
         # Plotting the predictions
-        for m, title in zip([model, [encoder, rf_decoder], [encoder, lgbm_decoder]], ['CNN', 'RF', 'LGBM']):
+        for m, title in zip([model, [encoder, rf_decoder], [encoder, lgbm_decoder]], [decoder_type.upper(), 'RF', 'LGBM']):
             create_loo_trace_prediction(m, 
                                         X_test_full, 
                                         y_test_full, 
@@ -226,7 +230,9 @@ if __name__ == '__main__':
                           GGM_test_full,
                           filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_latent_space_{i}.png')
         
-        
+        print(preds.shape, rf_preds.shape, lgbm_preds.shape)
+
+        if i == 0: break
 
 
     # Save the training times
