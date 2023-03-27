@@ -315,23 +315,20 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
             decoders.append(CNN_decoder(latent_features=latent_features, i=i)(encoder.output))
         elif dec == 'lstm':
             decoders.append(LSTM_decoder(latent_features=latent_features, i=i)(encoder.output))
+    model_mean = keras.layers.Average()(decoders)
     # if dec == 'cnn':
     #     decoder = ensemble_CNN_decoder(n_members=n_members, latent_features=latent_features)(encoder.output)
     # elif dec == 'lstm':
     #     decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
+
+    
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
     model = Model(encoder.input, decoders)
     model.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
 
-    model.members = decoders
-
-    # Predicting with the ensemble is done by averaging the predictions of the members
-    model.predict = lambda x: mean(array([m.predict(x) for m in model.members]), axis=0)
-
-    return model, encoder
-
+    return model, encoder, model_mean
 
 def predict_encoded_tree(encoder, tree, X): #, mask=None):
     """Predicts the target variable from encoded data using a tree based

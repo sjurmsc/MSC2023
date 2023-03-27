@@ -127,7 +127,7 @@ if __name__ == '__main__':
         # Setting up the model
         image_width = 2*dataset_params['n_neighboring_traces'] + 1
         learning_rate = 0.001
-        model, encoder = ensemble_CNN_model(n_members=n_members, 
+        model, encoder, model_mean = ensemble_CNN_model(n_members=n_members, 
                                             image_width=image_width, 
                                             learning_rate=learning_rate,
                                             enc = encoder_type,
@@ -163,10 +163,10 @@ if __name__ == '__main__':
         # Adding predictions to a numpy array
         if i == 0:
             trues = y_test_cv
-            preds = model.predict(X_test_cv)
+            preds = model_mean.predict(X_test_cv)
         else:
             trues = np.vstack((trues, y_test_cv))
-            preds = np.vstack((preds, model.predict(X_test_cv)))
+            preds = np.vstack((preds, model_mean.predict(X_test_cv)))
 
         encoded_data = encoder(X_train_full).numpy()
         tree_train_input_shape = (-1, encoded_data.shape[-1])
