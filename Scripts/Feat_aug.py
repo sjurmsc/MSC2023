@@ -335,7 +335,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
             # last = np.where(~nan_idx)[0][-1]
             # extrapolated_idx[last:] = True
 
-            extrapolated_idxs.append(extrapolated_idx)
+            # extrapolated_idxs.append(extrapolated_idx)
 
             seis = seismic.copy()
             if add_noise:
