@@ -171,7 +171,7 @@ if __name__ == '__main__':
         encoded_data = encoder(X_train_full).numpy()
         tree_train_input_shape = (-1, encoded_data.shape[-1])
         idx_train = full_no_nan_idx_train.flatten()
-        idx_nan_train = full_nan_idx_train.flatten()
+        # idx_nan_train = full_nan_idx_train.flatten()
         encoded_data = encoded_data.reshape(tree_train_input_shape)
         flat_y_train = y_train_full.reshape(-1, y_train_full.shape[-1])
         
@@ -179,7 +179,7 @@ if __name__ == '__main__':
         test_prediction = encoder(X_test_full).numpy()
         tree_test_input_shape = (-1, test_prediction.shape[-1])
         idx_test = full_no_nan_idx_test.flatten()
-        idx_nan_test = full_nan_idx_test.flatten()
+        # idx_nan_test = full_nan_idx_test.flatten()
         test_prediction = test_prediction.reshape(tree_test_input_shape)
         flat_y_test = y_test_full.reshape(-1, y_test_full.shape[-1])
 
