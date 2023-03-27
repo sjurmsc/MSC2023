@@ -315,7 +315,8 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
             decoders.append(CNN_decoder(latent_features=latent_features, i=i)(encoder.output))
         elif dec == 'lstm':
             decoders.append(LSTM_decoder(latent_features=latent_features, i=i)(encoder.output))
-    model_mean = keras.layers.Average()(decoders)
+    
+    model_mean = Model(encoder.input, keras.layers.Average()(decoders))
     # if dec == 'cnn':
     #     decoder = ensemble_CNN_decoder(n_members=n_members, latent_features=latent_features)(encoder.output)
     # elif dec == 'lstm':
@@ -327,6 +328,8 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
 
     model = Model(encoder.input, decoders)
     model.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
+
+    model_mean.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
 
     return model, encoder, model_mean
 
