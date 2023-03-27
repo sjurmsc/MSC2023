@@ -57,10 +57,8 @@ if __name__ == '__main__':
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
     full_trace = create_full_trace_dataset(**dataset_params)
-    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs = full_trace
+    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM = full_trace
     del full_trace
-
-    GGM = array(sw_idxs) + 1
 
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)
@@ -214,7 +212,7 @@ if __name__ == '__main__':
                 lgbm_preds = predict_encoded_tree(encoder, lgbm_decoder, X_test_cv)
 
         # Plotting the predictions
-        for m, title in zip([model, [encoder, rf_decoder], [encoder, lgbm_decoder]], [decoder_type.upper(), 'RF', 'LGBM']):
+        for m, title in zip([model_mean, [encoder, rf_decoder], [encoder, lgbm_decoder]], [decoder_type.upper(), 'RF', 'LGBM']):
             create_loo_trace_prediction(m, 
                                         X_test_full, 
                                         y_test_full, 

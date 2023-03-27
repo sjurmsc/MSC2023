@@ -311,11 +311,16 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         seismic_z = seismic_z[where((seismic_z >= z_min) & (seismic_z < z_max))]
         cpt_z = z_GM[where((z_GM >= z_min) & (z_GM < z_max))]
 
+        
+
         # Indices for sea water
         sf = value['seafloor']
         is_sw = lambda z: z<sf
         sw_idx = np.apply_along_axis(is_sw, axis=0, arr=z_GM)
         
+        # Assign GGM to the trace
+        ggm = assign_ggm_to_picks(value['Borehole'])
+        ggm[sw_idx] = 0
 
         for bootstrap in bootstraps:
             # List the indices of the CPT data that are not nan
@@ -330,6 +335,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
             # Adding sea water indices
             sw_idxs.append(sw_idx)
 
+            # Adding GGM
+            GGM.append(ggm)
             # Adding extrapolated indices
             # extrapolated_idx = np.zeros(bootstrap.shape[0], dtype=bool)
             # last = np.where(~nan_idx)[0][-1]
@@ -376,7 +383,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
 
     print('Done!')
 
-    return X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs
+    return X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs, GGM
             
 
 def get_struct_model_picks(line_name, CDP):
@@ -429,7 +436,7 @@ def create_pick_dict(to_file=''):
     return picks
 
 
-def assing_ggm_to_picks(horizons, zrange=(30, 100)):
+def assign_ggm_to_picks(bh, zrange=(30, 100)):
     """Assign the GGM to the picks"""
     unit_mapping = read_csv(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\StructuralModel_unit_mapping.csv', index_col=0)
 
@@ -445,15 +452,23 @@ def assing_ggm_to_picks(horizons, zrange=(30, 100)):
     z = np.arange(zrange[0], zrange[1], 0.1)
     GGM = np.ones_like(z)
 
-    h = list(horizons)
-    # Sort list by depth (lowest first)
-    print(h.sort(key=lambda x: horizons[x]))
-    for lower, higher in zip(h[:-1], h[1:]):
-        # print(lower, higher)
-        lower_idx = np.argmin(np.abs(z - horizons[lower]))
-        higher_idx = np.argmin(np.abs(z - horizons[higher]))
+    picks = pick_dict[bh]
+    
+    pick_list = picks.items()
+    pick_list = sorted(pick_list, key=lambda x: x[1])
 
-        GGM[lower_idx:higher_idx] = unit_mapping.loc[lower, higher]
+    for i, pick in enumerate(pick_list):
+        if i == 0:
+            lower = 'R00'
+        else:
+            lower = pick_list[i-1][0]
+        
+        higher = pick_list[i][0]
+
+        GGM[z < pick[1]] = pick_2_GGM(lower, higher)
+    
+    return GGM
+
 
 
 def pick_2_GGM(lower, higher):
