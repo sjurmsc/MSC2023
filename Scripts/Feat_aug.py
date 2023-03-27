@@ -331,9 +331,9 @@ def create_full_trace_dataset(n_neighboring_traces=5,
             sw_idxs.append(sw_idx)
 
             # Adding extrapolated indices
-            extrapolated_idx = np.zeros(bootstrap.shape[0], dtype=bool)
-            last = np.where(~nan_idx)[0][-1]
-            extrapolated_idx[last:] = True
+            # extrapolated_idx = np.zeros(bootstrap.shape[0], dtype=bool)
+            # last = np.where(~nan_idx)[0][-1]
+            # extrapolated_idx[last:] = True
 
             extrapolated_idxs.append(extrapolated_idx)
 
