@@ -276,7 +276,7 @@ def LSTM_encoder(latent_features, image_width):
 
 
 
-def LSTM_decoder(latent_features=16):
+def LSTM_decoder(latent_features=16, i=0):
     """LSTM decoder predicting CPT response from latent features."""
     lstm_decoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
@@ -284,21 +284,20 @@ def LSTM_decoder(latent_features=16):
         keras.layers.LSTM(32, return_sequences=True),
         keras.layers.LSTM(16, return_sequences=True),
         keras.layers.Dense(3)
-    ], name='lstm_decoder')
+    ], name='lstm_decoder_{}'.format(i))
 
     return lstm_decoder
 
 
-def ensemble_CNN_decoder(n_members=5, latent_features=16):
+def CNN_decoder(latent_features=16, i=0):
     """1D CNN decoder with a committee of n_members."""
-    print('More members are not implemented yet')
     cnn_decoder = keras.models.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
         keras.layers.Conv1D(64, 3, activation='relu', padding='same'),
         keras.layers.Conv1D(32, 3, activation='relu', padding='same'),
         keras.layers.Conv1D(16, 3, activation='relu', padding='same'),
         keras.layers.Dense(3)
-    ], name='cnn_decoder')
+    ], name='cnn_decoder_{}'.format(i))
 
     return cnn_decoder
 
@@ -311,11 +310,11 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
         encoder = LSTM_encoder(latent_features=latent_features, image_width=image_width)
    
     decoders = []
-    for _ in range(n_members):
+    for i in range(n_members):
         if dec == 'cnn':
-            decoders.append(ensemble_CNN_decoder(n_members=1, latent_features=latent_features)(encoder.output))
+            decoders.append(CNN_decoder(latent_features=latent_features, i=i)(encoder.output))
         elif dec == 'lstm':
-            decoders.append(LSTM_decoder(latent_features=latent_features)(encoder.output))
+            decoders.append(LSTM_decoder(latent_features=latent_features, i=i)(encoder.output))
     # if dec == 'cnn':
     #     decoder = ensemble_CNN_decoder(n_members=n_members, latent_features=latent_features)(encoder.output)
     # elif dec == 'lstm':
