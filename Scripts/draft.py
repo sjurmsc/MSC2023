@@ -1108,3 +1108,110 @@ def find_nth(haystack, needle, n : int):
         return haystack.find(needle)
     return loc
 
+
+def find_duplicates(m_files):
+    dupes = dict()
+    names = []
+    for i, (X_m, y_m) in enumerate(m_files):
+
+        name = X_m[62:-12]
+        name_list = name.split('_')
+        for n in names:
+            n_list = n.split('_')
+            if (len(name_list)>3) and (len(n_list)>3):
+                if n_list[:3] == name_list[:3]:
+                    key = '_'.join(n_list[:3])
+                    if not (key in dupes.keys()):
+                        dupes[key] = [X_m[:62] + '_'.join(n_list) + X_m[-12:], X_m]
+                    else:
+                        dupes[key].append(X_m)
+        names.append(name)
+    return dupes
+
+
+def box_plots_for_duplicates():
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    d_dict = load_data_dict()
+    m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
+    lines = []
+    dupe_names = []
+    dupe_labels = []
+    dupe = find_duplicates(m_files=m_files)
+    for key, val in dupe.items():
+        trc = []
+        lbls = []
+        for file in val:
+            trace, _ = get_traces(file, zrange=(25, 100))
+            trc.append(trace.flatten())
+            lbls.append(file[62:-12])
+        lines.append(trc)
+        dupe_names.append(key)
+        dupe_labels.append(lbls)
+    
+    for name, labels, collection in zip(dupe_names, dupe_labels, lines):
+        plt.clf()
+        plt.boxplot(collection, labels=labels)
+        plt.title(name)
+        plt.xticks(rotation=10)
+        plt.savefig('Data/dupelicates/{}.png'.format(name))
+
+
+
+def img_plots_for_dupelicates():
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import Normalize
+
+    d_dict = load_data_dict()
+    m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
+    lines = []
+    dupe_names = []
+    dupe_labels = []
+    dupe = find_duplicates(m_files=m_files)
+    for key, val in dupe.items():
+        trc = []
+        lbls = []
+        for file in val:
+            trace, _ = get_traces(file, zrange=(25, 100))
+            trc.append(trace.T)
+            lbls.append(file[62:-12])
+        lines.append(trc)
+        dupe_names.append(key)
+        dupe_labels.append(lbls)
+    
+    for name, labels, collection in zip(dupe_names, dupe_labels, lines):
+        plt.clf()
+        fig, ax = plt.subplots(len(labels))
+        fig.tight_layout(h_pad=1)
+        for i, im in enumerate(collection):
+            norm = Normalize(-2, 2)
+            ax[i].imshow(im, cmap = 'seismic', norm=norm)
+            ax[i].set_title(label=labels[i], fontsize=10)
+            ax[i].set_xticks([])
+            ax[i].set_yticks([])
+        plt.savefig('Data/dupelicates/Image_{}.png'.format(name))
+
+
+def negative_ai_values():
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from random import randint
+    d_dict = load_data_dict()
+    m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
+    low_val = 0
+    # y_below_zero = []
+    t_b_z = []
+    for file, i in m_files:
+        # _, z = get_traces(file, zrange=(25, 100))
+        traces, z_ai = get_traces(i, zrange=(25, 100))
+        t = traces[np.where(np.any((traces<low_val), axis=1)), :]
+        t_b_z+=list(t[0])
+        # y_below_zero.append(t_b_z)
+    # plt.hist(y_below_zero)
+    print(np.shape(t_b_z))
+    r = randint(0, len(t_b_z))
+    plt.plot(t_b_z[r], z_ai)
+    print('Minimum on the plot is: {}'.format(np.min(t_b_z[r])))
+    print('Total minimum is {}'.format(np.min(t_b_z)))
+    plt.show()
