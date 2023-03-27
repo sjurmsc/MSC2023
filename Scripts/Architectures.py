@@ -310,15 +310,20 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
     elif enc == 'lstm':
         encoder = LSTM_encoder(latent_features=latent_features, image_width=image_width)
    
-   
-    if dec == 'cnn':
-        decoder = ensemble_CNN_decoder(n_members=n_members, latent_features=latent_features)(encoder.output)
-    elif dec == 'lstm':
-        decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
+    decoders = []
+    for _ in range(n_members):
+        if dec == 'cnn':
+            decoders.append(ensemble_CNN_decoder(n_members=n_members, latent_features=latent_features))
+        elif dec == 'lstm':
+            decoders.append(LSTM_decoder(latent_features=latent_features))
+    # if dec == 'cnn':
+    #     decoder = ensemble_CNN_decoder(n_members=n_members, latent_features=latent_features)(encoder.output)
+    # elif dec == 'lstm':
+    #     decoder = LSTM_decoder(latent_features=latent_features)(encoder.output)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
-    model = Model(encoder.input, decoder)
+    model = Model(encoder.input, decoders)
     model.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
 
 
