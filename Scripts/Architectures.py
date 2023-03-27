@@ -328,17 +328,6 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
     # Predicting with the ensemble is done by averaging the predictions of the members
     model.predict = lambda x: mean(array([m.predict(x) for m in model.members]), axis=0)
 
-    # Add the ensemble members to the model
-    model.members = [Model(encoder.input, d) for d in decoders]
-
-    # Compile the ensemble members
-    for m in model.members:
-        m.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
-
-    
-    # Calling the fit method on the ensemble will fit all the members, each on the same data
-    model.fit = lambda x, y, *args, **kwargs: [m.fit(x, y, *args, **kwargs) for m in model.members]
-
     return model, encoder
 
 

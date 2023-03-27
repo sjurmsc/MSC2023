@@ -315,9 +315,15 @@ def repo_push(fps, message):
 
 def plot_history(History, val=False, filename=None):
     """Plots the history of the model training"""
-    plt.plot(History.history['loss'], label='Train', color='red', linewidth=2)
-    if val:
-        plt.plot(History.history['val_loss'], label='Validation', color='k', linewidth=2, linestyle='--')
+    if not isinstance(History, list):
+        plt.plot(History.history['loss'], label='Train', color='red', linewidth=2)
+        if val:
+            plt.plot(History.history['val_loss'], label='Validation', color='k', linewidth=2, linestyle='--')
+    else:
+        for i, history in enumerate(History):
+            plt.plot(history.history['loss'], label=f'Train {i}', color='red', linewidth=2)
+            if val:
+                plt.plot(history.history['val_loss'], label=f'Validation {i}', color='k', linewidth=2, linestyle='--')
     plt.title('Model loss')
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
