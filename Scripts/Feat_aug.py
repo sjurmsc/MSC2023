@@ -114,6 +114,7 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
         match_dict[row['Borehole']] = {'CDP'            : CDP,
                                        'distance'       : distance, 
                                        'cpt_loc'        : cpt_loc,
+                                       'Borehole'       : row['Borehole'],
                                        'CPT_data'       : CPT_DATA, 
                                        'Seismic_data'   : traces, 
                                        'z_traces'       : z_traces, 
