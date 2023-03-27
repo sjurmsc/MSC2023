@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 import pickle
 from sklearn.manifold import TSNE
 import numpy as np
-import pandas as pd
 from Architectures import predict_encoded_tree
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
@@ -251,14 +250,16 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                               random_flip=False,
                               random_state=0,
                               groupby='cpt_loc',
+                              data_folder='FE_CPT',
+                              force_new_match_file=False,
                               y_scaler=None):
     """ Creates a dataset with full seismic traces and corresponding CPT data with an array
         containing the indices where there are nan values in a row and one where are no nan values in a row.
     """
     match_file = './Data/match_dict{}_z_{}-{}.pkl'.format(n_neighboring_traces, zrange[0], zrange[1])
-    if not Path(match_file).exists():
+    if (not Path(match_file).exists()) or force_new_match_file:
         print('Creating match file...')
-        match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange, to_file=match_file)
+        match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange, to_file=match_file, data_folder=data_folder)
     else:
         with open(match_file, 'rb') as file:
             match_dict = pickle.load(file)
@@ -327,10 +328,9 @@ def create_full_trace_dataset(n_neighboring_traces=5,
 
             # Adding extrapolated indices
             extrapolated_idx = np.zeros(bootstrap.shape[0], dtype=bool)
-            for i in range(bootstrap.shape[0]):
-                if nan_idx[i]:
-                    extrapolated_idx[i:] = True
-                    break
+            last = np.where(~nan_idx)[-1]
+            extrapolated_idx[last:] = True
+
             extrapolated_idxs.append(extrapolated_idx)
 
             seis = seismic.copy()
@@ -375,6 +375,25 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     return X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs
             
 
+def get_struct_model_picks():
+    """Get the structural model from dat file"""
+
+    pick_path = Path('../OneDrive - NGI/Documents/NTNU/MSC_DATA/02_Picks/')
+
+    picks = pick_path.glob('*.dat')
+
+    line_names = np.unique([l.stem for l in Path(r"C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\2DUHRS_06_MIG_DEPTH").glob('*.sgy')])
+
+    for pick in picks:
+        # df = pd.read_csv(pick, sep='\t')
+
+        with open(pick, 'r') as readfile:
+            it = [l.split() for l in readfile.readlines()]
+            cols = ['Profile', 'CDP', 'Easting (m)', 'Northing (m)', 'TWT (ms)', 'Depth (mLAT)']
+            df = pd.DataFrame(it[1:], columns=cols)
+
+        lines = df.groupby('Profile')
+        
 
 
 #### Image creation functions ####
@@ -786,111 +805,6 @@ def get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/
     return df_dict
 
 
-def find_duplicates(m_files):
-    dupes = dict()
-    names = []
-    for i, (X_m, y_m) in enumerate(m_files):
-
-        name = X_m[62:-12]
-        name_list = name.split('_')
-        for n in names:
-            n_list = n.split('_')
-            if (len(name_list)>3) and (len(n_list)>3):
-                if n_list[:3] == name_list[:3]:
-                    key = '_'.join(n_list[:3])
-                    if not (key in dupes.keys()):
-                        dupes[key] = [X_m[:62] + '_'.join(n_list) + X_m[-12:], X_m]
-                    else:
-                        dupes[key].append(X_m)
-        names.append(name)
-    return dupes
-
-
-def box_plots_for_duplicates():
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    d_dict = load_data_dict()
-    m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
-    lines = []
-    dupe_names = []
-    dupe_labels = []
-    dupe = find_duplicates(m_files=m_files)
-    for key, val in dupe.items():
-        trc = []
-        lbls = []
-        for file in val:
-            trace, _ = get_traces(file, zrange=(25, 100))
-            trc.append(trace.flatten())
-            lbls.append(file[62:-12])
-        lines.append(trc)
-        dupe_names.append(key)
-        dupe_labels.append(lbls)
-    
-    for name, labels, collection in zip(dupe_names, dupe_labels, lines):
-        plt.clf()
-        plt.boxplot(collection, labels=labels)
-        plt.title(name)
-        plt.xticks(rotation=10)
-        plt.savefig('Data/dupelicates/{}.png'.format(name))
-
-
-def img_plots_for_dupelicates():
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import Normalize
-
-    d_dict = load_data_dict()
-    m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
-    lines = []
-    dupe_names = []
-    dupe_labels = []
-    dupe = find_duplicates(m_files=m_files)
-    for key, val in dupe.items():
-        trc = []
-        lbls = []
-        for file in val:
-            trace, _ = get_traces(file, zrange=(25, 100))
-            trc.append(trace.T)
-            lbls.append(file[62:-12])
-        lines.append(trc)
-        dupe_names.append(key)
-        dupe_labels.append(lbls)
-    
-    for name, labels, collection in zip(dupe_names, dupe_labels, lines):
-        plt.clf()
-        fig, ax = plt.subplots(len(labels))
-        fig.tight_layout(h_pad=1)
-        for i, im in enumerate(collection):
-            norm = Normalize(-2, 2)
-            ax[i].imshow(im, cmap = 'seismic', norm=norm)
-            ax[i].set_title(label=labels[i], fontsize=10)
-            ax[i].set_xticks([])
-            ax[i].set_yticks([])
-        plt.savefig('Data/dupelicates/Image_{}.png'.format(name))
-
-
-def negative_ai_values():
-    import matplotlib.pyplot as plt
-    import numpy as np
-    from random import randint
-    d_dict = load_data_dict()
-    m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
-    low_val = 0
-    # y_below_zero = []
-    t_b_z = []
-    for file, i in m_files:
-        # _, z = get_traces(file, zrange=(25, 100))
-        traces, z_ai = get_traces(i, zrange=(25, 100))
-        t = traces[np.where(np.any((traces<low_val), axis=1)), :]
-        t_b_z+=list(t[0])
-        # y_below_zero.append(t_b_z)
-    # plt.hist(y_below_zero)
-    print(np.shape(t_b_z))
-    r = randint(0, len(t_b_z))
-    plt.plot(t_b_z[r], z_ai)
-    print('Minimum on the plot is: {}'.format(np.min(t_b_z[r])))
-    print('Total minimum is {}'.format(np.min(t_b_z)))
-    plt.show()
 
 import pandas as pd
 def get_csv_of_cdp_location_coordinates():
@@ -981,79 +895,9 @@ def get_cpt_data_scaler(t='minmax'):
 
 # Only used for testing the code
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-
-    # print('Load CPT locations')
-    # df_CPT_loc=pd.DataFrame()
-
-
-    # for path_las_files in ['P:/2019/07/20190798/Calculations/LasFiles/LAS_from_AGS_20210518', 'P:/2019/07/20190798/Calculations/LasFiles/LAS_from_AGS_Tennet_20210518']:
-    #     for filename in os.listdir(path_las_files):
-    #         if filename.endswith(".las" or ".LAS"):
-    #             LAS = lasio.read(os.path.join(path_las_files, filename))
-    #             tmpdict={'borehole':filename[:-4], 
-    #                     'x':float(LAS.header['Well']['LOCX'].descr), 
-    #                     'y':float(LAS.header['Well']['LOCY'].descr),
-    #                     'TotalDepth':np.ceil(float(LAS.header['Well']['STOP'].value))
-    #                     }
-    #             df_CPT_loc=df_CPT_loc.append(tmpdict, ignore_index=True)
-
-
-    # print('CPT locations loaded\n')
-
-
-    # print('Load Water Depth')
-    # df_CPT_loc=get_bathy_at_CPT(df_CPT_loc)
-    # print('Water Depth loaded\n')
-
-    # # Round WaterDepth to 0.02 m (CPT dz) to match dz from resampled seismic data and convert to mm
-    # df_CPT_loc['WD'] = (1000*round(df_CPT_loc['WD']*50)/50).astype(int)
-
-
-    # print('Assign CPT unique location ID')      ####### SPECIFIC TNW ##########
-    # for index, row in df_CPT_loc.iterrows(): 
-    #     if 'TT' in row['borehole']:
-    #         ID = 85 + int(''.join(filter(lambda i: i.isdigit(), row['borehole'])))
-    #     else:
-    #         ID = int(''.join(filter(lambda i: i.isdigit(), row['borehole'])))
-    #     df_CPT_loc.loc[index, 'ID'] = ID
-    # print('CPT unique location ID assigned \n')
-
-    # del index, row, ID, tmpdict, LAS, path_las_files, filename
-
-    # df_CPT_loc=df_CPT_loc[['borehole','x','y','WD','TotalDepth','ID']]
-
-    # dirpath_sgy = 'P:/2019/07/20190798/Background/2DUHRS_06_MIG_DEPTH/'
-    # dirpath_NAV = 'P:/2019/07/20190798/Background/2DUHRS_06_MIG_DEPTH/nav_2DUHRS_06_MIG_DPT/'
-
-    # df_NAV = load_NAV(dirpath_NAV)
-
-    # get_seis_at_cpt_locations(df_NAV, dirpath_sgy, df_CPT_loc, n_tr=1)
-
-
-    # import numpy as np
-    # from random import randint
-    # d_dict = load_data_dict()
-    # m_files = match_files(d_dict['2DUHRS_06_MIG_DEPTH'], d_dict['00_AI'])
-    # z_high = []
-    # y_below_zero = []
-    # t_b_z = []
-    # for file, i in m_files:
-        # _, z = get_traces(file, zrange=(25, 100))
-        # traces, z_ai = get_traces(i, zrange=(25, 100))
-        # r = randint(0, len(traces))
-        # plt.plot(traces[r], z_ai[::-1])
-        # flat_t = traces.flatten()
-        # t = traces[np.where(np.any((traces<-10000), axis=1)), :]
-        # print(np.shape(t))
-        # t_b_z+=list(t[0])
-        
-        #y_below_zero.append(list(t_b_z))
-
-
-    # import numpy as np
     # import matplotlib.pyplot as plt
     # from matplotlib.colors import Normalize
+
     # # Display seismic traces at cpt locations
 
     # match_dict = match_cpt_to_seismic(n_neighboring_traces=500)
@@ -1062,17 +906,14 @@ if __name__ == '__main__':
     # plt.imshow(np.array(traces).T, cmap='Greys', norm=Normalize(-3, 3))
     # plt.yticks(np.arange(0, len(z), 200), z[::200])
     # plt.show()
-
-    
-
     # match_dict = match_cpt_to_seismic(n_neighboring_traces=n_neighboring_traces)
     
 
-    import keras
-    from lightgbm import LGBMRegressor
-    from sklearn.multioutput import MultiOutputRegressor
+    # import keras
+    # from lightgbm import LGBMRegressor
+    # from sklearn.multioutput import MultiOutputRegressor
 
-    from sklearn.model_selection import train_test_split
+    # from sklearn.model_selection import train_test_split
 
     # get_csv_of_cdp_location_coordinates()
 
@@ -1123,9 +964,9 @@ if __name__ == '__main__':
     # model.save('model.h5')
     # latent_model.save('latent_model.h5')
 
-    print('\nLoading model...')
-    model = keras.models.load_model('model.h5')
-    latent_model = keras.models.load_model('latent_model.h5')
+    # print('\nLoading model...')
+    # model = keras.models.load_model('model.h5')
+    # latent_model = keras.models.load_model('latent_model.h5')
 
     # LGBM_model = MultiOutputRegressor(LGBMRegressor())
 
@@ -1133,75 +974,15 @@ if __name__ == '__main__':
     # Fitting the LGBM model to the output of the latent model
     # LGBM_model.fit(latent_model.predict(X_train), y_train)
 
-    m_dict_path = r'.\Data\match_dict5_z_30-100.pkl'
+    # m_dict_path = r'.\Data\match_dict5_z_30-100.pkl'
 
-    with open(m_dict_path, 'rb') as f:
-        match_dict = pickle.load(f)
+    # with open(m_dict_path, 'rb') as f:
+    #     match_dict = pickle.load(f)
 
-    X_val = match_dict['TNW054-PCPT']['Seismic_data']
-    y_val = match_dict['TNW054-PCPT']['CPT_data']
-    z_cpt = match_dict['TNW054-PCPT']['z_cpt']
-    z_val = match_dict['TNW054-PCPT']['z_traces']
-    z = match_dict['TNW054-PCPT']['z_traces'][::2]
+    # X_val = match_dict['TNW054-PCPT']['Seismic_data']
+    # y_val = match_dict['TNW054-PCPT']['CPT_data']
+    # z_cpt = match_dict['TNW054-PCPT']['z_cpt']
+    # z_val = match_dict['TNW054-PCPT']['z_traces']
+    # z = match_dict['TNW054-PCPT']['z_traces'][::2]
 
-    bootstraps, z_GM = bootstrap_CPT_by_seis_depth(y_val, z_cpt, z, n=1)
-    bootstrap = bootstraps[0]
-
-    # The indices where no rows of y_val contain nan values
-    valid_indices = np.where(np.all(~np.isnan(bootstrap), axis=1))[0]
-
-    # The indexes of z where the depth matches valid indices of y_val
-    valid_z_indices = np.where(np.isin(z, z_GM[valid_indices]))[0]
-    outside_indices = np.where(~np.isin(np.arange(len(z)), valid_z_indices))[0]
-
-    y_comp = bootstrap[np.where(np.all(~np.isnan(bootstrap), axis=1))[0]]
-
-    # Plot TSNE of the latent model
-    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
-    prediction = latent_model.predict(X_val.reshape(1, *X_val.shape)).reshape(X_val.shape[1]//2, 16)
-    tsne_results = tsne.fit_transform(prediction)
-
-    
-    cpt_parameters = ['$q_c$', '$f_s$', '$u_2$'] 
-    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    for i in range(3):
-        # Give specific markers to points outside the valid indices
-        ax[i].scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c='k', alpha=0.5)
-        
-        # Plot the valid indices
-        ax[i].scatter(tsne_results[valid_z_indices, 0], tsne_results[valid_z_indices, 1], c=y_comp[:, i])
-
-        ax[i].set_title('Latent space colored by {}'.format(cpt_parameters[i]))
-
-    plt.show()
-    plt.close()
-
-    create_latent_space_prediction_images(latent_model, neighbors=500)
-
-    # # plot prediction results of the LGBM model in the same plot as a ground truth trace
-    # X_val, y_val = match_dict['TNW054-PCPT']['Seismic_data'], match_dict['TNW054-PCPT']['CPT_data']
-    # z_val = match_dict['TNW054-PCPT']['z_traces'][::2]
-
-    # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    # y_pred = LGBM_model.predict(latent_model.predict(X_val.reshape(1, *X_val.shape)).reshape(y_val.shape[0], 16))
-
-    # for i in range(3):
-    #     ax[i].plot(y_pred[:, i], z_val)
-    #     ax[i].plot(y_val[:, i], z_val)
-    #     ax[i].set_title('Feature {}'.format(i+1))
-    #     ax[i].invert_yaxis()
-    
-    # plt.show()
-
-
-
-    # Make three scatterplots of prediction results of the LGBM model
-    # fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    # for i in range(3):
-    #     ax[i].scatter(latent_model.predict(seis[:, :, :2*bs.shape[1]]).reshape(bs.shape[1], 16)[:, i], bs[0][:, i])
-    #     ax[i].set_xlabel('Predicted')
-    #     ax[i].set_ylabel('True')
-    #     ax[i].invert_yaxis()
-    #     ax[i].set_title('Feature {}'.format(i+1))
-    # plt.show()
-
+    get_struct_model_picks()
