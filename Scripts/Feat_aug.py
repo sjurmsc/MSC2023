@@ -102,7 +102,9 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
             traces = segyio.collect(SEISMIC.trace)[where(abs(a - CDP) <= n_neighboring_traces)]
             traces, z_traces = traces[:, (z>=zrange[0])&(z<zrange[1])], z[(z>=zrange[0])&(z<zrange[1])]
         
-        CPT_DATA = cpt_dict[cpt_key].values
+        try: CPT_DATA = cpt_dict[cpt_key].values
+        except KeyError: print('CPT key not found: {}'.format(cpt_key)); continue
+        
         CPT_DEPTH = cpt_dict[cpt_key].index.values
 
         # TEMPORARY
@@ -141,12 +143,13 @@ def create_sequence_dataset(n_neighboring_traces=5,
                             random_flip=False,
                             random_state=0,
                             groupby='cpt_loc',
+                            data_folder = 'FE_CPT',
                             y_scaler=None):
     """
     Creates a dataset with sections of seismic image and corresponding CPT data where
     none of the CPT data is missing.
     """
-    match_file = './Data/match_dict{}_z_{}-{}.pkl'.format(n_neighboring_traces, zrange[0], zrange[1])
+    match_file = './Data/match_dict{}_z_{}-{}_ds_{}.pkl'.format(n_neighboring_traces, zrange[0], zrange[1], data_folder)
     if not Path(match_file).exists():
         print('Creating match file...')
         match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange, to_file=match_file)
@@ -256,7 +259,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     """ Creates a dataset with full seismic traces and corresponding CPT data with an array
         containing the indices where there are nan values in a row and one where are no nan values in a row.
     """
-    match_file = './Data/match_dict{}_z_{}-{}.pkl'.format(n_neighboring_traces, zrange[0], zrange[1])
+    match_file = './Data/match_dict{}_z_{}-{}_ds_{}.pkl'.format(n_neighboring_traces, zrange[0], zrange[1], data_folder)
     if (not Path(match_file).exists()) or force_new_match_file:
         print('Creating match file...')
         match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange, to_file=match_file, data_folder=data_folder)
@@ -270,6 +273,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     sw_idxs = []
     extrapolated_idxs = []
     groups = []
+    GGM = []
 
     if y_scaler is not None:
         scaler = get_cpt_data_scaler()
@@ -328,7 +332,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
 
             # Adding extrapolated indices
             extrapolated_idx = np.zeros(bootstrap.shape[0], dtype=bool)
-            last = np.where(~nan_idx)[-1]
+            last = np.where(~nan_idx)[0][-1]
             extrapolated_idx[last:] = True
 
             extrapolated_idxs.append(extrapolated_idx)
@@ -375,16 +379,23 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     return X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs
             
 
-def get_struct_model_picks():
+def get_struct_model_picks(line_name, CDP):
     """Get the structural model from dat file"""
 
     pick_path = Path('../OneDrive - NGI/Documents/NTNU/MSC_DATA/02_Picks/')
 
     picks = pick_path.glob('*.dat')
 
-    line_names = np.unique([l.stem for l in Path(r"C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\2DUHRS_06_MIG_DEPTH").glob('*.sgy')])
+    # line_names = np.unique([l.stem for l in Path(r"C:\Users\SjB\OneDrive - NGI\Documents\NTNU\MSC_DATA\2DUHRS_06_MIG_DEPTH").glob('*.sgy')])
+
+    if line_name[-4:] == '_DPT':
+        line_name = line_name[:-4]
+
+    horizons = {}
 
     for pick in picks:
+
+        h = pick.stem.split('_')[2]
         # df = pd.read_csv(pick, sep='\t')
 
         with open(pick, 'r') as readfile:
@@ -392,8 +403,102 @@ def get_struct_model_picks():
             cols = ['Profile', 'CDP', 'Easting (m)', 'Northing (m)', 'TWT (ms)', 'Depth (mLAT)']
             df = pd.DataFrame(it[1:], columns=cols)
 
-        lines = df.groupby('Profile')
-        
+        try: pick_depth = df.loc[(df['Profile'] == line_name) & (df['CDP'] == str(CDP))]['Depth (mLAT)'].values.astype(float)[0]
+        except: continue
+
+        horizons[h] = pick_depth
+    
+    return horizons
+
+
+def create_pick_dict(to_file=''):
+    """Create a dictionary with the picks for each line and CDP"""
+    CPT_locs = pd.read_excel(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx')
+
+    picks = {}
+    for i, row in CPT_locs.iterrows():
+        line = row['2D UHR line']
+        CDP = row['CDP']
+        horizons = get_struct_model_picks(line, CDP)
+        picks[row['Borehole']] = horizons
+    
+    if to_file:
+        with open(to_file, 'wb') as f:
+            pickle.dump(picks, f)
+    
+    return picks
+
+
+def assing_ggm_to_picks(horizons, zrange=(30, 100)):
+    """Assign the GGM to the picks"""
+    unit_mapping = read_csv(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\StructuralModel_unit_mapping.csv', index_col=0)
+
+    # Load pick dict
+    pick_dict_filename = './Data/pick_dict.pkl'
+
+    if not Path(pick_dict_filename).exists():
+        pick_dict = create_pick_dict(to_file=pick_dict_filename)
+    else:
+        with open(pick_dict_filename, 'rb') as f:
+            pick_dict = pickle.load(f)
+
+    z = np.arange(zrange[0], zrange[1], 0.1)
+    GGM = np.ones_like(z)
+
+    h = list(horizons)
+    # Sort list by depth (lowest first)
+    print(h.sort(key=lambda x: horizons[x]))
+    for lower, higher in zip(h[:-1], h[1:]):
+        # print(lower, higher)
+        lower_idx = np.argmin(np.abs(z - horizons[lower]))
+        higher_idx = np.argmin(np.abs(z - horizons[higher]))
+
+        GGM[lower_idx:higher_idx] = unit_mapping.loc[lower, higher]
+
+
+def pick_2_GGM(lower, higher):
+    """Assign a GGM to a pick
+       lower and higher refers to values of z"""
+    if (lower == 'R00') and (higher == 'R01'):
+        return 1
+    elif ((lower == 'R01') or (lower == 'R00')) and ((higher == 'R02') or (higher == 'R10')):
+        return 2
+    elif (lower == 'R02') and (higher == 'R20'):
+        return 3
+    elif (lower == 'R10') and (higher == 'R20'):
+        return 4
+    elif (lower == 'R20') and (higher == 'R21'):
+        return 5
+    elif ((lower == 'R20') or (lower == 'R21')) and (higher == 'R22'):
+        return 6
+    elif (lower == 'R22') and ((higher == 'R23') or (higher == 'R30')):
+        return 7
+    elif (lower == 'R23') and (higher == 'R30'):
+        return 8
+    elif (lower == 'R30') and (higher == 'R31'):
+        return 10 # 10 and 11 are joined together
+    elif ((lower == 'R30') or (lower == 'R31')) and (higher == 'R32'):
+        return 12
+    elif ((lower == 'R31') or (lower == 'R32')) and (higher == 'R34'):
+        return 16
+    elif (lower == 'R40') and (higher == 'R41'):
+        return 17
+    elif ((lower == 'R40') or (lower == 'R41')) and (higher == 'R50'):
+        return 18
+    elif (lower == 'R50') and (higher == 'R51'):
+        return 19
+    elif ((lower == 'R50') or (lower == 'R51')) and (higher == 'R52'):
+        return 20
+    elif ((lower == 'R50') or (lower == 'R52')) and (higher == 'R53'):
+        return 21
+    elif ((lower == 'R50') or (lower == 'R53')) and (higher == 'R60'):
+        return 22
+    elif (lower == 'R60'):
+        return 23
+    else:
+        print('No GGM found for {} and {}'.format(lower, higher))
+
+
 
 
 #### Image creation functions ####
@@ -533,6 +638,9 @@ def plot_cpt_pred(model, cpt, save = False, image_width = 11):
     cpt_min, cpt_max, cpt_mean, z = get_max_min_and_mean_for_depth_bins(cpt_data=cpt_data, cpt_depth=cpt_z, 
                                                                         GM_depth=np.arange(cpt_z.min(), cpt_z.max(), 0.1))
     
+
+    pred_color = ['g', 'orange', 'b']
+
     fig, ax = plt.subplots(1, 3, figsize=(20, 5))
     
     fig.tight_layout()
@@ -540,7 +648,7 @@ def plot_cpt_pred(model, cpt, save = False, image_width = 11):
         ax[i].scatter(cpt_z, cpt_data[i], 'k', label='CPT data', s=1, alpha=0.5)
         ax[i].fill_betweenx(z, cpt_min[i], cpt_max[i], color='gray', alpha=0.5)
         ax[i].plot(z, cpt_mean[i],'k', linestyle='--')
-        ax[i].plot(z, pred, 'r')
+        ax[i].plot(z, pred, pred_color[i])
 
     if save:
         # Create Interpolation directory if it doesn't exist
@@ -985,4 +1093,14 @@ if __name__ == '__main__':
     # z_val = match_dict['TNW054-PCPT']['z_traces']
     # z = match_dict['TNW054-PCPT']['z_traces'][::2]
 
-    get_struct_model_picks()
+    # pick = get_struct_model_picks('TNW_B01_5460_MIG_DPT', 2095)
+    pick_dict_filename = './Data/pick_dict.pkl'
+
+    if not Path(pick_dict_filename).exists():
+        pick_dict = create_pick_dict(to_file=pick_dict_filename)
+    else:
+        with open(pick_dict_filename, 'rb') as f:
+            pick_dict = pickle.load(f)
+    
+
+    assing_ggm_to_picks(pick_dict)
