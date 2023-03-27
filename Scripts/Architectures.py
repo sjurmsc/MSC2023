@@ -327,6 +327,9 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
 
     # Predicting with the ensemble is done by averaging the predictions of the members
     model.predict = lambda x: mean(array([m.predict(x) for m in model.members]), axis=0)
+
+    # Calling the model on new data returns the mean prediction of the ensemble members
+    model.call = lambda x: model.predict(x)
     return model, encoder
 
 
