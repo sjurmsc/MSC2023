@@ -301,7 +301,7 @@ def CNN_decoder(latent_features=16, i=0):
 
     return cnn_decoder
 
-
+from numpy import mean, array
 def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001, enc='cnn', dec='cnn'):
     # 
     if enc == 'cnn':
@@ -326,7 +326,7 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
     model.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
 
     # Predicting with the ensemble is done by averaging the predictions of the members
-    model.predict = lambda x: np.mean(np.array([m.predict(x) for m in model.members]), axis=0)
+    model.predict = lambda x: mean(array([m.predict(x) for m in model.members]), axis=0)
     return model, encoder
 
 
