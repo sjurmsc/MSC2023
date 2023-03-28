@@ -854,7 +854,7 @@ def prediction_scatter_plot(model, test_X, test_y, zrange=(30, 100), filename=''
         ax[0, i].scatter(t, p, c=pred_color[i])
 
         # Plot a seaborn kdeplot with predicted values on the y axis and true values on the x axis
-        sns.kdeplot(y=t, x=p, ax=ax[0, i], cmap='Blues', fill=True, thresh=0.1, alpha=0.5)
+        sns.kdeplot(x=t, y=p, ax=ax[0, i], cmap='Blues', fill=True, thresh=0.1, alpha=0.5)
 
         # Add the 1:1 line
         ax[0, i].plot([0, 1], [0, 1], transform=ax[0, i].transAxes, ls='--', c='k')
