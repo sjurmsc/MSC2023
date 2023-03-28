@@ -848,23 +848,26 @@ def prediction_scatter_plot(model, test_X, test_y, zrange=(30, 100), filename=''
     # Create a figure for the predictions 
     fig, ax = plt.subplots(2, 3, figsize=(15, 10))
     for i in range(3):
-        for t in range(predictions.shape[0]):
-            # Plot predictions using only markers
-            ax[0, i].scatter(test_y[t, :, i], predictions[t, :, i], c=pred_color[i])
-            # Plot a seaborn kdeplot
-            sns.kdeplot(x=test_y[t, :, i], y=predictions[t, :, i], ax=ax[0, i], cmap='Blues', fill=True, thresh=0.1, alpha=0.5)
-            # Add the 1:1 line
-            ax[0, i].plot([0, 1], [0, 1], transform=ax[0, i].transAxes, ls='--', c='k')
-            # Add axis labels
-            ax[0, i].set_xlabel('True')
-            ax[0, i].set_ylabel('Predicted')
+        p = predictions[:, :, i].flatten()
+        t = test_y[:, :, i].flatten()
+        # Plot predictions using only markers
+        ax[0, i].scatter(t, p, c=pred_color[i])
 
-            # Plot the histogram of the residuals
-            ax[1, i].hist((predictions[t, :, i]-test_y[t, :, i]), bins=50, edgecolor='k')
-            ax[1, i].set_xlabel('Residuals')
-            ax[1, i].set_ylabel('Frequency')
+        # Plot a seaborn kdeplot with predicted values on the y axis and true values on the x axis
+        sns.kdeplot(t, p, ax=ax[1, i], cmap='Blues', shade=True, shade_lowest=False, alpha=0.5)
+        
+        # Add the 1:1 line
+        ax[0, i].plot([0, 1], [0, 1], transform=ax[0, i].transAxes, ls='--', c='k')
+        # Add axis labels
+        ax[0, i].set_xlabel('True')
+        ax[0, i].set_ylabel('Predicted')
 
-        ax[0, i].set_title(units[i])
+        # Plot the histogram of the residuals
+        ax[1, i].hist((p-t), bins=50, edgecolor='k')
+        ax[1, i].set_xlabel('Residuals')
+        ax[1, i].set_ylabel('Frequency')
+
+    ax[0, i].set_title(units[i])
     # Add super title
     fig.suptitle(title, fontsize=16)
     fig.subplots_adjust(top=0.85)

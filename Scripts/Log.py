@@ -313,17 +313,15 @@ def repo_push(fps, message):
     except:
         print('Unable to push to remote repo')
 
-def plot_history(History, val=False, filename=None):
+def plot_history(History, filename=None):
     """Plots the history of the model training"""
-    if not isinstance(History, list):
-        plt.plot(History.history['loss'], label='Train', color='red', linewidth=2)
-        if val:
-            plt.plot(History.history['val_loss'], label='Validation', color='k', linewidth=2, linestyle='--')
-    else:
-        for i, history in enumerate(History):
-            plt.plot(history.history['loss'], label=f'Train {i}', color='red', linewidth=2)
-            if val:
-                plt.plot(history.history['val_loss'], label=f'Validation {i}', color='k', linewidth=2, linestyle='--')
+    for key in History.history.keys():
+        if 'loss' in key:
+            if key == 'loss':
+                plt.plot(History.history[key], label=key, color='k', linewidth=2, zorder=2)
+            else:
+                plt.plot(History.history[key], label=key, color='red', linewidth=2, zorder=1, alpha=0.6)
+
     plt.title('Model loss')
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
