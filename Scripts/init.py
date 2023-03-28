@@ -60,7 +60,7 @@ if __name__ == '__main__':
     X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM = full_trace
     del full_trace
     
-    GGM = np.zeros_like(sw_idxs) + 1
+    GGM = np.array(sw_idxs) + 1
 
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)
