@@ -118,7 +118,7 @@ def LSTM_decoder(latent_features=16, i=0):
         keras.layers.InputLayer(input_shape=(None, latent_features)),
         # keras.layers.LSTM(64, return_sequences=True),
         # keras.layers.LSTM(32, return_sequences=True),
-        keras.layers.LSTM(16, return_sequences=True),
+        keras.layers.LSTM(64, return_sequences=True),
         keras.layers.Dense(3)
     ], name='lstm_decoder_{}'.format(i))
 
