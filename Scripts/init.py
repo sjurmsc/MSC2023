@@ -101,6 +101,8 @@ if __name__ == '__main__':
     rf_scores = None; lgbm_scores = None
     Histories = []
 
+    p = {}
+
     for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
         Train_groups    = np.unique(groups_train[train_index])
         Test_group      = np.unique(groups_train[test_index])
@@ -221,6 +223,12 @@ if __name__ == '__main__':
                                         zrange=dataset_params['zrange'],
                                         filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_{i}.png',
                                         title=title)
+            prediction_scatter_plot(m,
+                                    X_test_full,
+                                    y_test_full,
+                                    zrange=dataset_params['zrange'],
+                                    filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_scatter_{i}.png',
+                                    title=title)
         
         # Plotting the latent space
         plot_latent_space(encoder, 
@@ -231,41 +239,49 @@ if __name__ == '__main__':
                           filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_latent_space_{i}.png')
         
         print(preds.shape, rf_preds.shape, lgbm_preds.shape)
-
-
-
+        p[i] = {}
+        p[i]['CNN'] = preds
+        p[i]['RF'] = rf_preds
+        p[i]['LGBM'] = lgbm_preds
+        p[i]['true'] = trues
+    
+    # Save the predictions for each to a pickle
+    with open(f'./Models/{gname}/Ensemble_CNN_preds.pkl', 'wb') as f:
+        pickle.dump(p, f)
+    
 
     # Save the training times
     with open(f'./Models/{gname}/training_times.txt', 'w') as f:
         f.write(json.dumps(training_time_dict))
 
-    # Save the predictions
-    np.save(f'./Models/{gname}/Ensemble_CNN_preds.npy', preds)
-
     # plot the latent space, colored by structural model
     # plot_latent_space(encoder, X_t, y_train, groups_train, filename=f'./Models/{gname}/Ensemble_CNN_latent_space.png')
+    
+    # Iterate over the p and evaluate the stds
+    for i in range(len(p)):
+        trues = p[i]['true']
+        preds = p[i]['CNN']
+        rf_preds = p[i]['RF']
+        lgbm_preds = p[i]['LGBM']
 
-    for i in range(trues.shape[0]):
-        trues[i] = scaler.inverse_transform(trues[i])
+        for ii in range(trues.shape[0]):
+            trues[ii] = scaler.inverse_transform(trues[ii])
 
-    for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
-        stds = []
-        print('Evaluating model stds for {}'.format(label))
+        for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
+            stds = []
+            print('Evaluating model stds for {}'.format(label))
 
-        trans_pred = np.zeros(pred.shape)
-        # Inverse transform the data
-        for i in range(pred.shape[0]):
-            trans_pred[i] = scaler.inverse_transform(pred[i])
+            trans_pred = np.zeros(pred.shape)
+            # Inverse transform the data
+            for iii in range(pred.shape[0]):
+                trans_pred[iii] = scaler.inverse_transform(pred[iii])
 
-        for k in range(pred.shape[-1]):
-            _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, :, k].flatten(), trans_pred[:, :, k].flatten())
-            stds.append(std)
-        print('std for {} is: {}'.format(label, stds))
+            for k in range(pred.shape[-1]):
+                _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, :, k].flatten(), trans_pred[:, :, k].flatten())
+                stds.append(std)
+            print('std for {} is: {}'.format(label, stds))
+    
 
-    # with open(f'./Models/{gname}/std_results.txt', 'a') as f:
-    #     f.write(f'{label} stds: {stds}')
-
-    # Create prediction crossplots
 
 
 
