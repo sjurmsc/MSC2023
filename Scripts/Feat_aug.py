@@ -797,16 +797,25 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
 
 def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filename='', title=''):
 
+    # Get scaler
+    scaler = get_cpt_data_scaler()
+
     # Create predictions for the test set
     if not type(model) == list:
         predictions = model.predict(test_X)
     else:
         encoder, model = model
         predictions = predict_encoded_tree(encoder, model, test_X)
+
+    # Rescale the predictions
+    for i in range(predictions.shape[0]):
+        predictions[i] = scaler.inverse_transform(predictions[i])
+        test_y[i] = scaler.inverse_transform(test_y[i])
     
     z = np.arange(zrange[0], zrange[1], 0.1)
 
     units = ['$q_c$', '$f_s$', '$u_2$']
+    ax_labels = ['Measured tip resistance [MPa]', 'Sleeve Friction [MPa]', 'Pore pressure [MPa]']
     pred_color = ['g', 'orange', 'b']
 
     # Create a figure for the predictions 
@@ -818,6 +827,12 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
             # Plot test_y using only markers
             ax[i].plot(test_y[t, :, i], z, pred_color[i], marker='.', alpha=0.1)
         ax[i].set_title(units[i])
+        ax[i].set_ylabel('Depth [mLAT]')
+
+        # Set the x axis label to the top
+        ax[i].xaxis.set_label_position('top')
+        ax[i].set_xlabel(ax_labels[i])
+
         ax[i].invert_yaxis()
     # Add super title
     fig.suptitle(title, fontsize=16)
@@ -830,17 +845,23 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
     plt.close()
 
 
-def prediction_scatter_plot(model, test_X, test_y, zrange=(30, 100), filename='', title=''):
+def prediction_scatter_plot(model, test_X, test_y, filename='', title=''):
     """Plot the predictions of the model as a scatter plot, with density contours"""
     
+    # Get scaler
+    scaler = get_cpt_data_scaler()
+
     # Create predictions for the test set
     if not type(model) == list:
         predictions = model.predict(test_X)
     else:
         encoder, model = model
         predictions = predict_encoded_tree(encoder, model, test_X)
-    
-    z = np.arange(zrange[0], zrange[1], 0.1)
+
+    # Rescale the predictions
+    for i in range(predictions.shape[0]):
+        predictions[i] = scaler.inverse_transform(predictions[i])
+        test_y[i] = scaler.inverse_transform(test_y[i])
 
     units = ['$q_c$', '$f_s$', '$u_2$']
     pred_color = ['g', 'orange', 'b']
@@ -851,26 +872,29 @@ def prediction_scatter_plot(model, test_X, test_y, zrange=(30, 100), filename=''
         p = predictions[:, :, i].flatten()
         t = test_y[:, :, i].flatten()
         # Plot predictions using only markers
-        ax[0, i].scatter(t, p, c=pred_color[i])
+        ax[0, i].scatter(t, p, c=pred_color[i], marker='.', alpha=0.5)
 
-        # Plot a seaborn kdeplot with predicted values on the y axis and true values on the x axis
-        sns.kdeplot(x=t, y=p, ax=ax[0, i], cmap='Blues', fill=True, thresh=0.1, alpha=0.5)
+        # Plot a kdeplot with the predictions
+        sns.kdeplot(x=t, y=p, ax=ax[0, i], cmap='Blues', fill=True, thresh=0.05, alpha=0.5)
+
+        ax[0, i].set_title(units[i])
 
         # Add the 1:1 line
         ax[0, i].plot([0, 1], [0, 1], transform=ax[0, i].transAxes, ls='--', c='k')
+
         # Add axis labels
-        ax[0, i].set_xlabel('True')
-        ax[0, i].set_ylabel('Predicted')
+        ax[0, i].set_xlabel('True {} [MPa]'.format(units[i]))
+        ax[0, i].set_ylabel('Predicted {} [MPa]'.format(units[i]))
 
         # Plot the histogram of the residuals
         ax[1, i].hist((p-t), bins=50, edgecolor='k')
         ax[1, i].set_xlabel('Residuals')
         ax[1, i].set_ylabel('Frequency')
 
-    ax[0, i].set_title(units[i])
+        
     # Add super title
     fig.suptitle(title, fontsize=16)
-    fig.subplots_adjust(top=0.85)
+    fig.subplots_adjust(top=0.9, wspace=0.3, hspace=0.3)
 
     if filename:
         fig.savefig(filename, dpi=500)
