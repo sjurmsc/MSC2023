@@ -93,7 +93,7 @@ if __name__ == '__main__':
     
     encoder_type = 'cnn'
     decoder_type = 'lstm'
-    n_members    = 5
+    n_members    = 1
 
     # Training time dict
     training_time_dict = {}
