@@ -59,6 +59,8 @@ if __name__ == '__main__':
     full_trace = create_full_trace_dataset(**dataset_params)
     X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM = full_trace
     del full_trace
+    
+    GGM = np.zeros_like(sw_idxs) + 1
 
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)
@@ -85,7 +87,7 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 1,
+        'epochs'            : 100,
         'batch_size'        : 25
         }
     
@@ -230,7 +232,7 @@ if __name__ == '__main__':
         
         print(preds.shape, rf_preds.shape, lgbm_preds.shape)
 
-        if i == 0: break
+
 
 
     # Save the training times
