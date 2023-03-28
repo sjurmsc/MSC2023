@@ -42,10 +42,10 @@ if __name__ == '__main__':
     dataset_params = {
         'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
-        'n_bootstraps'          : 3,
+        'n_bootstraps'          : 1,
         'add_noise'             : 0.01,
-        'max_distance_to_cdp'   : 20,
-        'cumulative_seismic'    : True,
+        'max_distance_to_cdp'   : 5,
+        'cumulative_seismic'    : False,
         'random_flip'           : True,
         'random_state'          : 1,
         'groupby'               : 'cpt_loc',
@@ -87,12 +87,12 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 100,
+        'epochs'            : 1,
         'batch_size'        : 25
         }
     
     encoder_type = 'cnn'
-    decoder_type = 'cnn'
+    decoder_type = 'lstm'
     n_members    = 5
 
     # Training time dict
@@ -157,12 +157,6 @@ if __name__ == '__main__':
 
         # Plot the training and validation loss
         plot_history(History, filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.png')
-
-        # Plotting the models
-        # plot_model(model, to_file=f'./Models/{gname}/Ensemble_CNN_{i}.png', show_shapes=True, show_layer_names=True)
-        # plot_model(encoder, to_file=f'./Models/{gname}/Ensemble_CNN_encoder_{i}.png', show_shapes=True, show_layer_names=True)
-
-
 
         # Encoder and model summary to text file
         with open(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_encoder_{i}.txt', 'w') as f:
