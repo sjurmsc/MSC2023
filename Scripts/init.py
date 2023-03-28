@@ -20,6 +20,7 @@ from lightgbm import LGBMRegressor
 from sklearn.manifold import TSNE
 from sklearn.multioutput import MultiOutputRegressor
 # from tensorflow.compat.v1.keras.utils import plot_model
+from sys import redirect_stdout
 
 # My scripts
 from Log import *
@@ -164,10 +165,11 @@ if __name__ == '__main__':
 
         # Encoder and model summary to text file
         with open(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_encoder_{i}.txt', 'w') as f:
-            f.write(encoder.summary())
+            with redirect_stdout(f):
+                encoder.summary()
         with open(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.txt', 'w') as f:
-            f.write(model.summary())
-        
+            with redirect_stdout(f):
+                model.summary()
 
 
         # Adding predictions to a numpy array
