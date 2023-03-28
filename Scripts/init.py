@@ -163,13 +163,13 @@ if __name__ == '__main__':
         # plot_model(model, to_file=f'./Models/{gname}/Ensemble_CNN_{i}.png', show_shapes=True, show_layer_names=True)
         # plot_model(encoder, to_file=f'./Models/{gname}/Ensemble_CNN_encoder_{i}.png', show_shapes=True, show_layer_names=True)
 
+
+
         # Encoder and model summary to text file
         with open(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_encoder_{i}.txt', 'w') as f:
-            with redirect_stdout(f):
-                encoder.summary()
+            encoder.summary(print_fn=lambda x: f.write(x + '\n'))
         with open(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.txt', 'w') as f:
-            with redirect_stdout(f):
-                model.summary()
+            model.summary(print_fn=lambda x: f.write(x + '\n'))
 
 
         # Adding predictions to a numpy array
