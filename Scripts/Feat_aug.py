@@ -18,6 +18,11 @@ import pickle
 from sklearn.manifold import TSNE
 import numpy as np
 from Architectures import predict_encoded_tree
+from matplotlib.colors import ListedColormap, BoundaryNorm
+import seaborn as sns
+# import sns
+
+
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
 # Functions for loading data
@@ -256,7 +261,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                               groupby='cpt_loc',
                               data_folder='FE_CPT',
                               force_new_match_file=False,
-                              y_scaler=None):
+                              y_scaler=None,
+                              ydata='bootstraps'):
     """ Creates a dataset with full seismic traces and corresponding CPT data with an array
         containing the indices where there are nan values in a row and one where are no nan values in a row.
     """
@@ -298,7 +304,10 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         if y_scaler is not None:
             cpt_vals = scaler.transform(cpt_vals)
 
-        bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps)
+        if ydata == 'bootstraps':
+            bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps)
+        elif ydata == 'mmm':
+            b_min, b_max, b_mean, z_GM = get_max_min_and_mean_for_depth_bins(cpt_vals, array(value['z_cpt']), z_GM)
 
         seismic = array(value['Seismic_data'])
         if not seismic.shape[0] == image_width:
@@ -323,14 +332,57 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         ggm = assign_ggm_to_picks(value['Borehole'])
         ggm[sw_idx] = 0
 
-        for bootstrap in bootstraps:
+        if ydata == 'bootstraps':
+            for bootstrap in bootstraps:
+                # List the indices of the CPT data that are not nan
+                row_w_nan = lambda x: np.any(np.isnan(x))
+                nan_idx = np.apply_along_axis(row_w_nan, axis=1, arr=bootstrap)
+                nan_idxs.append(nan_idx)
+
+                row_wo_nan = lambda x: np.all(~np.isnan(x))
+                no_nan_idx = np.apply_along_axis(row_wo_nan, axis=1, arr=bootstrap)
+                no_nan_idxs.append(no_nan_idx)
+
+                # Adding sea water indices
+                sw_idxs.append(sw_idx)
+
+                # Adding GGM
+                GGM.append(ggm)
+                # Adding extrapolated indices
+                # extrapolated_idx = np.zeros(bootstrap.shape[0], dtype=bool)
+                # last = np.where(~nan_idx)[0][-1]
+                # extrapolated_idx[last:] = True
+
+                # extrapolated_idxs.append(extrapolated_idx)
+
+                seis = seismic.copy()
+                if add_noise:
+                    if cumulative_seismic:
+                        seis += np.cumsum(np.random.normal(0, add_noise, seis.shape), axis=1)
+                    else:
+                        seis += np.random.normal(0, add_noise, seis.shape)
+
+                if seis.shape[1] != 2*bootstrap.shape[0]:
+                    print(seis.shape[1], 2*bootstrap.shape[0])
+                    print('Seismic and CPT data do not match in length: {}'.format(key))
+                    continue
+                
+                X.append(seis.reshape(seis.shape[0], seis.shape[1], 1))
+                y.append(bootstrap)
+
+                # Adding the group value
+                if groupby == 'cpt_loc':
+                    groups.append(int(value['cpt_loc']))
+                elif groupby == 'borehole':
+                    raise ValueError('Grouping by borehole is not supported for full trace dataset')
+        elif ydata == 'mmm':
             # List the indices of the CPT data that are not nan
             row_w_nan = lambda x: np.any(np.isnan(x))
-            nan_idx = np.apply_along_axis(row_w_nan, axis=1, arr=bootstrap)
+            nan_idx = np.apply_along_axis(row_w_nan, arr=b_mean, axis=1)
             nan_idxs.append(nan_idx)
 
             row_wo_nan = lambda x: np.all(~np.isnan(x))
-            no_nan_idx = np.apply_along_axis(row_wo_nan, axis=1, arr=bootstrap)
+            no_nan_idx = np.apply_along_axis(row_wo_nan, axis=1, arr=b_mean)
             no_nan_idxs.append(no_nan_idx)
 
             # Adding sea water indices
@@ -352,19 +404,19 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                 else:
                     seis += np.random.normal(0, add_noise, seis.shape)
 
-            if seis.shape[1] != 2*bootstrap.shape[0]:
-                print(seis.shape[1], 2*bootstrap.shape[0])
+            if seis.shape[1] != 2*b_mean.shape[0]:
+                print(seis.shape[1], 2*b_mean.shape[0])
                 print('Seismic and CPT data do not match in length: {}'.format(key))
                 continue
             
             X.append(seis.reshape(seis.shape[0], seis.shape[1], 1))
-            y.append(bootstrap)
+            y.append(b_mean)
 
             # Adding the group value
             if groupby == 'cpt_loc':
                 groups.append(int(value['cpt_loc']))
             elif groupby == 'borehole':
-                raise ValueError('Grouping by borehole is not supported for full trace dataset')
+                raise ValueError('Grouping by borehole is not supported for full trace dataset')    
     
     X = np.array(X)
     y = np.array(y)
@@ -512,7 +564,7 @@ def pick_2_GGM(lower, higher):
     elif (lower == 'R60'):
         return 23
     else:
-        print('No GGM found for {} and {}'.format(lower, higher))
+        return -1
 
 
 
@@ -690,15 +742,51 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
     valid_indices = valid_indices.flatten()
     GGM = GGM.flatten()
     
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    umap = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv')
+    GGM_names = []
+    for u in GGM:
+        GGM_names.append(umap.loc[umap['uid'] == u]['unit'].values[0])
+
+    n_colors = len(np.unique(umap['uid']))
+    # Add a segmented colorbar with unique colors for the different units
+    cmap = plt.cm.get_cmap('gnuplot', n_colors)
+
+    bounds = np.arange(min(umap['uid']), max(umap['uid']), 1)
+    norm = BoundaryNorm(bounds, cmap.N)
+
+    fig, ax = plt.subplots(1, 1, figsize=(15, 10))
+
+    # Set padding
+    fig.subplots_adjust(left=0.05, top=0.9, right=0.85, bottom=0.1)
 
     # Give specific markers to points outside the valid indices
-    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], alpha=0.5)
+    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], cmap=cmap, norm=norm, alpha=0.8, label='Extrapolated GGM')
     
     # Plot the valid indices
-    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], c=GGM[valid_indices])
+    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], marker= 'o', c=GGM[valid_indices], cmap=cmap, norm=norm, alpha=0.8, label='Validated GGM')
 
-    ax.set_title('Latent space colored by Ground model units')
+    # Remove axis ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    # Create a colorbar
+    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=np.arange(-0.5, n_colors-0.5, 1))
+
+    cbar.ax.set_yticklabels(umap['unit'].unique())
+    cbar.ax.tick_params(labelsize=15)
+    cbar.set_label('Ground model units', fontsize=20)
+
+    fig.suptitle('Latent space colored by Ground model units', fontsize=20)
+
+    # Insert a legend for the markers without color, and at alpha=1
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles, labels, loc='upper left', fontsize=15)
+
+    # Remove the frame of the figure
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    
+
 
     if filename:
         fig.savefig(filename, dpi=500)
@@ -707,7 +795,7 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
     plt.close()
 
 
-def create_loo_trace_prediction(model, test_X, test_y, zrange, filename='', title=''):
+def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filename='', title=''):
 
     # Create predictions for the test set
     if not type(model) == list:
@@ -719,17 +807,64 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange, filename='', titl
     z = np.arange(zrange[0], zrange[1], 0.1)
 
     units = ['$q_c$', '$f_s$', '$u_2$']
+    pred_color = ['g', 'orange', 'b']
 
     # Create a figure for the predictions 
-    fig, ax = plt.subplots(1, 3, figsize=(20, 5))
+    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
     fig.tight_layout()
     for i in range(3):
         for t in range(predictions.shape[0]):
             ax[i].plot(predictions[t, :, i], z, 'k', alpha=0.1)
             # Plot test_y using only markers
-            ax[i].plot(test_y[t, :, i], z, 'r', marker='.', alpha=0.1)
+            ax[i].plot(test_y[t, :, i], z, pred_color[i], marker='.', alpha=0.1)
         ax[i].set_title(units[i])
         ax[i].invert_yaxis()
+    # Add super title
+    fig.suptitle(title, fontsize=16)
+    fig.subplots_adjust(top=0.85)
+
+    if filename:
+        fig.savefig(filename, dpi=500)
+    else:
+        plt.show()
+    plt.close()
+
+
+def prediction_scatter_plot(model, test_X, test_y, zrange=(30, 100), filename='', title=''):
+    """Plot the predictions of the model as a scatter plot, with density contours"""
+    
+    # Create predictions for the test set
+    if not type(model) == list:
+        predictions = model.predict(test_X)
+    else:
+        encoder, model = model
+        predictions = predict_encoded_tree(encoder, model, test_X)
+    
+    z = np.arange(zrange[0], zrange[1], 0.1)
+
+    units = ['$q_c$', '$f_s$', '$u_2$']
+    pred_color = ['g', 'orange', 'b']
+
+    # Create a figure for the predictions 
+    fig, ax = plt.subplots(2, 3, figsize=(15, 10))
+    for i in range(3):
+        for t in range(predictions.shape[0]):
+            # Plot predictions using only markers
+            ax[0, i].scatter(test_y[t, :, i], predictions[t, :, i], c=pred_color[i])
+            # Plot a seaborn kdeplot
+            sns.kdeplot(x=test_y[t, :, i], y=predictions[t, :, i], ax=ax[0, i], cmap='Blues', fill=True, thresh=0.1, alpha=0.5)
+            # Add the 1:1 line
+            ax[0, i].plot([0, 1], [0, 1], transform=ax[0, i].transAxes, ls='--', c='k')
+            # Add axis labels
+            ax[0, i].set_xlabel('True')
+            ax[0, i].set_ylabel('Predicted')
+
+            # Plot the histogram of the residuals
+            ax[1, i].hist((predictions[t, :, i]-test_y[t, :, i]), bins=50, edgecolor='k')
+            ax[1, i].set_xlabel('Residuals')
+            ax[1, i].set_ylabel('Frequency')
+
+        ax[0, i].set_title(units[i])
     # Add super title
     fig.suptitle(title, fontsize=16)
     fig.subplots_adjust(top=0.85)
@@ -894,18 +1029,18 @@ def get_max_min_and_mean_for_depth_bins(cpt_data, cpt_depth, GM_depth):
     for i, d in enumerate(GM_depth):
         cpt_bins.append(cpt_data[np.where((cpt_depth>=d-half_bin)&(cpt_depth<d+half_bin))])
 
-    bin_min = np.array([])
-    bin_max = np.array([])
-    bin_mean = np.array([])
+    bin_min = np.array([]).reshape(-1, 3)
+    bin_max = np.array([]).reshape(-1, 3)
+    bin_mean = np.array([]).reshape(-1, 3)
     for i, b in enumerate(cpt_bins):
         if not b.size: 
-            bin_min = np.append(bin_min, np.nan)
-            bin_max = np.append(bin_max, np.nan)
-            bin_mean = np.append(bin_mean, np.nan)
+            bin_min = np.row_stack((bin_min, np.full((1, 3), np.nan)))
+            bin_max = np.row_stack((bin_max, np.full((1, 3), np.nan)))
+            bin_mean = np.row_stack((bin_mean, np.full((1, 3), np.nan)))
         else: 
-            bin_min = np.append(bin_min, np.min(b, axis=1))
-            bin_max = np.append(bin_max, np.max(b, axis=1))
-            bin_mean = np.append(bin_mean, np.mean(b, axis=1))
+            bin_min = np.row_stack((bin_min, np.min(b, axis=0)))
+            bin_max = np.row_stack((bin_max, np.max(b, axis=0)))
+            bin_mean = np.row_stack((bin_mean, np.mean(b, axis=0)))
 
     return bin_min, bin_max, bin_mean, GM_depth
 
@@ -1110,13 +1245,39 @@ if __name__ == '__main__':
     # z = match_dict['TNW054-PCPT']['z_traces'][::2]
 
     # pick = get_struct_model_picks('TNW_B01_5460_MIG_DPT', 2095)
-    pick_dict_filename = './Data/pick_dict.pkl'
 
-    if not Path(pick_dict_filename).exists():
-        pick_dict = create_pick_dict(to_file=pick_dict_filename)
-    else:
-        with open(pick_dict_filename, 'rb') as f:
-            pick_dict = pickle.load(f)
+
+    # pick_dict_filename = './Data/pick_dict.pkl'
+
+    # if not Path(pick_dict_filename).exists():
+    #     pick_dict = create_pick_dict(to_file=pick_dict_filename)
+    # else:
+    #     with open(pick_dict_filename, 'rb') as f:
+    #         pick_dict = pickle.load(f)
     
 
-    assing_ggm_to_picks(pick_dict)
+    # assing_ggm_to_picks(pick_dict)
+
+    from keras.models import load_model
+
+    full_trace = create_full_trace_dataset(n_bootstraps=1, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax', ydata='mmm')
+
+    X_full = full_trace[0]
+    y_full = full_trace[1]
+    no_nan = full_trace[4]
+    nans = full_trace[3]
+    sw = full_trace[5]
+    GGM = full_trace[7]
+
+    GGM = np.array(sw).astype(int)-1
+
+    model_loc = r"C:\Users\SjB\MSC2023\Models\ALW\Fold1\Ensemble_CNN_encoder_0.h5"
+
+    encoder = load_model(model_loc)
+    model = load_model(model_loc.replace('_encoder', ''))
+
+    idx = 0
+
+    # plot_latent_space(encoder, X_full[idx].reshape(1, *X_full[0].shape), no_nan[idx], nans[idx], GGM[idx])
+    # create_loo_trace_prediction(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape))
+    prediction_scatter_plot(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), title='Fold 1, model 0, trace 0')
