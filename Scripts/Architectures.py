@@ -141,9 +141,9 @@ def ANN_decoder(latent_features=16, i=0):
     """1D CNN decoder with a committee of n_members."""
     ann_decoder = keras.models.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
-        keras.layers.Dense(64, activation='relu'),
-        keras.layers.Dense(32, activation='relu'),
-        keras.layers.Dense(16, activation='relu'),
+        # keras.layers.Dense(64, activation='relu'),
+        # keras.layers.Dense(32, activation='relu'),
+        # keras.layers.Dense(16, activation='relu'),
         keras.layers.Dense(3)
     ], name='ann_decoder_{}'.format(i))
 
