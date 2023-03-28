@@ -235,7 +235,6 @@ if __name__ == '__main__':
             prediction_scatter_plot(m,
                                     X_test_full,
                                     y_test_full,
-                                    zrange=dataset_params['zrange'],
                                     filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_scatter_{i}.png',
                                     title=title)
         
