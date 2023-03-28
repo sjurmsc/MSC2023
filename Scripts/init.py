@@ -19,7 +19,7 @@ from sklearn.ensemble import RandomForestRegressor
 from lightgbm import LGBMRegressor
 from sklearn.manifold import TSNE
 from sklearn.multioutput import MultiOutputRegressor
-# from tensorflow.compat.v1.keras.utils import plot_model
+from tensorflow.compat.v1.keras.utils import plot_model
 
 # My scripts
 from Log import *
@@ -159,8 +159,8 @@ if __name__ == '__main__':
         plot_history(History, filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.png')
 
         # Plotting the models
-        # plot_model(model, to_file=f'./Models/{gname}/Ensemble_CNN_{i}.png', show_shapes=True, show_layer_names=True)
-        # plot_model(encoder, to_file=f'./Models/{gname}/Ensemble_CNN_encoder_{i}.png', show_shapes=True, show_layer_names=True)
+        plot_model(model, to_file=f'./Models/{gname}/Ensemble_CNN_{i}.png', show_shapes=True, show_layer_names=True)
+        plot_model(encoder, to_file=f'./Models/{gname}/Ensemble_CNN_encoder_{i}.png', show_shapes=True, show_layer_names=True)
 
         # Adding predictions to a numpy array
         if i == 0:
