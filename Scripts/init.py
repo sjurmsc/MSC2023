@@ -42,7 +42,7 @@ if __name__ == '__main__':
     dataset_params = {
         'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
-        'n_bootstraps'          : 10,
+        'n_bootstraps'          : 3,
         'add_noise'             : 0.01,
         'max_distance_to_cdp'   : 20,
         'cumulative_seismic'    : False,
@@ -249,13 +249,9 @@ if __name__ == '__main__':
     with open(f'./Models/{gname}/Ensemble_CNN_preds.pkl', 'wb') as f:
         pickle.dump(p, f)
     
-
     # Save the training times
     with open(f'./Models/{gname}/training_times.txt', 'w') as f:
         f.write(json.dumps(training_time_dict))
-
-    # plot the latent space, colored by structural model
-    # plot_latent_space(encoder, X_t, y_train, groups_train, filename=f'./Models/{gname}/Ensemble_CNN_latent_space.png')
     
     # Iterate over the p and evaluate the stds
     for i in range(len(p)):
