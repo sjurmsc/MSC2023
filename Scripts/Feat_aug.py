@@ -800,6 +800,8 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
     # Get scaler
     scaler = get_cpt_data_scaler()
 
+    test_y = test_y.copy()
+
     # Create predictions for the test set
     if not type(model) == list:
         predictions = model.predict(test_X)
@@ -809,8 +811,8 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
 
     # Rescale the predictions
     for i in range(predictions.shape[0]):
-        predictions[i] = scaler.inverse_transform(predictions[i])
-        test_y[i] = scaler.inverse_transform(test_y[i])
+        predictions[i, :, :] = scaler.inverse_transform(predictions[i, :, :])
+        test_y[i, :, :] = scaler.inverse_transform(test_y[i, :, :])
     
     z = np.arange(zrange[0], zrange[1], 0.1)
 
@@ -850,6 +852,8 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title=''):
     
     # Get scaler
     scaler = get_cpt_data_scaler()
+
+    test_y = test_y.copy()
 
     # Create predictions for the test set
     if not type(model) == list:
