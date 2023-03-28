@@ -116,9 +116,9 @@ def LSTM_decoder(latent_features=16, i=0):
     """LSTM decoder predicting CPT response from latent features."""
     lstm_decoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
-        # keras.layers.LSTM(64, return_sequences=True),
-        # keras.layers.LSTM(32, return_sequences=True),
         keras.layers.LSTM(64, return_sequences=True),
+        keras.layers.LSTM(32, return_sequences=True),
+        keras.layers.LSTM(16, return_sequences=True),
         keras.layers.Dense(3)
     ], name='lstm_decoder_{}'.format(i))
 
@@ -129,14 +129,25 @@ def CNN_decoder(latent_features=16, i=0):
     """1D CNN decoder with a committee of n_members."""
     cnn_decoder = keras.models.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
-        # keras.layers.Conv1D(64, 3, activation='relu', padding='same'),
-        # keras.layers.Conv1D(32, 3, activation='relu', padding='same'),
+        keras.layers.Conv1D(64, 3, activation='relu', padding='same'),
+        keras.layers.Conv1D(32, 3, activation='relu', padding='same'),
         keras.layers.Conv1D(16, 3, activation='relu', padding='same'),
         keras.layers.Dense(3)
     ], name='cnn_decoder_{}'.format(i))
 
     return cnn_decoder
 
+def ANN_decoder(latent_features=16, i=0):
+    """1D CNN decoder with a committee of n_members."""
+    ann_decoder = keras.models.Sequential([
+        keras.layers.InputLayer(input_shape=(None, latent_features)),
+        keras.layers.Dense(64, activation='relu'),
+        keras.layers.Dense(32, activation='relu'),
+        keras.layers.Dense(16, activation='relu'),
+        keras.layers.Dense(3)
+    ], name='ann_decoder_{}'.format(i))
+
+    return ann_decoder
 
 def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001, enc='cnn', dec='cnn'):
     # 
@@ -152,6 +163,8 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
             decoders.append(CNN_decoder(latent_features=latent_features, i=i)(encoder.output))
         elif dec == 'lstm':
             decoders.append(LSTM_decoder(latent_features=latent_features, i=i)(encoder.output))
+        elif dec == 'ann':
+            decoders.append(ANN_decoder(latent_features=latent_features, i=i)(encoder.output))
     
     model_mean = Model(encoder.input, keras.layers.Average()(decoders))
 
