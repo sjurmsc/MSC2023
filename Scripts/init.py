@@ -45,7 +45,7 @@ if __name__ == '__main__':
         'n_bootstraps'          : 3,
         'add_noise'             : 0.01,
         'max_distance_to_cdp'   : 20,
-        'cumulative_seismic'    : False,
+        'cumulative_seismic'    : True,
         'random_flip'           : True,
         'random_state'          : 1,
         'groupby'               : 'cpt_loc',
