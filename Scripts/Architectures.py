@@ -19,11 +19,9 @@ def CNN_pyramidal_encoder(latent_features, image_width):
         keras.layers.InputLayer(input_shape=image_shape),
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))),
         keras.layers.Conv2D(16, (3, 3), activation='relu'),
-        keras.layers.LayerNormalization(),
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))), # 1, 1 padding because kernel is 3x3
         keras.layers.Conv2D(32, (3, 3), activation='relu'),
         keras.layers.MaxPooling2D((1, 2)), # Reduce the depth of seismic to GM_len
-        keras.layers.LayerNormalization(),
         keras.layers.Dropout(0.01)
     ], name='cnn_encoder')
 
@@ -31,7 +29,6 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     for _ in range((image_width-2*(3-1))//2):
         cnn_encoder.add(keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))))
         cnn_encoder.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
-        cnn_encoder.add(keras.layers.LayerNormalization())
         cnn_encoder.add(keras.layers.Dropout(0.01))
 
 
