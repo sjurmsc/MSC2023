@@ -57,7 +57,7 @@ if __name__ == '__main__':
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
     full_trace = create_full_trace_dataset(**dataset_params, ydata='mmm')
-    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM = full_trace
+    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM, minmax_full = full_trace
     del full_trace
     
     GGM = np.array(sw_idxs) + 1
@@ -225,7 +225,8 @@ if __name__ == '__main__':
                                         y_test_full, 
                                         zrange=dataset_params['zrange'],
                                         filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_{i}.png',
-                                        title=title)
+                                        title=title,
+                                        minmax=(minmax_full[0][in_test], minmax_full[1][in_test]))
             prediction_scatter_plot(m,
                                     X_test_full,
                                     y_test_full,

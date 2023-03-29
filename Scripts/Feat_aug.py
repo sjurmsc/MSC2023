@@ -281,6 +281,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     extrapolated_idxs = []
     groups = []
     GGM = []
+    mins = []
+    maxs = []
 
     if y_scaler is not None:
         scaler = get_cpt_data_scaler()
@@ -397,6 +399,9 @@ def create_full_trace_dataset(n_neighboring_traces=5,
 
             # extrapolated_idxs.append(extrapolated_idx)
 
+            mins.append(b_min)
+            maxs.append(b_max)
+
             seis = seismic.copy()
             if add_noise:
                 if cumulative_seismic:
@@ -424,6 +429,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     no_nan_idxs = np.array(no_nan_idxs)
     sw_idxs = np.array(sw_idxs)
     groups = np.array(groups)
+    mins = np.array(mins)
+    maxs = np.array(maxs)
 
     # Randomly flip the X data about the 1 axis
     if random_flip:
@@ -435,6 +442,9 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         X, y, groups, nan_idxs, no_nan_idxs = shuffle(X, y, groups, nan_idxs, no_nan_idxs, random_state=random_state)
 
     print('Done!')
+
+    if ydata == 'mmm':
+        return X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs, GGM, (mins, maxs)
 
     return X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs, GGM
             
@@ -795,12 +805,14 @@ def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, file
     plt.close()
 
 
-def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filename='', title=''):
+def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filename='', title='', minmax=None):
 
     # Get scaler
     scaler = get_cpt_data_scaler()
 
     test_y = test_y.copy()
+    mins = minmax[0].copy()
+    maxs = minmax[1].copy()
 
     # Create predictions for the test set
     if not type(model) == list:
@@ -813,7 +825,10 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
     for i in range(predictions.shape[0]):
         predictions[i, :, :] = scaler.inverse_transform(predictions[i, :, :])
         test_y[i, :, :] = scaler.inverse_transform(test_y[i, :, :])
+        mins[i, :, :] = scaler.inverse_transform(mins[i, :, :])
+        maxs[i, :, :] = scaler.inverse_transform(maxs[i, :, :])
     
+
     z = np.arange(zrange[0], zrange[1], 0.1)
 
     units = ['$q_c$', '$f_s$', '$u_2$']
@@ -827,7 +842,9 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
         for t in range(predictions.shape[0]):
             ax[i].plot(predictions[t, :, i], z, 'k', alpha=0.1)
             # Plot test_y using only markers
-            ax[i].plot(test_y[t, :, i], z, pred_color[i], marker='.', alpha=0.1)
+            ax[i].plot(test_y[t, :, i], z, pred_color[i], marker='.', alpha=0.5)
+            if minmax is not None:
+                ax[i].fill_betweenx(z, mins[t, :, i], maxs[t, :, i], color=pred_color[i], alpha=0.1)
         ax[i].set_title(units[i])
         ax[i].set_ylabel('Depth [mLAT]')
 
@@ -1299,6 +1316,8 @@ if __name__ == '__main__':
     sw = full_trace[5]
     GGM = full_trace[7]
 
+    minmax = full_trace[-1]
+
     GGM = np.array(sw).astype(int)-1
 
     model_loc = r"C:\Users\SjB\MSC2023\Models\ALW\Fold1\Ensemble_CNN_encoder_0.h5"
@@ -1309,5 +1328,5 @@ if __name__ == '__main__':
     idx = 0
 
     # plot_latent_space(encoder, X_full[idx].reshape(1, *X_full[0].shape), no_nan[idx], nans[idx], GGM[idx])
-    # create_loo_trace_prediction(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape))
+    create_loo_trace_prediction(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), minmax=minmax)
     prediction_scatter_plot(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), title='Fold 1, model 0, trace 0')
