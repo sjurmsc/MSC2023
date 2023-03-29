@@ -832,7 +832,7 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
         ax[i].set_ylabel('Depth [mLAT]')
 
         # Set the x axis label to the top
-        ax[i].xaxis.set_label_position('top')
+        # ax[i].xaxis.set_label_position('top')
         ax[i].set_xlabel(ax_labels[i])
 
         ax[i].invert_yaxis()
@@ -1093,7 +1093,6 @@ def get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/
             df_dict[key] = df.copy()
 
     return df_dict
-
 
 
 import pandas as pd
