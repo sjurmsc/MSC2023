@@ -43,10 +43,10 @@ if __name__ == '__main__':
         'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
         'n_bootstraps'          : 10,
-        'add_noise'             : 0.01,
+        'add_noise'             : False,
         'max_distance_to_cdp'   : 5,
         'cumulative_seismic'    : False,
-        'random_flip'           : True,
+        'random_flip'           : False,
         'random_state'          : 1,
         'groupby'               : 'cpt_loc',
         'y_scaler'              : scaler
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     
     encoder_type = 'cnn'
     decoder_type = 'ann'
-    n_members    = 1
+    n_members    = 5
 
     # Training time dict
     training_time_dict = {}
