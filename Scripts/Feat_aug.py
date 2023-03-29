@@ -1071,7 +1071,7 @@ def get_max_min_and_mean_for_depth_bins(cpt_data, cpt_depth, GM_depth):
         else: 
             bin_min = np.row_stack((bin_min, np.min(b, axis=0)))
             bin_max = np.row_stack((bin_max, np.max(b, axis=0)))
-            bin_mean = np.row_stack((bin_mean, np.mean(b, axis=0)))
+            bin_mean = np.row_stack((bin_mean, np.nanmean(b, axis=0)))
 
     return bin_min, bin_max, bin_mean, GM_depth
 
