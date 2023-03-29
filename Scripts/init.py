@@ -56,7 +56,7 @@ if __name__ == '__main__':
                                                              stride=1,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
-    full_trace = create_full_trace_dataset(**dataset_params)
+    full_trace = create_full_trace_dataset(**dataset_params, ydata='mmm')
     X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM = full_trace
     del full_trace
     
