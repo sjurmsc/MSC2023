@@ -182,7 +182,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
         cpt_vals = array(value['CPT_data'])
 
         if y_scaler is not None:
-            cpt_vals = y_scaler.transform(cpt_vals)
+            cpt_vals = scaler.transform(cpt_vals)
 
         bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps, plot=False)
 
@@ -470,10 +470,10 @@ def get_struct_model_picks(line_name, CDP):
 
         with open(pick, 'r') as readfile:
             it = [l.split() for l in readfile.readlines()]
-            cols = ['Profile', 'CDP', 'Easting (m)', 'Northing (m)', 'TWT (ms)', 'Depth (mLAT)']
+            cols = ['Profile', 'CDP', 'Easting (m)', 'Northing (m)', 'TWT (ms)', 'Depth (mbsl)']
             df = pd.DataFrame(it[1:], columns=cols)
 
-        try: pick_depth = df.loc[(df['Profile'] == line_name) & (df['CDP'] == str(CDP))]['Depth (mLAT)'].values.astype(float)[0]
+        try: pick_depth = df.loc[(df['Profile'] == line_name) & (df['CDP'] == str(CDP))]['Depth (mbsl)'].values.astype(float)[0]
         except: continue
 
         horizons[h] = pick_depth
@@ -528,8 +528,16 @@ def assign_ggm_to_picks(bh, zrange=(30, 100)):
         
         higher = pick_list[i][0]
 
-        GGM[z < pick[1]] = pick_2_GGM(lower, higher)
+        p2g = pick_2_GGM(lower, higher)
+
+        if p2g == -1:
+            with open('./Data/unknowns.txt', 'a') as f:
+                f.write('{}, {}, {}\n'.format(bh, lower, higher))
+
+        GGM[z < pick[1]] = p2g
     
+    
+
     return GGM
 
 
@@ -846,7 +854,7 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
             if minmax is not None:
                 ax[i].fill_betweenx(z, mins[t, :, i], maxs[t, :, i], color=pred_color[i], alpha=0.1)
         ax[i].set_title(units[i])
-        ax[i].set_ylabel('Depth [mLAT]')
+        ax[i].set_ylabel('Depth [mbsl]')
 
         # Set the x axis label to the top
         # ax[i].xaxis.set_label_position('top')
@@ -1328,5 +1336,5 @@ if __name__ == '__main__':
     idx = 0
 
     # plot_latent_space(encoder, X_full[idx].reshape(1, *X_full[0].shape), no_nan[idx], nans[idx], GGM[idx])
-    create_loo_trace_prediction(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), minmax=minmax)
-    prediction_scatter_plot(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), title='Fold 1, model 0, trace 0')
+    # create_loo_trace_prediction(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), minmax=minmax)
+    # prediction_scatter_plot(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), title='Fold 1, model 0, trace 0')
