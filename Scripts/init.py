@@ -52,7 +52,7 @@ if __name__ == '__main__':
         'y_scaler'              : scaler
         }
 
-    X_train, y_train, groups_train = create_sequence_dataset(sequence_length=10,
+    X_train, y_train, groups_train = create_sequence_dataset(sequence_length=5,
                                                              stride=1,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
@@ -92,7 +92,7 @@ if __name__ == '__main__':
         }
     
     encoder_type = 'cnn'
-    decoder_type = 'ann'
+    decoder_type = 'cnn'
     n_members    = 1
 
     # Training time dict
