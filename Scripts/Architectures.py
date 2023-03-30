@@ -104,9 +104,11 @@ def LSTM_encoder(latent_features, image_width):
 
     lstm_encoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=image_shape),
-        keras.layers.LSTM(64, return_sequences=True),
-        keras.layers.LSTM(32, return_sequences=True),
-        keras.layers.LSTM(16, return_sequences=True),
+        keras.layers.Conv2DLSTM(32, (3, 3), activation='relu', padding='same'),
+        keras.layers.Conv2DLSTM(32, (3, 3), activation='relu', padding='same'),
+        keras.layers.Conv2D(32, (3, 3), strides=(1, 2), activation='relu', padding='same'),
+        keras.layers.Conv2DLSTM(16, (3, 3), activation='relu', padding='same'),
+        keras.layers.Conv2DLSTM(latent_features, (3, 3), activation='relu', padding='same'),
         keras.layers.Dense(latent_features)
     ], name='lstm_encoder')
 
