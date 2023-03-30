@@ -17,6 +17,8 @@ def CNN_pyramidal_encoder(latent_features, image_width):
 
     cnn_encoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=image_shape),
+        keras.layers.GaussianNoise(0.01),
+        keras.layers.RandomFlip(mode='horizontal'),
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))),
         keras.layers.Conv2D(16, (3, 3), activation='relu'),
         keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))), # 1, 1 padding because kernel is 3x3
@@ -143,7 +145,7 @@ def ANN_decoder(latent_features=16, i=0):
         keras.layers.InputLayer(input_shape=(None, latent_features)),
         # keras.layers.Dense(64, activation='relu'),
         # keras.layers.Dense(32, activation='relu'),
-        # keras.layers.Dense(16, activation='relu'),
+        keras.layers.Dense(16, activation='relu'),
         keras.layers.Dense(3)
     ], name='ann_decoder_{}'.format(i))
 

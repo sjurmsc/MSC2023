@@ -610,7 +610,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
             sys.stdout.flush()
             l_loc = ii-img_neighbors
             r_loc = ii+img_neighbors+1
-            latent_pred = model.predict(seis[l_loc:r_loc, :, 0].reshape((1, image_width, seis.shape[1])), verbose=0)[0]
+            latent_pred = model.predict(seis[l_loc:r_loc, :, 0].reshape((1, image_width, seis.shape[1])), verbose=0)
             pred_image = row_stack((pred_image, latent_pred))
         
         if groupby == 'latent_unit':
@@ -627,12 +627,12 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
             fig.subplots_adjust(top=0.85)
 
             for ii in range(16):
-                ax[ii//8, ii%8].imshow(seis[img_left:img_right+1, :2:-1, 0 ].T, cmap='gray')
+                ax[ii//8, ii%8].imshow(seis[img_left:img_right+1, :-1:2, 0 ].T, cmap='gray')
                 ax[ii//8, ii%8].imshow(pred_image[:, :, ii].T, cmap='gist_rainbow', alpha=0.4)
                 ax[ii//8, ii%8].axis('off')
                 ax[ii//8, ii%8].set_title('Latent {}'.format(ii+1))
             fig.suptitle('Latent space prediction for CPT location {}'.format(cpt_loc))
-            fig.savefig('./Assignment Figures/Latent_units/Latent_space_units_{}.png'.format(cpt_loc), dpi=500)
+            fig.savefig('./Assignment Figures/Latent_units_CNN/Latent_space_units_{}.png'.format(cpt_loc), dpi=500)
             plt.close()
             print('\nSaved image for CPT location {}'.format(cpt_loc))
 
@@ -1307,26 +1307,28 @@ if __name__ == '__main__':
 
     from keras.models import load_model
 
-    full_trace = create_full_trace_dataset(n_bootstraps=1, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax', ydata='mmm')
+    # full_trace = create_full_trace_dataset(n_bootstraps=1, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax', ydata='mmm')
 
-    X_full = full_trace[0]
-    y_full = full_trace[1]
-    no_nan = full_trace[4]
-    nans = full_trace[3]
-    sw = full_trace[5]
-    GGM = full_trace[7]
+    # X_full = full_trace[0]
+    # y_full = full_trace[1]
+    # no_nan = full_trace[4]
+    # nans = full_trace[3]
+    # sw = full_trace[5]
+    # GGM = full_trace[7]
 
-    minmax = full_trace[-1]
+    # minmax = full_trace[-1]
 
-    GGM = np.array(sw).astype(int)-1
+    #GGM = np.array(sw).astype(int)-1
 
-    model_loc = r"C:\Users\SjB\MSC2023\Models\ALW\Fold1\Ensemble_CNN_encoder_0.h5"
+    # model_loc = r"C:\Users\SjB\MSC2023\Models\AOF\Fold1\Ensemble_CNN_encoder_0.h5"
+    model_loc = r"C:\Users\sjurbey\MSC2023\Models\AOF\Fold1\Ensemble_CNN_encoder_0.h5"
 
     encoder = load_model(model_loc)
-    model = load_model(model_loc.replace('_encoder', ''))
+    # model = load_model(model_loc.replace('_encoder', ''))
 
-    idx = 0
+    # idx = 0
 
     # plot_latent_space(encoder, X_full[idx].reshape(1, *X_full[0].shape), no_nan[idx], nans[idx], GGM[idx])
-    create_loo_trace_prediction(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), minmax=minmax)
-    prediction_scatter_plot(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), title='Fold 1, model 0, trace 0')
+    # create_loo_trace_prediction(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), minmax=minmax)
+    # prediction_scatter_plot(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), title='Fold 1, model 0, trace 0')
+    create_latent_space_prediction_images(encoder, neighbors=500)
