@@ -206,7 +206,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
             for section, z in zip(splits, splits_depth):
                 #### Testing ####
-                if section.shape[0] == 0: continue
+                if section.shape[0] <2: continue
                 in_seis = np.where((seismic_z >= z.min()-1e-6) & (seismic_z < z.max()-1e-6)) # -1e-6 to avoid floating point errors
                 seis_seq = seismic[:, in_seis][:, 0, :]
                 cpt_seq = section[:-1, :]
