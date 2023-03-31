@@ -124,7 +124,7 @@ if __name__ == '__main__':
     
     decoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
-        keras.layers.Conv1D(64, 3, activation='relu', padding='same'),
+        keras.layers.Dense(32),
         keras.layers.Dense(1)
     ])
 
