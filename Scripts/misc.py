@@ -52,11 +52,11 @@ if __name__ == '__main__':
     
     decoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
-        # keras.layers.Conv1D(64, 3, activation='relu', padding='same'),
+        keras.layers.Conv1D(64, 3, activation='relu', padding='same'),
         keras.layers.Dense(1)
     ])
 
-    # encoder = keras.models.load_model('depth_model_encoder.h5')
+    encoder = keras.models.load_model('depth_model_encoder.h5')
 
     model = keras.Model(inputs=encoder.inputs, outputs=decoder(encoder.outputs))
 
@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     # Plot the latent space
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    ax.scatter(latent_space_2d[:, 0], latent_space_2d[:, 1], c=Z[0], cmap='viridis')
+    ax.scatter(latent_space_2d[:, 0], latent_space_2d[:, 1], c=Z.flatten(), cmap='viridis')
 
     fig.savefig(img_dir + 'latent_space.png', dpi=500)
 
