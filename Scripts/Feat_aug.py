@@ -20,7 +20,7 @@ import numpy as np
 from Architectures import predict_encoded_tree
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import seaborn as sns
-# import sns
+import tensorflow as tf
 
 
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
@@ -213,7 +213,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
                 if not seis_seq.shape[1] == 2*cpt_seq.shape[0]:
                     print('Seismic sequences must represent the same interval as the CPT: {}'.format(key))
                     continue
-                X.append(seis_seq)
+                X.append(seis_seq.reshape(seis_seq.shape[0], seis_seq.shape[1], 1))
                 y.append(cpt_seq)
                 groups.append(value[groupby])
 
@@ -246,8 +246,10 @@ def create_sequence_dataset(n_neighboring_traces=5,
                 #             groups.append(int(key))
 
     
-    X = np.array(X, dtype=object)
-    y = np.array(y, dtype=object)
+    # X = np.array(X, dtype=object)
+    X = tf.ragged.constant(X)
+    # y = np.array(y, dtype=object)
+    y = tf.ragged.constant(y)
     groups = np.array(groups)   
 
     # Randomly flip the X data about the 1 axis
@@ -1331,6 +1333,13 @@ if __name__ == '__main__':
 
     # full_trace = create_full_trace_dataset(n_bootstraps=1, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax', ydata='mmm')
 
+    args = create_sequence_dataset(n_bootstraps=1, sequence_length=10, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax')
+
+    x = args[0]
+
+    print(x.shape)
+    print(x[0, :, :])
+
     # X_full = full_trace[0]
     # y_full = full_trace[1]
     # no_nan = full_trace[4]
@@ -1345,7 +1354,7 @@ if __name__ == '__main__':
     # model_loc = r"C:\Users\SjB\MSC2023\Models\AOF\Fold1\Ensemble_CNN_encoder_0.h5"
     model_loc = r"C:\Users\sjurbey\MSC2023\Models\AOF\Fold1\Ensemble_CNN_encoder_0.h5"
 
-    encoder = load_model(model_loc)
+    # encoder = load_model(model_loc)
     # model = load_model(model_loc.replace('_encoder', ''))
 
     # idx = 0
@@ -1353,4 +1362,4 @@ if __name__ == '__main__':
     # plot_latent_space(encoder, X_full[idx].reshape(1, *X_full[0].shape), no_nan[idx], nans[idx], GGM[idx])
     # create_loo_trace_prediction(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), minmax=minmax)
     # prediction_scatter_plot(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), title='Fold 1, model 0, trace 0')
-    create_latent_space_prediction_images(encoder, neighbors=500)
+    # create_latent_space_prediction_images(encoder, neighbors=500)
