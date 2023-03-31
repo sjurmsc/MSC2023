@@ -622,7 +622,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
             sys.stdout.flush()
             l_loc = ii-img_neighbors
             r_loc = ii+img_neighbors+1
-            latent_pred = model.predict(seis[l_loc:r_loc, :, 0].reshape((1, image_width, seis.shape[1])), verbose=0)
+            latent_pred = model.predict(seis[l_loc:r_loc, :, 0].reshape((1, image_width, seis.shape[1], 1)), verbose=0)
             pred_image = row_stack((pred_image, latent_pred))
         
         if groupby == 'latent_unit':

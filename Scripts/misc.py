@@ -22,6 +22,78 @@ def find_all_relevant_soil_units():
     plt.plot(cdps)
     plt.show()
 
+
+def illustrate_seq_lengths(n_neighboring_traces=5, 
+                            zrange: tuple = (30, 100), 
+                            n_bootstraps=20,
+                            max_distance_to_cdp=25, # in meters (largest value in dataset is 21)
+                            cumulative_seismic=False,
+                            data_folder = 'FE_CPT',
+                            y_scaler=None):
+    """
+    Creates a dataset with sections of seismic image and corresponding CPT data where
+    none of the CPT data is missing.
+    """
+    match_file = './Data/match_dict{}_z_{}-{}_ds_{}.pkl'.format(n_neighboring_traces, zrange[0], zrange[1], data_folder)
+    if not Path(match_file).exists():
+        print('Creating match file...')
+        match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange, to_file=match_file)
+    else:
+        with open(match_file, 'rb') as file:
+            match_dict = pickle.load(file)
+    
+    image_width = 2*n_neighboring_traces + 1
+
+    X, y = [], []
+    groups = []
+
+    if y_scaler is not None:
+        scaler = get_cpt_data_scaler()
+
+    print('Bootstrapping sequence CPT data...')
+    for key, value in match_dict.items():
+
+        # Skip if distance to CDP is too large
+        if abs(value['distance']) > max_distance_to_cdp:
+            continue
+
+        z_GM = np.arange(zrange[0], zrange[1], 0.1)
+        cpt_vals = array(value['CPT_data'])
+
+        if y_scaler is not None:
+            cpt_vals = scaler.transform(cpt_vals)
+
+        bootstraps, z_GM = bootstrap_CPT_by_seis_depth(cpt_vals, array(value['z_cpt']), z_GM, n=n_bootstraps, plot=False)
+
+        seismic = array(value['Seismic_data'])
+        if not seismic.shape[0] == image_width:
+            print('Seismic sequences must conform with image width: {}'.format(key))
+            continue
+
+        for bootstrap in bootstraps:
+            # Split CPT data by nan values
+            row_w_nan = lambda x: np.any(np.isnan(x))
+            nan_idx = np.apply_along_axis(row_w_nan, axis=1, arr=bootstrap)
+            split_indices = np.unique([(i+1)*b for i, b in enumerate(nan_idx)])[1:]
+            splits = np.split(bootstrap, split_indices)
+            splits_depth = np.split(z_GM, split_indices)
+            for s in splits:
+                if np.all(np.isnan(s)): continue
+                if (s.shape[0] > 1) and (s.shape[0] < 100):
+                    y.append(s.shape[0])
+
+    fig, ax = plt.subplots(1, 1, figsize=(2.5, 2))
+    ax.hist(y, bins=20, color=msc_color, edgecolor='k', density=True)
+    ax.set_xlabel('Length of CPT sequence', fontsize=8)
+    ax.set_ylabel('Relative frequency', fontsize=8)
+    fig.suptitle('CPT sequence lengths', fontsize=12)
+    fig.tight_layout
+    fig.subplots_adjust(bottom=0.236, left=0.279)
+    fig.savefig('./Assignment Figures/Sequence_lengths.png', dpi=500)
+    plt.show()
+
+
+
 if __name__ == '__main__':
     from Feat_aug import *
     from Architectures import *
@@ -105,3 +177,5 @@ if __name__ == '__main__':
 
     # Plot the latent space colored by the predicted z
     create_latent_space_prediction_images(encoder, img_dir=img_dir)
+
+    # illustrate_seq_lengths(n_bootstraps=10, max_distance_to_cdp=25)
