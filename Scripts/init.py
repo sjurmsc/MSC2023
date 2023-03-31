@@ -139,8 +139,8 @@ if __name__ == '__main__':
 
         # Preparing the data to train the CNN
         print('Fold', i+1, 'of', cv.get_n_splits(groups=groups_train))
-        X_train_cv, X_test_cv = X_train[tf.convert_to_tensor(train_index)], X_train[tf.convert_to_tensor(test_index)]
-        y_train_cv, y_test_cv = y_train[tf.convert_to_tensor(train_index)], y_train[tf.convert_to_tensor(test_index)]
+        X_train_cv, X_test_cv = X_train[train_index[0]:], X_train[train_index[0]:]
+        y_train_cv, y_test_cv = y_train[train_index[0]:], y_train[train_index[0]:]
         groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
 
         # Timing the model
