@@ -92,7 +92,7 @@ if __name__ == '__main__':
         'batch_size'        : 25
         }
     
-    encoder_type = 'cnn'
+    encoder_type = 'lstm'
     decoder_type = 'lstm'
     n_members    = 1
 
