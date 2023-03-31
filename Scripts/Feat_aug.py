@@ -6,7 +6,6 @@ import json
 from numpy import array, row_stack, intersect1d, where, amax, amin, stack
 from pandas import read_csv
 import pandas as pd
-from scipy.interpolate import interp1d
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.utils import shuffle
@@ -20,7 +19,6 @@ import numpy as np
 from Architectures import predict_encoded_tree
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import seaborn as sns
-import tensorflow as tf
 
 
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
@@ -589,11 +587,17 @@ def pick_2_GGM(lower, higher):
 
 #### Image creation functions ####
 
-def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_width = 11, groupby='cpt_loc'):
+def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_width = 11, groupby='cpt_loc', img_dir = ''):
     distances = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_old.xlsx'
     CPT_match = read_excel(distances)
 
     img_neighbors = int((image_width-1)/2)
+
+    if not len(img_dir):
+        img_dir = './Data/latent_space_images/{}/'.format(model)
+
+    if not Path(img_dir).exists():
+        Path(img_dir).mkdir(parents=True)
 
     if groupby == 'latent_unit':
         pred_image = array([]).reshape((16, len(CPT_match['Location no.'].unique()), neighbors*2+1, seis.shape[0]))
@@ -640,7 +644,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
                 ax[ii//8, ii%8].axis('off')
                 ax[ii//8, ii%8].set_title('Latent {}'.format(ii+1))
             fig.suptitle('Latent space prediction for CPT location {}'.format(cpt_loc))
-            fig.savefig('./Assignment Figures/Latent_units_CNN/Latent_space_units_{}.png'.format(cpt_loc), dpi=500)
+            fig.savefig(img_dir + 'Latent_space_units_{}.png'.format(cpt_loc), dpi=500)
             plt.close()
             print('\nSaved image for CPT location {}'.format(cpt_loc))
 
@@ -907,6 +911,9 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title=''):
         sns.kdeplot(x=t, y=p, ax=ax[0, i], cmap='Blues', fill=True, thresh=0.05, alpha=0.5)
 
         ax[0, i].set_title(units[i])
+        
+        # Set x and y tick values to be the same
+        ax[0, i].set_aspect('equal', adjustable='box')
 
         # Add the 1:1 line
         ax[0, i].plot([0, 1], [0, 1], transform=ax[0, i].transAxes, ls='--', c='k')

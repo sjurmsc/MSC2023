@@ -26,6 +26,12 @@ if __name__ == '__main__':
     from Feat_aug import *
     from Architectures import *
     from Log import *
+    from pathlib import Path
+
+    img_dir = './Assignment Figures/Depth_model/'
+
+    if not Path(img_dir).exists():
+        Path(img_dir).mkdir(parents=True)
 
     n_members = 1
     image_width = 11
@@ -56,7 +62,7 @@ if __name__ == '__main__':
 
     model.compile(optimizer='adam', loss='mae', metrics=['mse', 'mae'])
     
-    model.fit(X, Z, epochs=500, batch_size=1, verbose=1)
+    model.fit(X, Z, epochs=2, batch_size=1, verbose=1)
 
     encoder.save('depth_model_encoder.h5')
     Z_pred = model.predict(X)
@@ -79,7 +85,7 @@ if __name__ == '__main__':
     
     fig.suptitle('Depth prediction')
 
-    plt.show()
+    fig.savefig(img_dir + 'depth_prediction.png', dpi=500)
 
     # Create tsne plot of latent space colored by z
     from sklearn.manifold import TSNE
@@ -95,4 +101,7 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
     ax.scatter(latent_space_2d[:, 0], latent_space_2d[:, 1], c=Z[0], cmap='viridis')
 
-    plt.show()
+    fig.savefig(img_dir + 'latent_space.png', dpi=500)
+
+    # Plot the latent space colored by the predicted z
+    create_latent_space_prediction_images(encoder, img_dir=img_dir)

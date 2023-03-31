@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 from openpyxl import load_workbook
 
 
+msc_color = '#6bb4edff'
 
 
 def gname(old_name):
@@ -365,7 +366,7 @@ def describe_data(X, y, groups, mdir=''):
 
 
 if __name__ == '__main__':
-    pass
+    plt.imshow(np.array([1]))
     # a = np.random.randint(1, 10, size=(20, 10))
     # b = np.random.random((20, 10))
 
