@@ -96,7 +96,7 @@ def pyramidal_residual_encoder(latent_features, image_width, nb_stacks=5, nb_fil
 
 
 
-def LSTM_encoder(latent_features, image_width):
+def LSTM_encoder(latent_features, image_width, mask=None):
     """LSTM encoder collapsing the dimension first dimension down to 1.
     Made to predict features at centered trace from seismic data."""
     assert image_width % 2 == 1, 'width % 2 != 1'

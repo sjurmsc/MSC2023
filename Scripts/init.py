@@ -60,6 +60,9 @@ if __name__ == '__main__':
     full_trace = create_full_trace_dataset(**dataset_params, ydata='mmm')
     X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM, minmax_full = full_trace
     del full_trace
+
+    # Make an array with every value of full_nan_idx repeated twice
+    xnanidx = np.array(zip(full_nan_idx, full_nan_idx)).flatten()
     
     GGM = np.array(sw_idxs) + 1
 
@@ -139,8 +142,8 @@ if __name__ == '__main__':
 
         # Preparing the data to train the CNN
         print('Fold', i+1, 'of', cv.get_n_splits(groups=groups_train))
-        X_train_cv, X_test_cv = X_train[train_index[0]:], X_train[train_index[0]:]
-        y_train_cv, y_test_cv = y_train[train_index[0]:], y_train[train_index[0]:]
+        X_train_cv, X_test_cv = X_train[train_index], X_train[train_index]
+        y_train_cv, y_test_cv = y_train[train_index], y_train[train_index]
         groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
 
         # Timing the model

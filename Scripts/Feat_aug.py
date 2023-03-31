@@ -205,51 +205,35 @@ def create_sequence_dataset(n_neighboring_traces=5,
             splits_depth = np.split(z_GM, split_indices)
 
             for section, z in zip(splits, splits_depth):
-                #### Testing ####
-                if section.shape[0] <2: continue
-                in_seis = np.where((seismic_z >= z.min()-1e-6) & (seismic_z < z.max()-1e-6)) # -1e-6 to avoid floating point errors
-                seis_seq = seismic[:, in_seis][:, 0, :]
-                cpt_seq = section[:-1, :]
-                if not seis_seq.shape[1] == 2*cpt_seq.shape[0]:
-                    print('Seismic sequences must represent the same interval as the CPT: {}'.format(key))
-                    continue
-                X.append(seis_seq.reshape(seis_seq.shape[0], seis_seq.shape[1], 1))
-                y.append(cpt_seq)
-                groups.append(value[groupby])
+                if (section.shape[0]-1) > sequence_length:
+                    in_seis = np.where((seismic_z >= z.min()-1e-6) & (seismic_z < z.max()-1e-6)) # -1e-6 to avoid floating point errors
+                    seis_seq = seismic[:, in_seis][:, 0, :]
+                    cpt_seq = section[:-1, :]
+                    if not seis_seq.shape[1] == 2*cpt_seq.shape[0]:
+                        print('Seismic sequences must represent the same interval as the CPT: {}'.format(key))
+                        continue
 
-                #### Testing/ ####
+                    # Split the sequence into multiple overlapping sequences of length sequence_length
 
-                # if (section.shape[0]-1) > sequence_length:
-                #     in_seis = np.where((seismic_z >= z.min()-1e-6) & (seismic_z < z.max()-1e-6)) # -1e-6 to avoid floating point errors
-                #     seis_seq = seismic[:, in_seis][:, 0, :]
-                #     cpt_seq = section[:-1, :]
-                #     if not seis_seq.shape[1] == 2*cpt_seq.shape[0]:
-                #         print('Seismic sequences must represent the same interval as the CPT: {}'.format(key))
-                #         continue
-
-                #     # Split the sequence into multiple overlapping sequences of length sequence_length
-
-                #     for i, j in zip(range(0, cpt_seq.shape[0]-sequence_length, stride), range(0, seis_seq.shape[1]-2*sequence_length, 2*stride)):
-                #         X_val = seis_seq[:, j:j+2*sequence_length]
-                #         if add_noise:
-                #             if cumulative_seismic:
-                #                 X_val += np.cumsum(np.random.normal(0, add_noise, X_val.shape), axis=1)
-                #             else:
-                #                 X_val += np.random.normal(0, add_noise, X_val.shape)
+                    for i, j in zip(range(0, cpt_seq.shape[0]-sequence_length, stride), range(0, seis_seq.shape[1]-2*sequence_length, 2*stride)):
+                        X_val = seis_seq[:, j:j+2*sequence_length]
+                        if add_noise:
+                            if cumulative_seismic:
+                                X_val += np.cumsum(np.random.normal(0, add_noise, X_val.shape), axis=1)
+                            else:
+                                X_val += np.random.normal(0, add_noise, X_val.shape)
                         
-                #         X.append(X_val.reshape(X_val.shape[0], X_val.shape[1], 1))
-                #         y_val = cpt_seq[i:i+sequence_length, :]
-                #         y.append(y_val)
-                #         if groupby == 'cpt_loc':
-                #             groups.append(int(value['cpt_loc']))
-                #         elif groupby == 'borehole':
-                #             groups.append(int(key))
+                        X.append(X_val.reshape(X_val.shape[0], X_val.shape[1], 1))
+                        y_val = cpt_seq[i:i+sequence_length, :]
+                        y.append(y_val)
+                        if groupby == 'cpt_loc':
+                            groups.append(int(value['cpt_loc']))
+                        elif groupby == 'borehole':
+                            groups.append(int(key))
 
     
-    # X = np.array(X, dtype=object)
-    X = tf.ragged.constant(X)
-    # y = np.array(y, dtype=object)
-    y = tf.ragged.constant(y)
+    X = np.array(X)
+    y = np.array(y)
     groups = np.array(groups)   
 
     # Randomly flip the X data about the 1 axis
@@ -258,8 +242,8 @@ def create_sequence_dataset(n_neighboring_traces=5,
             if np.random.randint(2):
                 X[i] = np.flip(X[i], 0)
 
-    # if random_state:
-    #     X, y, groups = shuffle(X, y, groups, random_state=random_state)
+    if random_state:
+        X, y, groups = shuffle(X, y, groups, random_state=random_state)
 
     print('Done!')
 
