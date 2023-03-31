@@ -58,6 +58,7 @@ if __name__ == '__main__':
     
     model.fit(X, Z, epochs=500, batch_size=1, verbose=1)
 
+    encoder.save('depth_model_encoder.h5')
     Z_pred = model.predict(X)
 
     fig, ax = plt.subplots(1, 1, figsize=(5, 15))
@@ -65,7 +66,7 @@ if __name__ == '__main__':
     
     for i in range(len(Z_pred)):
         # Plot the true and predicted depth along the y axis
-        ax.plot(Z_pred[i], z, color=msc_color, alpha = 0.5, label='Predicted' if i==0 else None)
+        ax.plot(Z_pred[i], z, color=msc_color, alpha = 0.1, label='Predicted' if i==0 else None)
 
     # Flip x and y axis
     ax.invert_yaxis()
@@ -77,5 +78,21 @@ if __name__ == '__main__':
     ax.legend()
     
     fig.suptitle('Depth prediction')
+
+    plt.show()
+
+    # Create tsne plot of latent space colored by z
+    from sklearn.manifold import TSNE
+
+    # Get the latent space
+    latent_space = encoder.predict(X)
+
+    # Reshape the latent space to 2D
+    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+    latent_space_2d = tsne.fit_transform(latent_space.reshape(-1, latent_features))
+
+    # Plot the latent space
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    ax.scatter(latent_space_2d[:, 0], latent_space_2d[:, 1], c=Z[0], cmap='viridis')
 
     plt.show()
