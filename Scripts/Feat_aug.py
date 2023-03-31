@@ -258,8 +258,8 @@ def create_sequence_dataset(n_neighboring_traces=5,
             if np.random.randint(2):
                 X[i] = np.flip(X[i], 0)
 
-    if random_state:
-        # X, y, groups = shuffle(X, y, groups, random_state=random_state)
+    # if random_state:
+    #     X, y, groups = shuffle(X, y, groups, random_state=random_state)
 
     print('Done!')
 
