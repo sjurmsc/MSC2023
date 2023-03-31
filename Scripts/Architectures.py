@@ -15,28 +15,39 @@ def CNN_pyramidal_encoder(latent_features, image_width):
 
     image_shape = (image_width, None, 1) # None, because length is variable, 1 because monochromatic seismic
 
-    cnn_encoder = keras.Sequential([
-        keras.layers.InputLayer(input_shape=image_shape),
-        keras.layers.GaussianNoise(0.01),
-        keras.layers.RandomFlip(mode='horizontal'),
-        keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))),
-        keras.layers.Conv2D(16, (3, 3), activation='relu'),
-        keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))), # 1, 1 padding because kernel is 3x3
-        keras.layers.Conv2D(32, (3, 3), activation='relu'),
-        keras.layers.MaxPooling2D((1, 2)), # Reduce the depth of seismic to GM_len
-        keras.layers.SpatialDropout2D(0.1),
-    ], name='cnn_encoder')
+    # Input block
+    inp = keras.layers.Input(shape=image_shape)
+    x = keras.layers.GaussianNoise(0.01)(inp)
+    im = keras.layers.RandomFlip(mode='vertical')(x)
+
+    # First convolutional block
+    x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(im)
+    x = keras.layers.Conv2D(16, (3, 3), activation='relu')(x) # Reduce horizontal dimension by 2
+    x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(16, (3, 3), dilation_rate=(1, 2), activation='relu', padding='same')(x)
+
+    # Second convolutional block
+    x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(x) # 1, 1 padding because kernel is 3x3
+    x = keras.layers.SpatialDropout2D(0.1)(x)
+    x = keras.layers.Conv2D(32, (3, 3), strides=(1, 2), activation='relu')(x) # Reduce horizontal dimension by 2, and vertical by factor 2
+    x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
+
+    # Third convolutional block
+    x = keras.layers.ZeroPadding2D(padding=((0, 0), (2, 2)))(x) # 2, 2 padding because kernel is 5x5
+    x = keras.layers.SpatialDropout2D(0.1)(x)
+    x = keras.layers.Conv2D(64, (5, 5), activation='relu')(x) # Reduce horizontal dimension by 4
+    x = keras.layers.Conv2D(64, (5, 5), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(64, (5, 5), activation='relu', padding='same')(x)
 
     # Add more layers for shape reduction
-    for _ in range((image_width-2*(3-1))//2):
-        cnn_encoder.add(keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1))))
-        cnn_encoder.add(keras.layers.Conv2D(64, (3, 3), activation='relu'))
-        cnn_encoder.add(keras.layers.SpatialDropout2D(0.1))
+    x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(x) # 1, 1 padding because kernel is 3x3
+    x = keras.layers.Conv2D(32, (3, 3), activation='relu')(x) # Reduce horizontal dimension by 2
+    x = keras.layers.Conv2D(latent_features, (3, 3), activation='relu', padding='same')(x)
+    outp = keras.layers.Reshape((-1, latent_features))(x) # Reshape to get features in the second dimension
 
-
-    # cnn_encoder.add(keras.layers.Conv2D(latent_features, (1), activation='relu'))
-    # cnn_encoder.add(keras.layers.Reshape((-1, latent_features))) # Reshape to get features in the second dimension
-    cnn_encoder.add(keras.layers.ConvLSTM1D(latent_features, 3, activation='relu', padding='same'))
+    cnn_encoder = Model(inp, outp)
 
     return cnn_encoder
 
