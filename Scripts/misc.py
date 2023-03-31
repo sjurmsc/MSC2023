@@ -137,6 +137,7 @@ if __name__ == '__main__':
     model.fit(X, Z, epochs=1000, batch_size=1, verbose=1)
 
     encoder.save('depth_model_encoder.h5')
+    model.save('depth_model.h5')
     Z_pred = model.predict(X)
 
     fig, ax = plt.subplots(1, 1, figsize=(5, 15))
