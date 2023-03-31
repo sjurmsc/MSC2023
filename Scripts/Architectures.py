@@ -109,7 +109,7 @@ def LSTM_encoder(latent_features, image_width):
         keras.layers.ConvLSTM1D(32, 3, activation='relu', padding='same', return_sequences=True),
         keras.layers.Conv2D(32, (3, 3), strides=(1, 2), activation='relu', padding='same'),
         keras.layers.ConvLSTM1D(16, 3, activation='relu', padding='same', return_sequences=True),
-        keras.layers.ConvLSTM1D(latent_features, 3, activation='relu', padding='same', return_sequences=True),
+        keras.layers.ConvLSTM1D(latent_features, 3, activation='relu', padding='same'),
         keras.layers.Dense(latent_features)
     ], name='lstm_encoder')
 
