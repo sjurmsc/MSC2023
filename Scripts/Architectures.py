@@ -34,8 +34,9 @@ def CNN_pyramidal_encoder(latent_features, image_width):
         cnn_encoder.add(keras.layers.Dropout(0.01))
 
 
-    cnn_encoder.add(keras.layers.Conv2D(latent_features, (1), activation='relu'))
-    cnn_encoder.add(keras.layers.Reshape((-1, latent_features))) # Reshape to get features in the second dimension
+    # cnn_encoder.add(keras.layers.Conv2D(latent_features, (1), activation='relu'))
+    # cnn_encoder.add(keras.layers.Reshape((-1, latent_features))) # Reshape to get features in the second dimension
+    cnn_encoder.add(keras.layers.ConvLSTM1D(latent_features, 3, activation='relu'))
 
     return cnn_encoder
 
@@ -104,11 +105,11 @@ def LSTM_encoder(latent_features, image_width):
 
     lstm_encoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=image_shape),
-        keras.layers.ConvLSTM1D(32, 3, activation='relu', padding='same'),
-        keras.layers.ConvLSTM1D(32, 3, activation='relu', padding='same'),
+        keras.layers.ConvLSTM1D(32, 3, activation='relu', padding='same', return_sequences=True),
+        keras.layers.ConvLSTM1D(32, 3, activation='relu', padding='same', return_sequences=True),
         keras.layers.Conv2D(32, (3, 3), strides=(1, 2), activation='relu', padding='same'),
-        keras.layers.ConvLSTM1D(16, 3, activation='relu', padding='same'),
-        keras.layers.ConvLSTM1D(latent_features, 3, activation='relu', padding='same'),
+        keras.layers.ConvLSTM1D(16, 3, activation='relu', padding='same', return_sequences=True),
+        keras.layers.ConvLSTM1D(latent_features, 3, activation='relu', padding='same', return_sequences=True),
         keras.layers.Dense(latent_features)
     ], name='lstm_encoder')
 
