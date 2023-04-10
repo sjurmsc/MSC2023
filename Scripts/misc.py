@@ -100,7 +100,7 @@ if __name__ == '__main__':
     from Log import *
     from pathlib import Path
 
-    img_dir = './Assignment Figures/Depth_model/'
+    img_dir = './Assignment Figures/Depth_model_3/'
 
     if not Path(img_dir).exists():
         Path(img_dir).mkdir(parents=True)
@@ -110,13 +110,32 @@ if __name__ == '__main__':
     encoder_type = 'cnn'
     decoder_type = 'cnn'
     zrange = (30, 100)
-    z = np.arange(zrange[0], zrange[1], 0.1)
+    
+    z = np.arange(zrange[0], zrange[1], 0.1).reshape(-1, 1)
+    
+    x = np.arange(0, len(z), 1).reshape(-1, 1)
+    
+    x2 = x**2; x2 = x2.reshape(-1, 1)
+    
+    lx = np.log(z).reshape(-1, 1)
+    
+    
+    
+    
     args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
 
     X = args[0]
-    x = X[0].reshape(1, 11, -1)
+    #x = X[0].reshape(1, 11, -1)
 
     Z = np.array([z for i in range(X.shape[0])])
+    XS = np.array([x for i in range(X.shape[0])])
+    X2 = np.array([x2 for i in range(X.shape[0])])
+    LX = np.array([lx for i in range(X.shape[0])])
+    
+    print(Z.shape, XS.shape, X2.shape)
+    
+    A = np.stack((Z, XS, X2, LX), axis=2)
+    
 
     latent_features = 16
 
@@ -125,22 +144,27 @@ if __name__ == '__main__':
     decoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
         keras.layers.Dense(32),
-        keras.layers.Dense(1)
+        keras.layers.Dense(32),
+        keras.layers.Dense(4)
     ])
 
-    encoder = keras.models.load_model('depth_model_encoder.h5')
+    encoder = keras.models.load_model('depth_model_encoder_2.h5')
 
     model = keras.Model(inputs=encoder.inputs, outputs=decoder(encoder.outputs))
 
     model.compile(optimizer='adam', loss='mae', metrics=['mse', 'mae'])
     
-    model.fit(X, Z, epochs=1000, batch_size=1, verbose=1)
+    model.fit(X, A, epochs=1000, batch_size=1, verbose=1)
 
-    encoder.save('depth_model_encoder.h5')
-    model.save('depth_model.h5')
-    Z_pred = model.predict(X)
+    encoder.save('depth_model_encoder_3.h5')
+    model.save('depth_model_3.h5')
 
-    fig, ax = plt.subplots(1, 1, figsize=(5, 15))
+    # model = keras.models.load_model('depth_model_1.h5')
+    # encoder = keras.models.load_model('depth_model_encoder_1.h5')
+
+    Z_pred = model.predict(X)[:, :, 0]
+
+    fig, ax = plt.subplots(1, 1, figsize=(5, 10))
     ax.plot(Z[0], z, label='True')
     
     for i in range(len(Z_pred)):
@@ -177,6 +201,6 @@ if __name__ == '__main__':
     fig.savefig(img_dir + 'latent_space.png', dpi=500)
 
     # Plot the latent space colored by the predicted z
-    create_latent_space_prediction_images(encoder, img_dir=img_dir)
+    create_latent_space_prediction_images(encoder, img_dir=img_dir, neighbors=600)
 
     # illustrate_seq_lengths(n_bootstraps=10, max_distance_to_cdp=25)

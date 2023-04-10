@@ -608,7 +608,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
         seis_file = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/{}.sgy'.format(row['2D UHR line'])
         with segyio.open(seis_file, ignore_geometry=True) as f:
             seis = f.trace.raw[:]
-            seis = seis.reshape((seis.shape[0], seis.shape[1], 1))
+            seis = seis.reshape((seis.shape[0], seis.shape[1], 1))[:, :-1, :]
             
             CDP_index = np.where(array(f.attributes(segyio.TraceField.CDP)) == CDP)[0][0]
             
@@ -634,7 +634,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
             
 
         if groupby == 'cpt_loc':
-            fig, ax = plt.subplots(2, 8, figsize=(20, 5))
+            fig, ax = plt.subplots(2, 8, figsize=(15, 5))
             fig.tight_layout()
             fig.subplots_adjust(top=0.85)
 
