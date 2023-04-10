@@ -116,16 +116,16 @@ if __name__ == '__main__':
         in_test = np.isin(groups_full, Test_group)
 
         # Creating full trace cv dataset
-        X_train_full    = X_full[in_train]
-        y_train_full    = y_full[in_train]
-        X_test_full     = X_full[in_test]
-        y_test_full     = y_full[in_test]
-        minmax_test_full = (minmax_full[0][in_test], minmax_full[1][in_test])
-        GGM_test_full   = GGM[in_test]
+        X_train_full    = X_full[in_train].copy()
+        y_train_full    = y_full[in_train].copy()
+        X_test_full     = X_full[in_test].copy()
+        y_test_full     = y_full[in_test].copy()
+        minmax_test_full = (minmax_full[0][in_test].copy(), minmax_full[1][in_test].copy())
+        GGM_test_full   = GGM[in_test].copy()
 
         # Getting the indices of the nan values for coloring plots
-        full_nan_idx_train = full_nan_idx[in_train]
-        full_nan_idx_test = full_nan_idx[in_test]
+        full_nan_idx_train = full_nan_idx[in_train].copy()
+        full_nan_idx_test = full_nan_idx[in_test].copy()
 
         # Getting the indices of the non-nan values for training trees
         full_no_nan_idx_train = full_no_nan_idx[in_train]
