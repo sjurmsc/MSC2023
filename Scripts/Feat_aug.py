@@ -1333,43 +1333,43 @@ if __name__ == '__main__':
 
     # assing_ggm_to_picks(pick_dict)
 
-    # from keras.models import load_model
+    from keras.models import load_model
 
-    # full_trace = create_full_trace_dataset(n_bootstraps=1, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax', ydata='mmm')
+    full_trace = create_full_trace_dataset(n_bootstraps=1, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax', ydata='mmm')
 
-    # args = create_sequence_dataset(n_bootstraps=1, sequence_length=10, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax')
+    args = create_sequence_dataset(n_bootstraps=1, sequence_length=10, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax')
 
-    # x = args[0]
+    x = args[0]
 
-    # print(x.shape)
-    # print(x[0, :, :])
+    print(x.shape)
+    print(x[0, :, :])
 
-    # X_full = full_trace[0]
-    # y_full = full_trace[1]
-    # # no_nan = full_trace[4]
-    # # nans = full_trace[3]
-    # # sw = full_trace[5]
-    # # GGM = full_trace[7]
+    X_full = full_trace[0]
+    y_full = full_trace[1]
+    # no_nan = full_trace[4]
+    # nans = full_trace[3]
+    # sw = full_trace[5]
+    # GGM = full_trace[7]
 
-    # minmax = full_trace[-1]
+    minmax = full_trace[-1]
 
-    # #GGM = np.array(sw).astype(int)-1
+    #GGM = np.array(sw).astype(int)-1
 
-    # model_loc = r"C:\Users\SjB\MSC2023\Models\AOX\Fold1\Ensemble_CNN_0.h5"
-
-
-    # # encoder = load_model(model_loc)
-    # model = load_model(model_loc)
+    model_loc = r"C:\Users\SjB\MSC2023\Models\AOX\Fold1\Ensemble_CNN_0.h5"
 
 
+    # encoder = load_model(model_loc)
+    model = load_model(model_loc)
 
-    # for i in range(10):
 
 
-    #     idx = slice(i, i+4)
+    for i in range(10):
+
+
+        idx = slice(i, i+4)
         
 
         # plot_latent_space(encoder, X_full[idx].reshape(1, *X_full[0].shape), no_nan[idx], nans[idx], GGM[idx])
-        # create_loo_trace_prediction(model, X_full[idx], y_full[idx], minmax=(minmax[0][idx], minmax[1][idx]), filename=f'Assignment figures/{i}')
+        create_loo_trace_prediction(model, X_full[idx], y_full[idx], minmax=(minmax[0][idx], minmax[1][idx]))
     # prediction_scatter_plot(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), title='Fold 1, model 0, trace 0')
     # create_latent_space_prediction_images(encoder, neighbors=500)
