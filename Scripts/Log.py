@@ -365,6 +365,34 @@ def describe_data(X, y, groups, mdir=''):
 # Only used for testing the code
 
 
+from NGI.GM_Toolbox import evaluate_modeldist_norm
+
+def make_cv_excel(filename, data, groups):
+    """Creates a new excel file with the results of the model"""
+    xl = "C:/Users/SjB/MSC2023/Results/NGI_stdd_{}.xlsx"
+    wb = load_workbook(xl)
+    # Open the worksheet q_c
+    
+    params = ['q_c', 'f_s', 'u_2']
+
+    g_data = data.groupby(groups)
+    for g in g_data.groups.keys():
+
+
+        std = evaluate_modeldist_norm(g_data.get_group(g))[4]
+
+    # All
+    
+    ws = wb['q_c']
+
+
+
+
+    if not filename.endswith('.xlsx'):
+        filename += '.xlsx'
+    wb.save(filename)
+
+
 if __name__ == '__main__':
     plt.imshow(np.array([1]))
     # a = np.random.randint(1, 10, size=(20, 10))

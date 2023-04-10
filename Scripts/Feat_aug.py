@@ -66,6 +66,7 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
 
     CPT_match = read_excel(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_Revised.xlsx')
 
+
     cpt_dict = get_cpt_las_files(cpt_folder_loc = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/{}'.format(data_folder))
 
 
@@ -91,7 +92,7 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
 
         distance = row['Distance to CDP']
 
-        
+        X, Y = row['Location Eastings'], row['Location Northings']
 
 
 
@@ -122,7 +123,9 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
                                        'Seismic_data'   : traces, 
                                        'z_traces'       : z_traces, 
                                        'z_cpt'          : z_cpt,
-                                       'seafloor'       : SEAFLOOR}
+                                       'seafloor'       : SEAFLOOR,
+                                       'GGM'            : 0,
+                                       'GGM_unc'        : 0}
     sys.stdout.flush()
     sys.stdout.write('\nDone!\n')
     
@@ -279,6 +282,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     extrapolated_idxs = []
     groups = []
     GGM = []
+    GGM_unc = []
     mins = []
     maxs = []
 
@@ -329,7 +333,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         sw_idx = np.apply_along_axis(is_sw, axis=0, arr=z_GM)
         
         # Assign GGM to the trace
-        ggm = assign_ggm_to_picks(value['Borehole'])
+        ggm = np.ones_like(sw_idx) # value['GGM']
+        ggm_unc = np.ones_like(sw_idx) # value['GGM_unc']
         ggm[sw_idx] = 0
 
         if ydata == 'bootstraps':
@@ -581,6 +586,14 @@ def pick_2_GGM(lower, higher):
         return 23
     else:
         return -1
+
+
+def evalueate_UK_at_well():
+    uk_fp = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\UKriging3D-Kfold-Scores.pkl'
+
+    df_UKs = pd.read_pickle(uk_fp)
+    df_UKs.loc[df_UKs['unit']=='GGM31C','unit'] = 'GGM31B'
+    df_UKs.loc[df_UKs['unit']=='GGB01C','unit'] = 'GGB01B'
 
 
 
@@ -1322,7 +1335,7 @@ if __name__ == '__main__':
 
     from keras.models import load_model
 
-    # full_trace = create_full_trace_dataset(n_bootstraps=1, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax', ydata='mmm')
+    full_trace = create_full_trace_dataset(n_bootstraps=1, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax', ydata='mmm')
 
     args = create_sequence_dataset(n_bootstraps=1, sequence_length=10, n_neighboring_traces=n_neighboring_traces, y_scaler='minmax')
 
@@ -1331,26 +1344,26 @@ if __name__ == '__main__':
     print(x.shape)
     print(x[0, :, :])
 
-    # X_full = full_trace[0]
-    # y_full = full_trace[1]
+    X_full = full_trace[0]
+    y_full = full_trace[1]
     # no_nan = full_trace[4]
     # nans = full_trace[3]
     # sw = full_trace[5]
     # GGM = full_trace[7]
 
-    # minmax = full_trace[-1]
+    minmax = full_trace[-1]
 
     #GGM = np.array(sw).astype(int)-1
 
-    # model_loc = r"C:\Users\SjB\MSC2023\Models\AOF\Fold1\Ensemble_CNN_encoder_0.h5"
-    model_loc = r"C:\Users\sjurbey\MSC2023\Models\AOF\Fold1\Ensemble_CNN_encoder_0.h5"
+    model_loc = r"C:\Users\SjB\MSC2023\Models\AOX\Fold1\Ensemble_CNN_0.h5"
+
 
     # encoder = load_model(model_loc)
-    # model = load_model(model_loc.replace('_encoder', ''))
+    model = load_model(model_loc)
 
-    # idx = 0
+    idx = 0
 
     # plot_latent_space(encoder, X_full[idx].reshape(1, *X_full[0].shape), no_nan[idx], nans[idx], GGM[idx])
-    # create_loo_trace_prediction(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), minmax=minmax)
+    create_loo_trace_prediction(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), minmax=minmax)
     # prediction_scatter_plot(model, X_full[idx].reshape(1, *X_full[0].shape), y_full[idx].reshape(1, *y_full[0].shape), title='Fold 1, model 0, trace 0')
     # create_latent_space_prediction_images(encoder, neighbors=500)
