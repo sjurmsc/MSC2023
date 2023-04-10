@@ -237,7 +237,6 @@ if __name__ == '__main__':
                                         filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_{i}.png',
                                         title=title,
                                         minmax=minmax_test_full)
-            create_loo_trace_prediction(m, X_test_full, y_test_full,minmax=minmax_test_full)
             prediction_scatter_plot(m,
                                     X_test_full,
                                     y_test_full,
