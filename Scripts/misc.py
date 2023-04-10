@@ -112,6 +112,9 @@ if __name__ == '__main__':
     zrange = (30, 100)
     
     z = np.arange(zrange[0], zrange[1], 0.1).reshape(-1, 1)
+
+    # normalize z between 0 and 1
+    z = (z - z.min()) / (z.max() - z.min())
     
     x = np.arange(0, len(z), 1).reshape(-1, 1)
     
@@ -128,13 +131,12 @@ if __name__ == '__main__':
     #x = X[0].reshape(1, 11, -1)
 
     Z = np.array([z for i in range(X.shape[0])])
-    XS = np.array([x for i in range(X.shape[0])])
-    X2 = np.array([x2 for i in range(X.shape[0])])
-    LX = np.array([lx for i in range(X.shape[0])])
+    # XS = np.array([x for i in range(X.shape[0])])
+    # X2 = np.array([x2 for i in range(X.shape[0])])
+    # LX = np.array([lx for i in range(X.shape[0])])
+
     
-    print(Z.shape, XS.shape, X2.shape)
-    
-    A = np.stack((Z, XS, X2, LX), axis=2)
+    # A = np.stack((Z, XS, X2, LX), axis=2)
     
 
     latent_features = 16
@@ -145,7 +147,7 @@ if __name__ == '__main__':
         keras.layers.InputLayer(input_shape=(None, latent_features)),
         keras.layers.Dense(32),
         keras.layers.Dense(32),
-        keras.layers.Dense(4)
+        keras.layers.Dense(1)
     ])
 
     encoder = keras.models.load_model('depth_model_encoder_2.h5')
@@ -154,10 +156,10 @@ if __name__ == '__main__':
 
     model.compile(optimizer='adam', loss='mae', metrics=['mse', 'mae'])
     
-    model.fit(X, A, epochs=1000, batch_size=1, verbose=1)
+    model.fit(X, Z, epochs=10000, batch_size=1, verbose=1)
 
-    encoder.save('depth_model_encoder_3.h5')
-    model.save('depth_model_3.h5')
+    encoder.save('depth_model_encoder_Z.h5')
+    model.save('depth_model_Z.h5')
 
     # model = keras.models.load_model('depth_model_1.h5')
     # encoder = keras.models.load_model('depth_model_encoder_1.h5')
