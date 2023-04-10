@@ -1,0 +1,52 @@
+Model: "cnn_encoder"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ gaussian_noise (GaussianNoi  (None, 11, None, 1)      0         
+ se)                                                             
+                                                                 
+ random_flip (RandomFlip)    (None, 11, None, 1)       0         
+                                                                 
+ zero_padding2d (ZeroPadding  (None, 11, None, 1)      0         
+ 2D)                                                             
+                                                                 
+ conv2d (Conv2D)             (None, 9, None, 16)       160       
+                                                                 
+ zero_padding2d_1 (ZeroPaddi  (None, 9, None, 16)      0         
+ ng2D)                                                           
+                                                                 
+ conv2d_1 (Conv2D)           (None, 7, None, 32)       4640      
+                                                                 
+ max_pooling2d (MaxPooling2D  (None, 7, None, 32)      0         
+ )                                                               
+                                                                 
+ dropout (Dropout)           (None, 7, None, 32)       0         
+                                                                 
+ zero_padding2d_2 (ZeroPaddi  (None, 7, None, 32)      0         
+ ng2D)                                                           
+                                                                 
+ conv2d_2 (Conv2D)           (None, 5, None, 64)       18496     
+                                                                 
+ dropout_1 (Dropout)         (None, 5, None, 64)       0         
+                                                                 
+ zero_padding2d_3 (ZeroPaddi  (None, 5, None, 64)      0         
+ ng2D)                                                           
+                                                                 
+ conv2d_3 (Conv2D)           (None, 3, None, 64)       36928     
+                                                                 
+ dropout_2 (Dropout)         (None, 3, None, 64)       0         
+                                                                 
+ zero_padding2d_4 (ZeroPaddi  (None, 3, None, 64)      0         
+ ng2D)                                                           
+                                                                 
+ conv2d_4 (Conv2D)           (None, 1, None, 64)       36928     
+                                                                 
+ dropout_3 (Dropout)         (None, 1, None, 64)       0         
+                                                                 
+ conv_lstm1d (ConvLSTM1D)    (None, None, 4)           3280      
+                                                                 
+=================================================================
+Total params: 100,432
+Trainable params: 100,432
+Non-trainable params: 0
+_________________________________________________________________
