@@ -172,6 +172,8 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
         # encoder = pyramidal_residual_encoder(latent_features=latent_features, image_width=image_width)
     elif enc == 'lstm':
         encoder = LSTM_encoder(latent_features=latent_features, image_width=image_width)
+    elif enc == 'depth':
+        encoder = keras.models.load_model('depth_model_encoder_2.h5')
    
     decoders = []
     for i in range(n_members):
@@ -182,14 +184,19 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
         elif dec == 'ann':
             decoders.append(ANN_decoder(latent_features=latent_features, i=i)(encoder.output))
     
-    model_mean = Model(encoder.input, keras.layers.Average()(decoders))
+    
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
     model = Model(encoder.input, decoders)
     model.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
 
-    model_mean.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
+
+    if len(decoders)>1:
+        model_mean = Model(encoder.input, keras.layers.Average()(decoders))
+        model_mean.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
+    else:
+        model_mean = model
 
     return model, encoder, model_mean
 

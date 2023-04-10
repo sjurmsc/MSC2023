@@ -91,13 +91,14 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 100,
+        'epochs'            : 1,
         'batch_size'        : 25
         }
     
-    encoder_type = 'cnn'
+    encoder_type = 'depth'
     decoder_type = 'cnn'
     n_members    = 1
+    latent_features = 16
 
     # Training time dict
     training_time_dict = {}
@@ -135,7 +136,7 @@ if __name__ == '__main__':
         image_width = 2*dataset_params['n_neighboring_traces'] + 1
         learning_rate = 0.001
         model, encoder, model_mean = ensemble_CNN_model(n_members=n_members,
-                                                        latent_features=4, 
+                                                        latent_features=latent_features, 
                                                         image_width=image_width, 
                                                         learning_rate=learning_rate,
                                                         enc = encoder_type,
@@ -144,8 +145,8 @@ if __name__ == '__main__':
 
         # Preparing the data to train the CNN
         print('Fold', i+1, 'of', cv.get_n_splits(groups=groups_train))
-        X_train_cv, X_test_cv = X_train[train_index], X_train[train_index]
-        y_train_cv, y_test_cv = y_train[train_index], y_train[train_index]
+        X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
+        y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
         groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
 
         # Timing the model
@@ -160,6 +161,9 @@ if __name__ == '__main__':
 
         encoder.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_encoder_{i}.h5')
         model.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.h5')
+
+        with open(f'./Models/{gname}/Fold{i+1}/LOO_group.txt', 'w') as f:
+            f.write(f'LOO group: {Test_group}')
 
         # Plot the training and validation loss
         plot_history(History, filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.png')
@@ -233,6 +237,7 @@ if __name__ == '__main__':
                                         filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_{i}.png',
                                         title=title,
                                         minmax=minmax_test_full)
+            create_loo_trace_prediction(m, X_test_full, y_test_full,minmax=minmax_test_full)
             prediction_scatter_plot(m,
                                     X_test_full,
                                     y_test_full,
@@ -240,7 +245,8 @@ if __name__ == '__main__':
                                     title=title)
         
         # Plotting the latent space
-        plot_latent_space(encoder, 
+        plot_latent_space(encoder,
+                          latent_features, 
                           X_test_full, 
                           full_no_nan_idx_test, 
                           full_nan_idx_test, 

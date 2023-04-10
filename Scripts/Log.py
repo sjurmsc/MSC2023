@@ -322,7 +322,7 @@ def plot_history(History, filename=None):
                 plt.plot(History.history[key], label=key, color='k', linewidth=2, zorder=2)
             else:
                 plt.plot(History.history[key], label=key, color='red', linewidth=2, zorder=1, alpha=0.6)
-
+    plt.yscale('log')
     plt.title('Model loss')
     plt.ylabel('Loss')
     plt.xlabel('Epoch')

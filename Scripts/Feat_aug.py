@@ -263,7 +263,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                               data_folder='FE_CPT',
                               force_new_match_file=False,
                               y_scaler=None,
-                              ydata='bootstraps'):
+                              ydata='mmm'):
     """ Creates a dataset with full seismic traces and corresponding CPT data with an array
         containing the indices where there are nan values in a row and one where are no nan values in a row.
     """
@@ -442,7 +442,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                 X[i] = np.flip(X[i], 0)
     
     if random_state:
-        X, y, groups, nan_idxs, no_nan_idxs = shuffle(X, y, groups, nan_idxs, no_nan_idxs, random_state=random_state)
+        X, y, groups, nan_idxs, no_nan_idxs, mins, maxs = shuffle(X, y, groups, nan_idxs, no_nan_idxs, mins, maxs, random_state=random_state)
 
     print('Done!')
 
@@ -765,12 +765,12 @@ def plot_cpt_pred(model, cpt, save = False, image_width = 11):
     plt.close()
 
 
-def plot_latent_space(latent_model, X, valid_indices, outside_indices, GGM, filename=''):
+def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_indices, GGM, filename=''):
     """Use t-SNE to plot the latent space"""
 
     # Plot TSNE of the latent model
     tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
-    prediction = latent_model.predict(X).reshape((-1, 16))
+    prediction = latent_model.predict(X).reshape((-1, latent_features))
     tsne_results = tsne.fit_transform(prediction)
 
     outside_indices = outside_indices.flatten()
@@ -835,9 +835,11 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
     # Get scaler
     scaler = get_cpt_data_scaler()
 
+    test_X = test_X.copy()
     test_y = test_y.copy()
     mins = minmax[0].copy()
     maxs = minmax[1].copy()
+    
 
     # Create predictions for the test set
     if not type(model) == list:
@@ -880,7 +882,7 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
         ax[i].invert_yaxis()
     # Add super title
     fig.suptitle(title, fontsize=16)
-    fig.subplots_adjust(top=0.85)
+    fig.subplots_adjust(left=0.05, bottom=0.09, top=0.85, wspace=0.19)
 
     if filename:
         fig.savefig(filename, dpi=500)
