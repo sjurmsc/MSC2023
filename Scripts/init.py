@@ -120,6 +120,7 @@ if __name__ == '__main__':
         y_train_full    = y_full[in_train]
         X_test_full     = X_full[in_test]
         y_test_full     = y_full[in_test]
+        minmax_test_full = (minmax_full[0][in_test], minmax_full[1][in_test])
         GGM_test_full   = GGM[in_test]
 
         # Getting the indices of the nan values for coloring plots
@@ -231,7 +232,7 @@ if __name__ == '__main__':
                                         zrange=dataset_params['zrange'],
                                         filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_{i}.png',
                                         title=title,
-                                        minmax=(minmax_full[0][in_test], minmax_full[1][in_test]))
+                                        minmax=minmax_test_full)
             prediction_scatter_plot(m,
                                     X_test_full,
                                     y_test_full,
