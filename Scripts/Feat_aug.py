@@ -1355,7 +1355,7 @@ if __name__ == '__main__':
 
     #GGM = np.array(sw).astype(int)-1
 
-    model_loc = r"C:\Users\SjB\MSC2023\Models\AOX\Fold1\Ensemble_CNN_0.h5"
+    model_loc = r"Models\AOX\Fold1\Ensemble_CNN_0.h5"
 
 
     # encoder = load_model(model_loc)
