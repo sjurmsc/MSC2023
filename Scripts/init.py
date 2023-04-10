@@ -95,7 +95,7 @@ if __name__ == '__main__':
         'batch_size'        : 25
         }
     
-    encoder_type = 'depth'
+    encoder_type = 'cnn'
     decoder_type = 'cnn'
     n_members    = 1
     latent_features = 16
