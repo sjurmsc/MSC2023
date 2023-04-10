@@ -146,11 +146,10 @@ if __name__ == '__main__':
     decoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
         keras.layers.Dense(32),
-        keras.layers.Dense(32),
         keras.layers.Dense(1)
     ])
 
-    encoder = keras.models.load_model('depth_model_encoder_2.h5')
+    # encoder = keras.models.load_model('depth_model_encoder_2.h5')
 
     model = keras.Model(inputs=encoder.inputs, outputs=decoder(encoder.outputs))
 
