@@ -175,10 +175,11 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
     elif enc == 'depth':
         encoder = keras.models.load_model('depth_model_encoder_2.h5')
    
-    decoders = []
+    # decoders = []
     for i in range(n_members):
         if dec == 'cnn':
-            decoders.append(CNN_decoder(latent_features=latent_features, i=i)(encoder.output))
+            # decoders.append(CNN_decoder(latent_features=latent_features, i=i)(encoder.output))
+            decoders = CNN_decoder(latent_features=latent_features, i=i)(encoder.output)
         elif dec == 'lstm':
             decoders.append(LSTM_decoder(latent_features=latent_features, i=i)(encoder.output))
         elif dec == 'ann':
