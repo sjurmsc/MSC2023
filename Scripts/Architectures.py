@@ -188,8 +188,8 @@ def ANN_decoder(latent_features=16, i=0):
     """1D CNN decoder with a committee of n_members."""
     ann_decoder = keras.models.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
-        # keras.layers.Dense(64, activation='relu'),
-        # keras.layers.Dense(32, activation='relu'),
+        keras.layers.Dense(64, activation='relu'),
+        keras.layers.Dense(32, activation='relu'),
         keras.layers.Dense(16, activation='relu'),
         keras.layers.Dense(3)
     ], name='ann_decoder_{}'.format(i))
@@ -212,9 +212,9 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
             # decoders.append(CNN_decoder(latent_features=latent_features, i=i)(encoder.output))
             decoders = CNN_decoder(latent_features=latent_features, i=i)(encoder.output)
         elif dec == 'lstm':
-            decoders.append(LSTM_decoder(latent_features=latent_features, i=i)(encoder.output))
+            decoders = LSTM_decoder(latent_features=latent_features, i=i)(encoder.output)
         elif dec == 'ann':
-            decoders.append(ANN_decoder(latent_features=latent_features, i=i)(encoder.output))
+            decoders = ANN_decoder(latent_features=latent_features, i=i)(encoder.output)
     
     if reconstruct:
         rec = CNN_pyramidal_decoder(latent_features=latent_features, image_width=image_width)(encoder.output)
