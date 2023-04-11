@@ -46,6 +46,7 @@ def illustrate_seq_lengths(n_neighboring_traces=5,
 
     X, y = [], []
     groups = []
+    Z = []
 
     if y_scaler is not None:
         scaler = get_cpt_data_scaler()
@@ -77,13 +78,16 @@ def illustrate_seq_lengths(n_neighboring_traces=5,
             split_indices = np.unique([(i+1)*b for i, b in enumerate(nan_idx)])[1:]
             splits = np.split(bootstrap, split_indices)
             splits_depth = np.split(z_GM, split_indices)
-            for s in splits:
+            for s, sz in zip(splits, splits_depth):
                 if np.all(np.isnan(s)): continue
                 if (s.shape[0] > 1) and (s.shape[0] < 100):
                     y.append(s.shape[0])
+                    Z.append(sz)
+
+    data = {'y': y, 'Z': Z}
 
     fig, ax = plt.subplots(1, 1, figsize=(2.5, 2))
-    ax.hist(y, bins=20, color=msc_color, edgecolor='k', density=True)
+    ax.hist(data, bins=20, color=msc_color, edgecolor='k', stacked=True, density=True)
     ax.set_xlabel('Length of CPT sequence', fontsize=8)
     ax.set_ylabel('Relative frequency', fontsize=8)
     fig.suptitle('CPT sequence lengths', fontsize=12)
@@ -100,7 +104,7 @@ if __name__ == '__main__':
     from Log import *
     from pathlib import Path
 
-    img_dir = './Assignment Figures/Depth_model_3/'
+    img_dir = './Assignment Figures/Depth_model_4/'
 
     if not Path(img_dir).exists():
         Path(img_dir).mkdir(parents=True)
@@ -125,17 +129,29 @@ if __name__ == '__main__':
     
     
     
-    args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
+    full_args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
+    X_full = full_args[0]
+    # Z_full = full_args[3]
+    Z_full = np.array([z for i in range(X_full.shape[0])])
 
+
+    args = create_sequence_dataset(zrange=zrange, n_bootstraps=1)
     X = args[0]
+
+    # Normalize Z between 0 and 1
+    Z = args[3]
+    Z = (Z - Z.min()) / (Z.max() - Z.min())
+
+
     #x = X[0].reshape(1, 11, -1)
 
-    Z = np.array([z for i in range(X.shape[0])])
+    # Z = np.array([z for i in range(X.shape[0])])
     # XS = np.array([x for i in range(X.shape[0])])
     # X2 = np.array([x2 for i in range(X.shape[0])])
     # LX = np.array([lx for i in range(X.shape[0])])
 
-    
+   
+
     # A = np.stack((Z, XS, X2, LX), axis=2)
     
 
@@ -146,6 +162,7 @@ if __name__ == '__main__':
     decoder = keras.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
         keras.layers.Dense(32),
+        keras.layers.Dense(64),
         keras.layers.Dense(1)
     ])
 
