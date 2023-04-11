@@ -933,10 +933,10 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=
         ax[0, i].set_title(units[i])
         
         # Set x and y tick values to be the same
-        ax[0, i].set_aspect('equal')
+        add_identity(ax[0, i], ls='--', c='k')
 
         # Add the 1:1 line
-        ax[0, i].plot([0, 1], [0, 1], transform=ax[0, i].transAxes, ls='--', c='k')
+        # ax[0, i].plot([0, 1], [0, 1], transform=ax[0, i].transAxes, ls='--', c='k')
 
         # Add axis labels
         ax[0, i].set_xlabel('True {} [MPa]'.format(units[i]))

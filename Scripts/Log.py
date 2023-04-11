@@ -393,6 +393,21 @@ def make_cv_excel(filename, data, groups):
     wb.save(filename)
 
 
+def add_identity(axes, *line_args, **line_kwargs):
+    """Author: JaminSore (https://stackoverflow.com/users/1940479/jaminsore)"""
+    identity, = axes.plot([], [], *line_args, **line_kwargs)
+    def callback(axes):
+        low_x, high_x = axes.get_xlim()
+        low_y, high_y = axes.get_ylim()
+        low = max(low_x, low_y)
+        high = min(high_x, high_y)
+        identity.set_data([low, high], [low, high])
+    callback(axes)
+    axes.callbacks.connect('xlim_changed', callback)
+    axes.callbacks.connect('ylim_changed', callback)
+    return axes
+
+
 if __name__ == '__main__':
     plt.imshow(np.array([1]))
     # a = np.random.randint(1, 10, size=(20, 10))
