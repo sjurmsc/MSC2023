@@ -73,7 +73,7 @@ def CNN_pyramidal_decoder(latent_features, image_width):
     x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu')(x) # Increase horizontal dimension by 2
 
     x = keras.layers.Conv2DTranspose(1, (image_width, 1), activation='linear', padding='same')(x) # Increase horizontal dimension to image_width
-    outp = keras.layers.Reshape((-1, image_width))(x) # Reshape to get features in the second dimension
+    outp = keras.layers.Reshape((-1, image_width, -1, 1))(x) # Reshape to get features in the second dimension
 
     cnn_decoder = Model(inp, outp)
 
@@ -214,7 +214,7 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
     if reconstruct:
         rec = CNN_pyramidal_decoder(latent_features=latent_features, image_width=image_width)(encoder.output)
         decoders = [decoders, rec]
-        
+
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
