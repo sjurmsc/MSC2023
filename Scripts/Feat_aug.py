@@ -833,7 +833,7 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     plt.close()
 
 
-def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filename='', title='', minmax=None):
+def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filename='', title='', minmax=None, scale=True):
 
     # Get scaler
     scaler = get_cpt_data_scaler()
@@ -852,11 +852,12 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
         predictions = predict_encoded_tree(encoder, model, test_X)
 
     # Rescale the predictions
-    for i in range(predictions.shape[0]):
-        predictions[i, :, :] = scaler.inverse_transform(predictions[i, :, :])
-        test_y[i, :, :] = scaler.inverse_transform(test_y[i, :, :])
-        mins[i, :, :] = scaler.inverse_transform(mins[i, :, :])
-        maxs[i, :, :] = scaler.inverse_transform(maxs[i, :, :])
+    if scale:
+        for i in range(predictions.shape[0]):
+            predictions[i, :, :] = scaler.inverse_transform(predictions[i, :, :])
+            test_y[i, :, :] = scaler.inverse_transform(test_y[i, :, :])
+            mins[i, :, :] = scaler.inverse_transform(mins[i, :, :])
+            maxs[i, :, :] = scaler.inverse_transform(maxs[i, :, :])
     
 
     z = np.arange(zrange[0], zrange[1], 0.1)
@@ -894,7 +895,7 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
     plt.close()
 
 
-def prediction_scatter_plot(model, test_X, test_y, filename='', title=''):
+def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=True):
     """Plot the predictions of the model as a scatter plot, with density contours"""
     
     # Get scaler
@@ -910,9 +911,10 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title=''):
         predictions = predict_encoded_tree(encoder, model, test_X)
 
     # Rescale the predictions
-    for i in range(predictions.shape[0]):
-        predictions[i] = scaler.inverse_transform(predictions[i])
-        test_y[i] = scaler.inverse_transform(test_y[i])
+    if scale:
+        for i in range(predictions.shape[0]):
+            predictions[i] = scaler.inverse_transform(predictions[i])
+            test_y[i] = scaler.inverse_transform(test_y[i])
 
     units = ['$q_c$', '$f_s$', '$u_2$']
     pred_color = ['g', 'orange', 'b']
@@ -931,7 +933,7 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title=''):
         ax[0, i].set_title(units[i])
         
         # Set x and y tick values to be the same
-        ax[0, i].set_aspect('equal', adjustable='box')
+        ax[0, i].set_aspect('equal')
 
         # Add the 1:1 line
         ax[0, i].plot([0, 1], [0, 1], transform=ax[0, i].transAxes, ls='--', c='k')
