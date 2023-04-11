@@ -50,7 +50,7 @@ if __name__ == '__main__':
         'random_flip'           : False,
         'random_state'          : 1,
         'groupby'               : 'cpt_loc',
-        'y_scaler'              : scaler
+        'y_scaler'              : None
         }
 
     X_train, y_train, groups_train, z_train = create_sequence_dataset(sequence_length=5,
