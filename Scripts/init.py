@@ -53,7 +53,7 @@ if __name__ == '__main__':
         'y_scaler'              : scaler
         }
 
-    X_train, y_train, groups_train, z_train = create_sequence_dataset(sequence_length=149,
+    X_train, y_train, groups_train, z_train = create_sequence_dataset(sequence_length=100,
                                                              stride=1,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
