@@ -42,10 +42,10 @@ if __name__ == '__main__':
 
     dataset_params = {
         'n_neighboring_traces'  : 5,
-        'zrange'                : (30, 100),
+        'zrange'                : (35, 50),
         'n_bootstraps'          : 2,
         'add_noise'             : False,
-        'max_distance_to_cdp'   : 1,
+        'max_distance_to_cdp'   : 25,
         'cumulative_seismic'    : False,
         'random_flip'           : False,
         'random_state'          : 1,
@@ -53,7 +53,7 @@ if __name__ == '__main__':
         'y_scaler'              : scaler
         }
 
-    X_train, y_train, groups_train, z_train = create_sequence_dataset(sequence_length=5,
+    X_train, y_train, groups_train, z_train = create_sequence_dataset(sequence_length=150,
                                                              stride=1,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
