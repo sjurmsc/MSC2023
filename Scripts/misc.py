@@ -140,6 +140,7 @@ if __name__ == '__main__':
 
     # Normalize Z between 0 and 1
     Z = args[3]
+    Z_nnorm = Z.copy()
     Z = (Z - Z.min()) / (Z.max() - Z.min())
 
 
@@ -152,7 +153,7 @@ if __name__ == '__main__':
 
    
 
-    # A = np.stack((Z, XS, X2, LX), axis=2)
+    A = np.stack((Z, Z_nnorm), axis=2)
     
 
     latent_features = 16
@@ -163,7 +164,7 @@ if __name__ == '__main__':
         keras.layers.InputLayer(input_shape=(None, latent_features)),
         keras.layers.Dense(32),
         keras.layers.Dense(64),
-        keras.layers.Dense(1)
+        keras.layers.Dense(2)
     ])
 
     # encoder = keras.models.load_model('depth_model_encoder_2.h5')
