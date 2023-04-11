@@ -946,7 +946,7 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=
         ax[0, i].set_ylabel('Predicted {} [MPa]'.format(units[i]))
 
         # Plot the histogram of the residuals
-        ax[1, i].hist((p-t), bins=50, c=pred_color[i], edgecolor='k')
+        ax[1, i].hist((p-t), bins=50, color=pred_color[i], edgecolor='k')
         ax[1, i].set_xlabel('Residuals')
         ax[1, i].set_ylabel('Frequency')
 
