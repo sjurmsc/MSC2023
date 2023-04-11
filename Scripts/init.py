@@ -75,7 +75,7 @@ if __name__ == '__main__':
     # Configurations for models
     RF_param_dict = {
         'max_depth'         : 20,
-        'n_estimators'      : 20,
+        'n_estimators'      : 300,
         'min_samples_leaf'  : 1,
         'min_samples_split' : 4,
         'bootstrap'         : True,
@@ -84,9 +84,9 @@ if __name__ == '__main__':
         }
 
     LGBM_param_dict = {
-        'num_leaves'        : 31,
+        'num_leaves'        : 200,
         'max_depth'         : 20,
-        'n_estimators'      : 100,
+        'n_estimators'      : 300,
         'n_jobs'            : -1
         }
 
