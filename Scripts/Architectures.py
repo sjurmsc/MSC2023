@@ -21,11 +21,11 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     im = keras.layers.RandomFlip(mode='vertical')(x)
 
     # First convolutional block
-    x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(im)
-    x = keras.layers.Conv2D(16, (3, 3), activation='relu')(x) # Reduce horizontal dimension by 2
-    x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2D(16, (3, 3), dilation_rate=(1, 2), activation='relu', padding='same')(x)
+    x = keras.layers.ZeroPadding2D(padding=((0, 0), (2, 2)))(im)
+    x = keras.layers.Conv2D(16, (5, 5), activation='relu')(x) # Reduce horizontal dimension by 2
+    x = keras.layers.Conv2D(16, (5, 5), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(16, (5, 5), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(16, (5, 5), activation='relu', padding='same')(x)
 
     # Second convolutional block
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(x) # 1, 1 padding because kernel is 3x3
@@ -35,11 +35,11 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
 
     # Third convolutional block
-    x = keras.layers.ZeroPadding2D(padding=((0, 0), (2, 2)))(x) # 2, 2 padding because kernel is 5x5
+    x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(x) # 2, 2 padding because kernel is 5x5
     x = keras.layers.SpatialDropout2D(0.1)(x)
-    x = keras.layers.Conv2D(64, (5, 5), activation='relu')(x) # Reduce horizontal dimension by 4
-    x = keras.layers.Conv2D(64, (5, 5), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2D(64, (5, 5), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x) # Reduce horizontal dimension by 4
+    x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
 
     # Add more layers for shape reduction
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(x) # 1, 1 padding because kernel is 3x3
