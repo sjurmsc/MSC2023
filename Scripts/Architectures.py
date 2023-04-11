@@ -51,7 +51,33 @@ def CNN_pyramidal_encoder(latent_features, image_width):
 
     return cnn_encoder
 
+def CNN_pyramidal_decoder(latent_features, image_width):
+    """This model uses the encoding of the CNN encoder to reconstruct the input image."""
 
+    inp = keras.layers.Input(shape=(None, latent_features))
+    x = keras.layers.Reshape((-1, 1, latent_features))(inp) # Reshape to get features in the third dimension
+    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu')(x) # Increase horizontal dimension by 2
+
+    x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu')(x) # Increase horizontal dimension by 4
+
+    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', strides=(1, 2), padding='same')(x) # Increase horizontal dimension by 2, and vertical by factor 2
+
+    x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu')(x) # Increase horizontal dimension by 2
+
+    x = keras.layers.Conv2DTranspose(1, (image_width, 1), activation='linear', padding='same')(x) # Increase horizontal dimension to image_width
+    outp = keras.layers.Reshape((-1, image_width))(x) # Reshape to get features in the second dimension
+
+    cnn_decoder = Model(inp, outp)
+
+    return cnn_decoder
 
 def pyramidal_residual_encoder(latent_features, image_width, nb_stacks=5, nb_filters=16, kernel_size=3, activation='relu'):
     """2D CNN encoder with skip connections collapsing the first dimension down to 1."""
@@ -165,7 +191,7 @@ def ANN_decoder(latent_features=16, i=0):
 
     return ann_decoder
 
-def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001, enc='cnn', dec='cnn'):
+def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001, enc='cnn', dec='cnn', reconstruct = False):
     # 
     if enc == 'cnn':
         encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
@@ -185,7 +211,10 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
         elif dec == 'ann':
             decoders.append(ANN_decoder(latent_features=latent_features, i=i)(encoder.output))
     
-    
+    if reconstruct:
+        rec = CNN_pyramidal_decoder(latent_features=latent_features, image_width=image_width)(encoder.output)
+        decoders = [decoders, rec]
+        
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 

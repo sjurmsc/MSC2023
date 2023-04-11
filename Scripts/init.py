@@ -142,7 +142,8 @@ if __name__ == '__main__':
                                                         image_width=image_width, 
                                                         learning_rate=learning_rate,
                                                         enc = encoder_type,
-                                                        dec = decoder_type)
+                                                        dec = decoder_type,
+                                                        reconstruct=True)
         if i==0: model.summary()
 
         # Preparing the data to train the CNN
@@ -156,7 +157,7 @@ if __name__ == '__main__':
         t0 = time()
 
         # Training the model
-        History = model.fit(X_train_cv, y_train_cv, **NN_param_dict)
+        History = model.fit(X_train_cv, [y_train_cv, X_train_cv], **NN_param_dict)
         training_time_dict[i]['CNN'] = time() - t0
 
         Histories.append(History)
