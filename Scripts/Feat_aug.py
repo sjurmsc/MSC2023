@@ -167,6 +167,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
     image_width = 2*n_neighboring_traces + 1
 
     X, y = [], []
+    Z = []
     groups = []
 
     if y_scaler is not None:
@@ -227,6 +228,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
                         X.append(X_val.reshape(X_val.shape[0], X_val.shape[1], 1))
                         y_val = cpt_seq[i:i+sequence_length, :]
                         y.append(y_val)
+                        Z.append(z[i:i+sequence_length])
                         if groupby == 'cpt_loc':
                             groups.append(int(value['cpt_loc']))
                         elif groupby == 'borehole':
@@ -235,6 +237,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
     
     X = np.array(X)
     y = np.array(y)
+    Z = np.array(Z)
     groups = np.array(groups)   
 
     # Randomly flip the X data about the 1 axis
@@ -244,11 +247,11 @@ def create_sequence_dataset(n_neighboring_traces=5,
                 X[i] = np.flip(X[i], 0)
 
     if random_state:
-        X, y, groups = shuffle(X, y, groups, random_state=random_state)
+        X, y, groups, Z = shuffle(X, y, groups, Z, random_state=random_state)
 
     print('Done!')
 
-    return X, y, groups
+    return X, y, groups, Z
 
 
 def create_full_trace_dataset(n_neighboring_traces=5,
