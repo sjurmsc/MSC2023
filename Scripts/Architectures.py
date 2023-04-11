@@ -57,11 +57,13 @@ def CNN_pyramidal_decoder(latent_features, image_width):
     inp = keras.layers.Input(shape=(None, latent_features))
     x = keras.layers.Reshape((-1, 1, latent_features))(inp) # Reshape to get features in the third dimension
     x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(x) # 1, 1 padding because kernel is 3x3
     x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu')(x) # Increase horizontal dimension by 2
 
     x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu', padding='same')(x)
     x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu')(x) # Increase horizontal dimension by 4
+    x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu')(x) # Increase horizontal dimension by 2
 
     x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
     x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
@@ -70,7 +72,7 @@ def CNN_pyramidal_decoder(latent_features, image_width):
     x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
     x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
     x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu')(x) # Increase horizontal dimension by 2
+    x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu')(x) # Increase horizontal dimension by 4
 
     x = keras.layers.Conv2DTranspose(1, (image_width, 1), activation='linear', padding='same')(x) # Increase horizontal dimension to image_width
     outp = keras.layers.Reshape((-1, image_width, -1, 1))(x) # Reshape to get features in the second dimension
