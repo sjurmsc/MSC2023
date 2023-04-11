@@ -53,7 +53,7 @@ if __name__ == '__main__':
         'y_scaler'              : scaler
         }
 
-    X_train, y_train, groups_train = create_sequence_dataset(sequence_length=5,
+    X_train, y_train, groups_train, z_train = create_sequence_dataset(sequence_length=5,
                                                              stride=1,
                                                              **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
@@ -105,6 +105,8 @@ if __name__ == '__main__':
  
     rf_scores = None; lgbm_scores = None
     Histories = []
+
+    COMPARE_DICT = {}
 
     p = {}
 
@@ -179,30 +181,44 @@ if __name__ == '__main__':
         if i == 0:
             trues = y_test_cv
             preds = model_mean.predict(X_test_cv)
+            z = z_train[test_index]
         else:
             trues = np.vstack((trues, y_test_cv))
             preds = np.vstack((preds, model_mean.predict(X_test_cv)))
+            z = np.vstack((z, z_train[test_index]))
 
-        encoded_data = encoder(X_train_full).numpy()
+        # encoded_data = encoder(X_train_full).numpy()
+        encoded_data = encoder(X_train_cv).numpy()
         tree_train_input_shape = (-1, encoded_data.shape[-1])
-        idx_train = full_no_nan_idx_train.flatten()
+        # idx_train = full_no_nan_idx_train.flatten()
         # idx_nan_train = full_nan_idx_train.flatten()
         encoded_data = encoded_data.reshape(tree_train_input_shape)
-        flat_y_train = y_train_full.reshape(-1, y_train_full.shape[-1])
+        # flat_y_train = y_train_full.reshape(-1, y_train_full.shape[-1])
+        flat_y_train = y_train_cv.reshape(-1, y_train_cv.shape[-1])
         
         
-        test_prediction = encoder(X_test_full).numpy()
+        # test_prediction = encoder(X_test_full).numpy()
+        test_prediction = encoder(X_test_cv).numpy()
         tree_test_input_shape = (-1, test_prediction.shape[-1])
-        idx_test = full_no_nan_idx_test.flatten()
+        # idx_test = full_no_nan_idx_test.flatten()
         # idx_nan_test = full_nan_idx_test.flatten()
         test_prediction = test_prediction.reshape(tree_test_input_shape)
-        flat_y_test = y_test_full.reshape(-1, y_test_full.shape[-1])
+        # flat_y_test = y_test_full.reshape(-1, y_test_full.shape[-1])
+        flat_y_test = y_test_cv.reshape(-1, y_test_cv.shape[-1])
 
-        t_train_pred = encoded_data[idx_train]
-        t_flat_y_train = flat_y_train[idx_train]
+        # t_train_pred = encoded_data[idx_train]
+        # t_flat_y_train = flat_y_train[idx_train]
 
-        t_test_pred = test_prediction[idx_test]
-        t_flat_y = flat_y_test[idx_test]
+        # Temporary
+        t_train_pred = encoded_data
+        t_flat_y_train = flat_y_train
+
+        # t_test_pred = test_prediction[idx_test]
+        # t_flat_y = flat_y_test[idx_test]
+
+        # Temporary
+        t_test_pred = test_prediction
+        t_flat_y = flat_y_test
 
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
@@ -252,6 +268,22 @@ if __name__ == '__main__':
                           GGM_test_full,
                           filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_latent_space_{i}.png')
         
+        # COMPARE_DICT = {'Depth', z, 
+        #                 # 'GGM': GGMs, 
+        #                 'True_qc': trues[:, 0], 
+        #                 'CNN_qc': preds[:, 0], 
+        #                 'RF_qc': rf_preds[:, 0], 
+        #                 'LGBM_qc': lgbm_preds[:, 0],
+        #                 'True_fs': trues[:, 1],
+        #                 'CNN_fs': preds[:, 1],
+        #                 'RF_fs': rf_preds[:, 1],
+        #                 'LGBM_fs': lgbm_preds[:, 1],
+        #                 'True_u2': trues[:, 2],
+        #                 'CNN_u2': preds[:, 2],
+        #                 'RF_u2': rf_preds[:, 2],
+        #                 'LGBM_u2': lgbm_preds[:, 2]
+        #                 }
+
         print(preds.shape, rf_preds.shape, lgbm_preds.shape)
         p[i] = {}
         p[i]['CNN'] = preds
