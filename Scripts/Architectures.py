@@ -78,7 +78,7 @@ def CNN_pyramidal_decoder(latent_features, image_width):
     x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x) # Increase horizontal dimension by 4
 
     x = keras.layers.Conv2DTranspose(1, (image_width, 1), activation='linear', padding='same')(x) # Increase horizontal dimension to image_width
-    outp = keras.layers.Reshape((-1, image_width, -1, 1))(x) # Reshape to get features in the second dimension
+    outp = keras.layers.Reshape((image_width, -1, 1))(x) # Reshape to get features in the second dimension
 
     cnn_decoder = Model(inp, outp)
 
