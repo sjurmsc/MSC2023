@@ -43,7 +43,7 @@ if __name__ == '__main__':
     dataset_params = {
         'n_neighboring_traces'  : 5,
         'zrange'                : (30, 100),
-        'n_bootstraps'          : 1,
+        'n_bootstraps'          : 2,
         'add_noise'             : False,
         'max_distance_to_cdp'   : 1,
         'cumulative_seismic'    : False,
@@ -91,7 +91,7 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 100,
+        'epochs'            : 200,
         'batch_size'        : 25
         }
     
