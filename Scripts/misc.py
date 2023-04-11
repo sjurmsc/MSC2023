@@ -173,7 +173,7 @@ if __name__ == '__main__':
 
     model.compile(optimizer='adam', loss='mae', metrics=['mse', 'mae'])
     
-    model.fit(X, Z, epochs=10000, batch_size=1, verbose=1)
+    model.fit(X, A, epochs=10000, batch_size=1, verbose=1)
 
     encoder.save('depth_model_encoder_Z1.h5')
     model.save('depth_model_Z1.h5')
