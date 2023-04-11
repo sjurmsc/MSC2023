@@ -55,7 +55,7 @@ def CNN_pyramidal_decoder(latent_features, image_width):
     """This model uses the encoding of the CNN encoder to reconstruct the input image."""
 
     inp = keras.layers.Input(shape=(None, latent_features))
-    x = keras.layers.Reshape((-1, 1, latent_features))(inp) # Reshape to get features in the third dimension
+    x = keras.layers.Reshape((1, -1, latent_features))(inp) # Reshape to get features in the third dimension
     x = keras.layers.ZeroPadding2D(padding=((1, 1), (0, 0)))(x)
     x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
     x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
