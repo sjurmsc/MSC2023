@@ -50,7 +50,7 @@ if __name__ == '__main__':
         'random_flip'           : False,
         'random_state'          : 1,
         'groupby'               : 'cpt_loc',
-        'y_scaler'              : None
+        'y_scaler'              : scaler
         }
 
     X_train, y_train, groups_train, z_train = create_sequence_dataset(sequence_length=5,
@@ -254,13 +254,13 @@ if __name__ == '__main__':
                                         filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_{i}.png',
                                         title=title,
                                         minmax=minmax_test_full,
-                                        scale=False)
+                                        scale=True)
             prediction_scatter_plot(m,
                                     X_test_full,
                                     y_test_full,
                                     filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_scatter_{i}.png',
                                     title=title,
-                                    scale=False)
+                                    scale=True)
         
         # Plotting the latent space
         plot_latent_space(encoder,

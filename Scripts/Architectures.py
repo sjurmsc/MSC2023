@@ -227,11 +227,15 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
     model.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
 
 
+    # Have predictions just from the first decoder
+    model_mean = Model(encoder.input, decoders[0])
+
+
     # if len(decoders)>1:
     #     model_mean = Model(encoder.input, keras.layers.Average()(decoders))
     #     model_mean.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
     # else:
-    model_mean = model
+    # model_mean = model
 
     return model, encoder, model_mean
 
