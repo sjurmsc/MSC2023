@@ -920,6 +920,7 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=
 
     units = ['$q_c$', '$f_s$', '$u_2$']
     pred_color = ['g', 'orange', 'b']
+    cmaps = ['Greens', 'Oranges', 'Blues']
 
     # Create a figure for the predictions 
     fig, ax = plt.subplots(2, 3, figsize=(15, 10))
@@ -930,7 +931,7 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=
         ax[0, i].scatter(t, p, c=pred_color[i], marker='.', alpha=0.5)
 
         # Plot a kdeplot with the predictions
-        sns.kdeplot(x=t, y=p, ax=ax[0, i], cmap='Blues', fill=True, thresh=0.05, alpha=0.5)
+        sns.kdeplot(x=t, y=p, ax=ax[0, i], cmap=cmaps[i], fill=True, thresh=0.05, alpha=0.5)
 
         ax[0, i].set_title(units[i])
         
@@ -945,7 +946,7 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=
         ax[0, i].set_ylabel('Predicted {} [MPa]'.format(units[i]))
 
         # Plot the histogram of the residuals
-        ax[1, i].hist((p-t), bins=50, edgecolor='k')
+        ax[1, i].hist((p-t), bins=50, c=pred_color[i], edgecolor='k')
         ax[1, i].set_xlabel('Residuals')
         ax[1, i].set_ylabel('Frequency')
 
