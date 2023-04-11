@@ -20,6 +20,8 @@ from Architectures import predict_encoded_tree
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import seaborn as sns
 
+from Log import add_identity
+
 
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
 
