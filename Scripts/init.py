@@ -45,7 +45,7 @@ if __name__ == '__main__':
         'zrange'                : (35, 50),
         'n_bootstraps'          : 2,
         'add_noise'             : False,
-        'max_distance_to_cdp'   : 25,
+        'max_distance_to_cdp'   : 1,
         'cumulative_seismic'    : False,
         'random_flip'           : False,
         'random_state'          : 1,
