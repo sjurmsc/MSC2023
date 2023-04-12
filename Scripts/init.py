@@ -91,8 +91,8 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 200,
-        'batch_size'        : 25
+        'epochs'            : 1000,
+        'batch_size'        : 30
         }
     
     encoder_type = 'depth'
