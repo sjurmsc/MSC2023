@@ -132,12 +132,16 @@ if __name__ == '__main__':
 
     X = []
     for seis_file in seis_files:
-        with segyio.open(seis_file, ignore_geometry=True) as seis:
-            seis = seis.trace.raw[:].reshape(-1, 1)
+        try:
+            with segyio.open(seis_file, ignore_geometry=True) as seis:
+                seis = seis.trace.raw[:].reshape(-1, 1)
 
-            # partition the seismic data into images of width 11
-            for i in range(0, len(seis), image_width):
-                X.append(seis[i:i+image_width])
+                # partition the seismic data into images of width 11
+                for i in range(0, len(seis), image_width):
+                    X.append(seis[i:i+image_width])
+        except:
+            print('Error in file: {}'.format(seis_file))
+            continue
 
     
     # full_args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
