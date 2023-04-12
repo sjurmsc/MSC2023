@@ -80,29 +80,43 @@ def illustrate_seq_lengths(n_neighboring_traces=5,
             splits_depth = np.split(z_GM, split_indices)
             for s, sz in zip(splits, splits_depth):
                 if np.all(np.isnan(s)): continue
-                if (s.shape[0] > 1) and (s.shape[0] < 100):
+                if (s.shape[0] > 1): # and (s.shape[0] < 100):
                     y.append(s.shape[0])
                     Z.append(sz)
 
     data = {'y': y, 'Z': Z}
 
     fig, ax = plt.subplots(1, 1, figsize=(2.5, 2))
-    ax.hist(data, bins=20, color=msc_color, edgecolor='k', stacked=True, density=True)
-    ax.set_xlabel('Length of CPT sequence', fontsize=8)
-    ax.set_ylabel('Relative frequency', fontsize=8)
-    fig.suptitle('CPT sequence lengths', fontsize=12)
+    ax.hist(y, bins=20, color=msc_color, edgecolor='k', stacked=True)
+    ax.set_xlabel('Length of sequence', fontsize=8)
+    ax.set_ylabel('Count', fontsize=8)
+    fig.suptitle('Continuous CPT sequence lengths', fontsize=12)
     fig.tight_layout
     fig.subplots_adjust(bottom=0.236, left=0.279)
-    fig.savefig('./Assignment Figures/Sequence_lengths.png', dpi=500)
+    fig.savefig('./Assignment Figures/Shallow_Sequence_lengths.png', dpi=500)
     plt.show()
 
-
+def get_traces(fp, mmap=True, zrange: tuple = (None, 100)):
+    """
+    This function should conserve some information about the domain (time or depth) of
+    the data.
+    """
+    with segyio.open(fp, ignore_geometry=True) as seis_data:
+        z = seis_data.samples
+        if mmap:
+            seis_data.mmap()  # Only to be used if the file size is small compared to available memory
+        traces = segyio.collect(seis_data.trace)
+    
+    traces, z = traces[:, z<zrange[1]], z[z<zrange[1]]
+    return traces, z
 
 if __name__ == '__main__':
     from Feat_aug import *
     from Architectures import *
     from Log import *
     from pathlib import Path
+
+    # illustrate_seq_lengths(zrange=(35, 50))
 
     img_dir = './Assignment Figures/Depth_model_5/'
 
@@ -113,7 +127,7 @@ if __name__ == '__main__':
     image_width = 11
     encoder_type = 'cnn'
     decoder_type = 'cnn'
-    zrange = (30, 100)
+    zrange = (35, 50)
     
     z = np.arange(zrange[0], zrange[1], 0.1).reshape(-1, 1)
 
@@ -126,27 +140,25 @@ if __name__ == '__main__':
     
     lx = np.log(z).reshape(-1, 1)
     
-    seis_dir = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/'
-    seis_files = Path(seis_dir).glob('*.sgy')
-    seis_files = [str(f) for f in seis_files]
+    # seis_dir = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/'
+    # seis_files = Path(seis_dir).glob('*.sgy')
+    # seis_files = [str(f) for f in seis_files]
 
-    X = []
-    for seis_file in seis_files:
-        try:
-            with segyio.open(seis_file, ignore_geometry=True) as seis:
-                seis = seis.trace.raw[:].reshape(-1, 1)
-
-                # partition the seismic data into images of width 11
-                for i in range(0, len(seis), image_width):
-                    X.append(seis[i:i+image_width])
-        except:
-            print('Error in file: {}'.format(seis_file))
-            continue
+    # X = []
+    # for seis_file in seis_files:
+    #     try:
+    #         seis, z = get_traces(seis_file, zrange=zrange)
+    #         # partition the seismic data into images of width 11
+    #         for i in range(0, len(seis), image_width):
+    #             X.append(seis[i:i+image_width])
+    #     except:
+    #         print('Error in file: {}'.format(seis_file))
+    #         continue
 
     
-    # full_args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
-    # X_full = full_args[0]
-    # # Z_full = full_args[3]
+    full_args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
+    X = full_args[0]
+    # Z_full = full_args[3]
     # Z_full = np.array([z for i in range(X_full.shape[0])])
 
 
@@ -173,7 +185,7 @@ if __name__ == '__main__':
 
     latent_features = 16
 
-    encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
+    # encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
     
     # decoder = keras.Sequential([
     #     keras.layers.InputLayer(input_shape=(None, latent_features)),
@@ -189,9 +201,9 @@ if __name__ == '__main__':
 
     model = keras.Model(inputs=encoder.inputs, outputs=decoder(encoder.outputs))
 
-    model.compile(optimizer='adam', loss='mae', metrics=['mse', 'mae'])
+    model.compile(optimizer='adam', loss='mse')
     
-    model.fit(X, X, epochs=100, batch_size=1, verbose=1)
+    model.fit(X, X, epochs=10000, batch_size=1, verbose=1)
 
     encoder.save('depth_model_encoder_auto.h5')
     model.save('depth_model_auto.h5')
