@@ -27,20 +27,12 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     x = keras.layers.Conv2D(16, (5, 5), activation='relu', padding='same')(x)
     b1 = keras.layers.Conv2D(16, (5, 5), activation='relu', padding='same')(x)
 
-    # adding a skip connection with 1x1 convolution
-    im = keras.layers.Conv2D(16, (1, 1), activation='relu', padding='same')(im)
-    b1 = keras.layers.Add()([b1, im])
-
     # Second convolutional block
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(b1) # 1, 1 padding because kernel is 3x3
     x = keras.layers.SpatialDropout2D(0.1)(x)
     x = keras.layers.Conv2D(32, (3, 3), strides=(1, 2), activation='relu')(x) # Reduce horizontal dimension by 2, and vertical by factor 2
     x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
     b2 = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
-
-    # Skip connection
-    b1 = keras.layers.Conv2D(32, (1, 1), activation='relu', padding='same')(b1)
-    b2 = keras.layers.Add()([b2, b1])
 
     # Third convolutional block
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(b2) # 2, 2 padding because kernel is 5x5
@@ -49,9 +41,6 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
     b3 = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
 
-    # Skip connection
-    b2 = keras.layers.Conv2D(64, (1, 1), activation='relu', padding='same')(b2)
-    b3 = keras.layers.Add()([b3, b2])
 
     # Add more layers for shape reduction
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(b3) # 1, 1 padding because kernel is 3x3

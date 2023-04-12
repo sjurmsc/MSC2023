@@ -96,7 +96,7 @@ if __name__ == '__main__':
         }
     
     encoder_type = 'cnn'
-    decoder_type = 'ann'
+    decoder_type = 'lstm'
     n_members    = 1
     latent_features = 16
 
