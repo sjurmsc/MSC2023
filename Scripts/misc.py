@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
     # illustrate_seq_lengths(zrange=(35, 50))
 
-    img_dir = './Assignment Figures/Depth_model_5/'
+    img_dir = './Assignment Figures/Depth_model_6/'
 
     if not Path(img_dir).exists():
         Path(img_dir).mkdir(parents=True)
@@ -205,8 +205,8 @@ if __name__ == '__main__':
     
     History = model.fit(X, X, epochs=10000, batch_size=30, verbose=1)
 
-    encoder.save('depth_model_encoder_auto.h5')
-    model.save('depth_model_auto.h5')
+    encoder.save('depth_model_encoder_auto1.h5')
+    model.save('depth_model_auto1.h5')
 
     plot_history(History, img_dir+'depth_model_auto.png')
 

@@ -21,7 +21,7 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     # im = keras.layers.RandomFlip(mode='vertical')(x)
 
     # First convolutional block
-    x = keras.layers.ZeroPadding2D(padding=((0, 0), (2, 2)))(im)
+    x = keras.layers.ZeroPadding2D(padding=((0, 0), (2, 2)))(x)
     x = keras.layers.Conv2D(16, (5, 5), activation='relu')(x) # Reduce horizontal dimension by 2
     x = keras.layers.Conv2D(16, (5, 5), activation='relu', padding='same')(x)
     x = keras.layers.Conv2D(16, (5, 5), activation='relu', padding='same')(x)
