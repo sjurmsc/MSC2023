@@ -203,7 +203,7 @@ if __name__ == '__main__':
 
     model.compile(optimizer='adam', loss='mse')
     
-    model.fit(X, X, epochs=10000, batch_size=1, verbose=1)
+    model.fit(X, X, epochs=10000, batch_size=30, verbose=1)
 
     encoder.save('depth_model_encoder_auto.h5')
     model.save('depth_model_auto.h5')
