@@ -158,6 +158,13 @@ if __name__ == '__main__':
     
     full_args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
     X = full_args[0]
+
+    end = X.shape[0]
+
+    Xflip = np.flip(X, axis=1)
+
+    X = np.vstack((X, Xflip))
+
     # Z_full = full_args[3]
     Z_full = np.array([z for i in range(X.shape[0])])
     Z_nnorm = np.array([z_norm for i in range(X.shape[0])])
@@ -184,6 +191,7 @@ if __name__ == '__main__':
 
     A = np.stack((Z_full, Z_nnorm, Z2), axis=2)
     
+    X, A = shuffle(X, A, random_state=42)
 
     latent_features = 16
 
