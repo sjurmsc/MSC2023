@@ -104,7 +104,7 @@ if __name__ == '__main__':
     from Log import *
     from pathlib import Path
 
-    img_dir = './Assignment Figures/Depth_model_4/'
+    img_dir = './Assignment Figures/Depth_model_5/'
 
     if not Path(img_dir).exists():
         Path(img_dir).mkdir(parents=True)
@@ -126,22 +126,33 @@ if __name__ == '__main__':
     
     lx = np.log(z).reshape(-1, 1)
     
+    seis_dir = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/'
+    seis_files = Path(seis_dir).glob('*.sgy')
+    seis_files = [str(f) for f in seis_files]
+
+    X = []
+    for seis_file in seis_files:
+        seis = segyio.open(seis_file, ignore_geometry=True)
+        seis = seis.trace.raw[:].reshape(-1, 1)
+
+        # partition the seismic data into images of width 11
+        for i in range(0, len(seis), image_width):
+            X.append(seis[i:i+image_width])
+
     
-    
-    
-    full_args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
-    X_full = full_args[0]
-    # Z_full = full_args[3]
-    Z_full = np.array([z for i in range(X_full.shape[0])])
+    # full_args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
+    # X_full = full_args[0]
+    # # Z_full = full_args[3]
+    # Z_full = np.array([z for i in range(X_full.shape[0])])
 
 
-    args = create_sequence_dataset(zrange=zrange, n_bootstraps=1)
-    X = args[0]
+    # args = create_sequence_dataset(zrange=zrange, n_bootstraps=1)
+    # X = args[0]
 
-    # Normalize Z between 0 and 1
-    Z = args[3]
-    Z_nnorm = Z.copy()
-    Z = (Z - Z.min()) / (Z.max() - Z.min())
+    # # Normalize Z between 0 and 1
+    # Z = args[3]
+    # Z_nnorm = Z.copy()
+    # Z = (Z - Z.min()) / (Z.max() - Z.min())
 
 
     #x = X[0].reshape(1, 11, -1)
@@ -153,19 +164,22 @@ if __name__ == '__main__':
 
    
 
-    A = np.stack((Z, Z_nnorm), axis=2)
+    # A = np.stack((Z, Z_nnorm), axis=2)
     
 
     latent_features = 16
 
     encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
     
-    decoder = keras.Sequential([
-        keras.layers.InputLayer(input_shape=(None, latent_features)),
-        keras.layers.Dense(32),
-        keras.layers.Dense(64),
-        keras.layers.Dense(2)
-    ])
+    # decoder = keras.Sequential([
+    #     keras.layers.InputLayer(input_shape=(None, latent_features)),
+    #     keras.layers.Dense(32),
+    #     keras.layers.Dense(64),
+    #     keras.layers.Dense(2)
+    # ])
+
+    encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
+    decoder = CNN_pyramidal_decoder(latent_features=latent_features, image_width=image_width)
 
     # encoder = keras.models.load_model('depth_model_encoder_2.h5')
 
@@ -173,35 +187,46 @@ if __name__ == '__main__':
 
     model.compile(optimizer='adam', loss='mae', metrics=['mse', 'mae'])
     
-    model.fit(X, A, epochs=10000, batch_size=1, verbose=1)
+    model.fit(X, X, epochs=100, batch_size=1, verbose=1)
 
-    encoder.save('depth_model_encoder_Z1.h5')
-    model.save('depth_model_Z1.h5')
+    encoder.save('depth_model_encoder_auto.h5')
+    model.save('depth_model_auto.h5')
 
     # model = keras.models.load_model('depth_model_1.h5')
     # encoder = keras.models.load_model('depth_model_encoder_1.h5')
 
-    Z_pred = model.predict(X)[:, :, 0]
+    # Z_pred = model.predict(X)[:, :, 0]
 
-    fig, ax = plt.subplots(1, 1, figsize=(5, 10))
-    ax.plot(Z[0], z, label='True')
+    # fig, ax = plt.subplots(1, 1, figsize=(5, 10))
+    # ax.plot(Z[0], z, label='True')
     
-    for i in range(len(Z_pred)):
-        # Plot the true and predicted depth along the y axis
-        ax.plot(Z_pred[i], z, color=msc_color, alpha = 0.1, label='Predicted' if i==0 else None)
+    # for i in range(len(Z_pred)):
+    #     # Plot the true and predicted depth along the y axis
+    #     ax.plot(Z_pred[i], z, color=msc_color, alpha = 0.1, label='Predicted' if i==0 else None)
 
-    # Flip x and y axis
-    ax.invert_yaxis()
+    # # Flip x and y axis
+    # ax.invert_yaxis()
 
-    # Set the x and y axis labels
-    ax.set_xlabel('Predicted depth (m)')
-    ax.set_ylabel('True depth (m)')
+    # # Set the x and y axis labels
+    # ax.set_xlabel('Predicted depth (m)')
+    # ax.set_ylabel('True depth (m)')
 
-    ax.legend()
+    # ax.legend()
     
-    fig.suptitle('Depth prediction')
+    # fig.suptitle('Depth prediction')
 
-    fig.savefig(img_dir + 'depth_prediction.png', dpi=500)
+    # fig.savefig(img_dir + 'depth_prediction.png', dpi=500)
+
+    X_pred = model.predict(X)
+
+    # Plot the predicted and true images
+    fig, ax = plt.subplots(1, 2, figsize=(10, 10))
+    ax[0].imshow(X[0].reshape(11, -1), cmap='gray')
+    ax[1].imshow(X_pred[0].reshape(11, -1), cmap='gray')
+
+    fig.savefig(img_dir + 'image_prediction.png', dpi=500)
+
+
 
     # Create tsne plot of latent space colored by z
     from sklearn.manifold import TSNE
@@ -215,7 +240,7 @@ if __name__ == '__main__':
 
     # Plot the latent space
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    ax.scatter(latent_space_2d[:, 0], latent_space_2d[:, 1], c=Z.flatten(), cmap='viridis')
+    ax.scatter(latent_space_2d[:, 0], latent_space_2d[:, 1])
 
     fig.savefig(img_dir + 'latent_space.png', dpi=500)
 
