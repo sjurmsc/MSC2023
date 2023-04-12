@@ -159,8 +159,8 @@ if __name__ == '__main__':
     full_args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
     X = full_args[0]
     # Z_full = full_args[3]
-    Z_full = np.array([z for i in range(X_full.shape[0])])
-    Z_nnorm = np.array([z_norm for i in range(X_full.shape[0])])
+    Z_full = np.array([z for i in range(X.shape[0])])
+    Z_nnorm = np.array([z_norm for i in range(X.shape[0])])
     Z2 = Z_nnorm**2
 
 
