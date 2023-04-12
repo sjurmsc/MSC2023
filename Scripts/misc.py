@@ -83,15 +83,16 @@ def illustrate_seq_lengths(n_neighboring_traces=5,
                 if (s.shape[0] > 1): # and (s.shape[0] < 100):
                     y.append(s.shape[0])
                     Z.append(sz)
-
-    data = {'y': y, 'Z': Z}
+    y = np.array(y)
+    Z = np.array(Z)
+    data = np.vstack((y, Z)).reshape(-1, 2)
 
     fig, ax = plt.subplots(1, 1, figsize=(2.5, 2))
-    ax.hist(y, bins=20, color=msc_color, edgecolor='k', stacked=True)
+    ax.hist(data, bins=20) # , color=[msc_color, 'g'], edgecolor='k', stacked=True)
     ax.set_xlabel('Length of sequence', fontsize=8)
     ax.set_ylabel('Count', fontsize=8)
     fig.suptitle('Continuous CPT sequence lengths', fontsize=12)
-    fig.tight_layout
+    fig.tight_layout()
     fig.subplots_adjust(bottom=0.236, left=0.279)
     fig.savefig('./Assignment Figures/Shallow_Sequence_lengths.png', dpi=500)
     plt.show()
@@ -117,6 +118,8 @@ if __name__ == '__main__':
     from pathlib import Path
 
     # illustrate_seq_lengths(zrange=(35, 50))
+
+    # raise SystemExit
 
     img_dir = './Assignment Figures/Depth_model_6/'
 
@@ -212,17 +215,17 @@ if __name__ == '__main__':
     # model = keras.Model(inputs=encoder.inputs, outputs=decoder(encoder.outputs))
 
     # model.compile(optimizer='adam', loss='mse')
-    model, encoder, model_mean = ensemble_CNN_model(1, 16, 11, enc='cnn', dec='cnn', reconstruct=True)
+    # model, encoder, model_mean = ensemble_CNN_model(1, 16, 11, enc='cnn', dec='cnn', reconstruct=True)
     
-    History = model.fit(X, [A, X], epochs=10000, batch_size=30, verbose=1)
+    # History = model.fit(X, [A, X], epochs=10000, batch_size=30, verbose=1)
 
-    encoder.save('depth_model_encoder_auto1.h5')
-    model.save('depth_model_auto1.h5')
+    # encoder.save('depth_model_encoder_auto1.h5')
+    # model.save('depth_model_auto1.h5')
 
-    plot_history(History, img_dir+'depth_model_auto.png')
+    # plot_history(History, img_dir+'depth_model_auto.png')
 
-    # model = keras.models.load_model('depth_model_1.h5')
-    # encoder = keras.models.load_model('depth_model_encoder_1.h5')
+    model = keras.models.load_model('depth_model_auto1.h5')
+    encoder = keras.models.load_model('depth_model_encoder_auto1.h5')
 
     # Z_pred = model.predict(X)[:, :, 0]
 
@@ -250,7 +253,7 @@ if __name__ == '__main__':
 
     # Plot the predicted and true images
     fig, ax = plt.subplots(1, 2, figsize=(10, 10))
-    ax[0].imshow(X[1][0].reshape(11, -1).T, cmap='gray')
+    ax[0].imshow(X[0].reshape(11, -1).T, cmap='gray')
     ax[1].imshow(X_pred[0].reshape(11, -1).T, cmap='gray')
 
     fig.savefig(img_dir + 'image_prediction.png', dpi=500)
