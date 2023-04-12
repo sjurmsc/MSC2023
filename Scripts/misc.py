@@ -132,7 +132,7 @@ if __name__ == '__main__':
     z = np.arange(zrange[0], zrange[1], 0.1).reshape(-1, 1)
 
     # normalize z between 0 and 1
-    z = (z - z.min()) / (z.max() - z.min())
+    z_norm = (z - z.min()) / (z.max() - z.min())
     
     x = np.arange(0, len(z), 1).reshape(-1, 1)
     
@@ -159,7 +159,9 @@ if __name__ == '__main__':
     full_args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
     X = full_args[0]
     # Z_full = full_args[3]
-    # Z_full = np.array([z for i in range(X_full.shape[0])])
+    Z_full = np.array([z for i in range(X_full.shape[0])])
+    Z_nnorm = np.array([z_norm for i in range(X_full.shape[0])])
+    Z2 = Z_nnorm**2
 
 
     # args = create_sequence_dataset(zrange=zrange, n_bootstraps=1)
@@ -180,7 +182,7 @@ if __name__ == '__main__':
 
    
 
-    # A = np.stack((Z, Z_nnorm), axis=2)
+    A = np.stack((Z_full, Z_nnorm, Z2), axis=2)
     
 
     latent_features = 16
@@ -194,16 +196,17 @@ if __name__ == '__main__':
     #     keras.layers.Dense(2)
     # ])
 
-    encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
-    decoder = CNN_pyramidal_decoder(latent_features=latent_features, image_width=image_width)
+    # encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
+    # decoder = CNN_pyramidal_decoder(latent_features=latent_features, image_width=image_width)
 
     # encoder = keras.models.load_model('depth_model_encoder_2.h5')
 
-    model = keras.Model(inputs=encoder.inputs, outputs=decoder(encoder.outputs))
+    # model = keras.Model(inputs=encoder.inputs, outputs=decoder(encoder.outputs))
 
-    model.compile(optimizer='adam', loss='mse')
+    # model.compile(optimizer='adam', loss='mse')
+    model, encoder, model_mean = ensemble_CNN_model(1, 16, 11, enc='cnn', dec='cnn', reconstruct=True)
     
-    History = model.fit(X, X, epochs=10000, batch_size=30, verbose=1)
+    History = model.fit(X, [A, X], epochs=10000, batch_size=30, verbose=1)
 
     encoder.save('depth_model_encoder_auto1.h5')
     model.save('depth_model_auto1.h5')
@@ -235,12 +238,12 @@ if __name__ == '__main__':
 
     # fig.savefig(img_dir + 'depth_prediction.png', dpi=500)
 
-    X_pred = model.predict(X)
+    X_pred = model.predict(X)[1]
 
     # Plot the predicted and true images
     fig, ax = plt.subplots(1, 2, figsize=(10, 10))
-    ax[0].imshow(X[0].reshape(11, -1), cmap='gray')
-    ax[1].imshow(X_pred[0].reshape(11, -1), cmap='gray')
+    ax[0].imshow(X[1][0].reshape(11, -1).T, cmap='gray')
+    ax[1].imshow(X_pred[0].reshape(11, -1).T, cmap='gray')
 
     fig.savefig(img_dir + 'image_prediction.png', dpi=500)
 
