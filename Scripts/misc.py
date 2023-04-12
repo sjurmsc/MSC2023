@@ -203,10 +203,12 @@ if __name__ == '__main__':
 
     model.compile(optimizer='adam', loss='mse')
     
-    model.fit(X, X, epochs=10000, batch_size=30, verbose=1)
+    History = model.fit(X, X, epochs=10000, batch_size=30, verbose=1)
 
     encoder.save('depth_model_encoder_auto.h5')
     model.save('depth_model_auto.h5')
+
+    plot_history(History, img_dir+'depth_model_auto.png')
 
     # model = keras.models.load_model('depth_model_1.h5')
     # encoder = keras.models.load_model('depth_model_encoder_1.h5')
