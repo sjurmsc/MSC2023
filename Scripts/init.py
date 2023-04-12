@@ -274,36 +274,22 @@ if __name__ == '__main__':
                           filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_latent_space_{i}.png')
         
         # Adding predictions to the compare dataframe
-        comp = {'Depth': z,
-                'True_qc': trues[:, 0],
-                'CNN_qc': preds[:, 0],
-                'RF_qc': rf_preds[:, 0],
-                'LGBM_qc': lgbm_preds[:, 0],
-                'True_fs': trues[:, 1],
-                'CNN_fs': preds[:, 1],
-                'RF_fs': rf_preds[:, 1],
-                'LGBM_fs': lgbm_preds[:, 1],
-                'True_u2': trues[:, 2],
-                'CNN_u2': preds[:, 2],
-                'RF_u2': rf_preds[:, 2],
-                'LGBM_u2': lgbm_preds[:, 2]
-                }
-        COMPARE_df = pd.concat([COMPARE_df, pd.DataFrame(comp)], axis=0)
-        # COMPARE_df = {'Depth', z, 
-        #                 # 'GGM': GGMs, 
-        #                 'True_qc': trues[:, 0], 
-        #                 'CNN_qc': preds[:, 0], 
-        #                 'RF_qc': rf_preds[:, 0], 
-        #                 'LGBM_qc': lgbm_preds[:, 0],
-        #                 'True_fs': trues[:, 1],
-        #                 'CNN_fs': preds[:, 1],
-        #                 'RF_fs': rf_preds[:, 1],
-        #                 'LGBM_fs': lgbm_preds[:, 1],
-        #                 'True_u2': trues[:, 2],
-        #                 'CNN_u2': preds[:, 2],
-        #                 'RF_u2': rf_preds[:, 2],
-        #                 'LGBM_u2': lgbm_preds[:, 2]
-        #                 }
+        # comp = {'Depth': z,
+        #         'True_qc': trues[:, 0],
+        #         'CNN_qc': preds[:, 0],
+        #         'RF_qc': rf_preds[:, 0],
+        #         'LGBM_qc': lgbm_preds[:, 0],
+        #         'True_fs': trues[:, 1],
+        #         'CNN_fs': preds[:, 1],
+        #         'RF_fs': rf_preds[:, 1],
+        #         'LGBM_fs': lgbm_preds[:, 1],
+        #         'True_u2': trues[:, 2],
+        #         'CNN_u2': preds[:, 2],
+        #         'RF_u2': rf_preds[:, 2],
+        #         'LGBM_u2': lgbm_preds[:, 2]
+        #         }
+        # COMPARE_df = pd.concat([COMPARE_df, pd.DataFrame(comp)], axis=0)
+
 
         print(preds.shape, rf_preds.shape, lgbm_preds.shape)
         p[i] = {}
