@@ -205,7 +205,7 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
     elif enc == 'lstm':
         encoder = LSTM_encoder(latent_features=latent_features, image_width=image_width)
     elif enc == 'depth':
-        encoder = keras.models.load_model('depth_model_encoder_2.h5')
+        encoder = keras.models.load_model('depth_model_encoder_auto1.h5')
    
     # decoders = []
     for i in range(n_members):
