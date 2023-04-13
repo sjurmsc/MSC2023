@@ -379,6 +379,7 @@ def make_cv_excel(filename, COMP_DF):
     unit_mapping = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv', index_col=0)
     
     for g in COMP_DF.groupby('GGM'):
+
         g_data = g[1]
 
         for p in params:
@@ -388,12 +389,13 @@ def make_cv_excel(filename, COMP_DF):
                 std = evaluate_modeldist_norm(g_data['True_{}'.format(param)], g_data['{}_{}'.format(method, param)])[4]
                 
                 # Find the cell row by searching for the GGM in the first column
-                for row in range(1, ws.max_row + 1):
-                    if ws.cell(row=row, column=1).value == unit_mapping.iloc[g[0]]:
+                for row in range(2, ws.max_row + 1):
+                    unit = unit_mapping.iloc[int(g[0])]['unit']
+                    if ws.cell(row=row, column=1).value == unit:
                         cellrow = row
                         break
                 # Find the cell column by searching for the method in the first row
-                for col in range(1, ws.max_column + 1):
+                for col in range(2, ws.max_column + 1):
                     if '_'+method in ws.cell(row=1, column=col).value:
                         cellcol = col
                         break
