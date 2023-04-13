@@ -43,9 +43,9 @@ if __name__ == '__main__':
     dataset_params = {
         'n_neighboring_traces'  : 5,
         'zrange'                : (35, 50),
-        'n_bootstraps'          : 2,
+        'n_bootstraps'          : 1,
         'add_noise'             : False,
-        'max_distance_to_cdp'   : 1,
+        'max_distance_to_cdp'   : 0.5,
         'cumulative_seismic'    : False,
         'random_flip'           : False,
         'random_state'          : 1,
@@ -281,6 +281,12 @@ if __name__ == '__main__':
                           GGM_test_full,
                           filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_latent_space_{i}.png')
     
+    # Inverse scaling
+    for ii in range(trues.shape[0]):
+        trues[ii, :, :] = scaler.inverse_transform(trues[ii, :, :])
+        preds[ii, :, :] = scaler.inverse_transform(preds[ii, :, :])
+        rf_preds[ii, :, :] = scaler.inverse_transform(rf_preds[ii, :, :])
+        lgbm_preds[ii, :, :] = scaler.inverse_transform(lgbm_preds[ii, :, :])
 
     # Adding predictions to the compare dataframe
     comp = {'Depth'             : z.flatten(),
@@ -314,10 +320,6 @@ if __name__ == '__main__':
     with open(f'./Models/{gname}/training_times.txt', 'w') as f:
         f.write(json.dumps(training_time_dict))
 
-    """
-    for ii in range(trues.shape[0]):
-        trues[ii] = scaler.inverse_transform(trues[ii])
-    """
     
 
 
