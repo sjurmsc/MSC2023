@@ -53,18 +53,16 @@ if __name__ == '__main__':
         'y_scaler'              : scaler
         }
 
-    X_train, y_train, groups_train, z_train = create_sequence_dataset(sequence_length=100,
-                                                             stride=1,
-                                                             **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
+    X_train, y_train, groups_train, z_train, GGM_train, GGM_unc_train = create_sequence_dataset(sequence_length=100,
+                                                                                                stride=1,
+                                                                                                **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
 
     full_trace = create_full_trace_dataset(**dataset_params, ydata='mmm')
-    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM, minmax_full = full_trace
+    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM, GGM_unc, minmax_full = full_trace
     del full_trace
 
     # Make an array with every value of full_nan_idx repeated twice
     xnanidx = np.array(zip(full_nan_idx, full_nan_idx)).flatten()
-    
-    GGM = np.array(sw_idxs) + 1
 
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)
@@ -84,18 +82,18 @@ if __name__ == '__main__':
         }
 
     LGBM_param_dict = {
-        'num_leaves'        : 200,
+        'num_leaves'        : 31,
         'max_depth'         : 20,
-        'n_estimators'      : 300,
+        'n_estimators'      : 100,
         'n_jobs'            : -1
         }
 
     NN_param_dict = {
-        'epochs'            : 1000,
+        'epochs'            : 1,
         'batch_size'        : 30
         }
     
-    encoder_type = 'depth'
+    encoder_type = 'cnn'
     decoder_type = 'ann'
     n_members    = 1
     latent_features = 16
@@ -106,11 +104,9 @@ if __name__ == '__main__':
     rf_scores = None; lgbm_scores = None
     Histories = []
 
-    cols = ['Depth', 'GGM', 'True_qc', 'CNN_qc', 'RF_qc', 'LGBM_qc', 'True_fs', 'CNN_fs', 'RF_fs', 'LGBM_fs', 'True_u2', 'CNN_u2', 'RF_u2', 'LGBM_u2']
+    cols = ['Depth', 'GGM', 'GGM_uncertainty', 'True_qc', 'CNN_qc', 'RF_qc', 'LGBM_qc', 'True_fs', 'CNN_fs', 'RF_fs', 'LGBM_fs', 'True_u2', 'CNN_u2', 'RF_u2', 'LGBM_u2']
 
     COMPARE_df = pd.DataFrame(columns=cols)
-
-    p = {}
 
     for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
         Train_groups    = np.unique(groups_train[train_index])
@@ -152,6 +148,7 @@ if __name__ == '__main__':
         print('Fold', i+1, 'of', cv.get_n_splits(groups=groups_train))
         X_train_cv, X_test_cv = X_train[train_index], X_train[test_index]
         y_train_cv, y_test_cv = y_train[train_index], y_train[test_index]
+        GGM_train_cv, GGM_test_cv = GGM_train[train_index], GGM_train[test_index]
         groups_train_cv, groups_test_cv = groups_train[train_index], groups_train[test_index]
 
         # Timing the model
@@ -185,10 +182,12 @@ if __name__ == '__main__':
             trues = y_test_cv
             preds = model_mean.predict(X_test_cv)
             z = z_train[test_index]
+            ggms = GGM_test_cv
         else:
             trues = np.vstack((trues, y_test_cv))
             preds = np.vstack((preds, model_mean.predict(X_test_cv)))
             z = np.vstack((z, z_train[test_index]))
+            ggms = np.vstack((ggms, GGM_test_cv))
 
         # encoded_data = encoder(X_train_full).numpy()
         encoded_data = encoder(X_train_cv).numpy()
@@ -234,7 +233,12 @@ if __name__ == '__main__':
                 
                 s = rf_decoder.score(t_test_pred, t_flat_y)
                 print('RF score: {}'.format(s))
-                rf_preds = predict_encoded_tree(encoder, rf_decoder, X_test_cv)
+
+                rf = predict_encoded_tree(encoder, rf_decoder, X_test_cv)
+                if i == 0:
+                    rf_preds = rf
+                else:
+                    rf_preds = np.vstack((rf_preds, rf))
     
             elif dec == 'LGBM':
                 print('Fitting LGBM')
@@ -245,7 +249,11 @@ if __name__ == '__main__':
 
                 s = lgbm_decoder.score(t_test_pred, t_flat_y)
                 print('LGBM score: {}'.format(s))
-                lgbm_preds = predict_encoded_tree(encoder, lgbm_decoder, X_test_cv)
+                lgbm = predict_encoded_tree(encoder, lgbm_decoder, X_test_cv)
+                if i == 0:
+                    lgbm_preds = lgbm
+                else:
+                    lgbm_preds = np.vstack((lgbm_preds, lgbm))
 
         # Plotting the predictions
         for m, title in zip([model_mean, [encoder, rf_decoder], [encoder, lgbm_decoder]], [decoder_type.upper(), 'RF', 'LGBM']):
@@ -272,63 +280,44 @@ if __name__ == '__main__':
                           full_nan_idx_test, 
                           GGM_test_full,
                           filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_latent_space_{i}.png')
-        
-        # Adding predictions to the compare dataframe
-        # comp = {'Depth': z,
-        #         'True_qc': trues[:, 0],
-        #         'CNN_qc': preds[:, 0],
-        #         'RF_qc': rf_preds[:, 0],
-        #         'LGBM_qc': lgbm_preds[:, 0],
-        #         'True_fs': trues[:, 1],
-        #         'CNN_fs': preds[:, 1],
-        #         'RF_fs': rf_preds[:, 1],
-        #         'LGBM_fs': lgbm_preds[:, 1],
-        #         'True_u2': trues[:, 2],
-        #         'CNN_u2': preds[:, 2],
-        #         'RF_u2': rf_preds[:, 2],
-        #         'LGBM_u2': lgbm_preds[:, 2]
-        #         }
-        # COMPARE_df = pd.concat([COMPARE_df, pd.DataFrame(comp)], axis=0)
+    
 
-
-        print(preds.shape, rf_preds.shape, lgbm_preds.shape)
-        p[i] = {}
-        p[i]['CNN'] = preds
-        p[i]['RF'] = rf_preds
-        p[i]['LGBM'] = lgbm_preds
-        p[i]['true'] = trues
+    # Adding predictions to the compare dataframe
+    comp = {'Depth'             : z.flatten(),
+            'GGM'               : ggms.flatten(),
+            'GGM_uncertainty'   : np.zeros_like(ggms.flatten()),
+            'True_qc'           : trues[:, :, 0].flatten(),
+            'CNN_qc'            : preds[:, :, 0].flatten(),
+            'RF_qc'             : rf_preds[:, :, 0].flatten(),
+            'LGBM_qc'           : lgbm_preds[:, :, 0].flatten(),
+            'True_fs'           : trues[:, :, 1].flatten(),
+            'CNN_fs'            : preds[:, :, 1].flatten(),
+            'RF_fs'             : rf_preds[:, :, 1].flatten(),
+            'LGBM_fs'           : lgbm_preds[:, :, 1].flatten(),
+            'True_u2'           : trues[:, :, 2].flatten(),
+            'CNN_u2'            : preds[:, :, 2].flatten(),
+            'RF_u2'             : rf_preds[:, :, 2].flatten(),
+            'LGBM_u2'           : lgbm_preds[:, :, 2].flatten(),
+            }
+    
+    COMPARE_df = pd.DataFrame(comp)
     
     # Save the predictions for each to a pickle
     with open(f'./Models/{gname}/Ensemble_CNN_preds.pkl', 'wb') as f:
-        pickle.dump(p, f)
+        pickle.dump(COMPARE_df, f)
     
+    # Calculate statisics, grouped by ggm unit
+    filename = f'./Models/{gname}/Ensemble_CNN_stats.xlsx'
+    make_cv_excel(filename, COMPARE_df)
+
     # Save the training times
     with open(f'./Models/{gname}/training_times.txt', 'w') as f:
         f.write(json.dumps(training_time_dict))
-    
-    # Iterate over the p and evaluate the stds
-    for i in range(len(p)):
-        trues = p[i]['true']
-        preds = p[i]['CNN']
-        rf_preds = p[i]['RF']
-        lgbm_preds = p[i]['LGBM']
 
-        for ii in range(trues.shape[0]):
-            trues[ii] = scaler.inverse_transform(trues[ii])
-
-        for label, pred in zip(['Ensemble_CNN', 'RF', 'LGBM'], [preds, rf_preds, lgbm_preds]):
-            stds = []
-            print('Evaluating model stds for {}'.format(label))
-
-            trans_pred = np.zeros(pred.shape)
-            # Inverse transform the data
-            for iii in range(pred.shape[0]):
-                trans_pred[iii] = scaler.inverse_transform(pred[iii])
-
-            for k in range(pred.shape[-1]):
-                _, _, _, _, std, _ = evaluate_modeldist_norm(trues[:, :, k].flatten(), trans_pred[:, :, k].flatten())
-                stds.append(std)
-            print('std for {} is: {}'.format(label, stds))
+    """
+    for ii in range(trues.shape[0]):
+        trues[ii] = scaler.inverse_transform(trues[ii])
+    """
     
 
 

@@ -18,6 +18,7 @@ from numpy.linalg import norm
 from matplotlib.colors import Normalize, Colormap
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook
+from pandas import read_csv
 
 
 msc_color = '#6bb4edff'
@@ -367,26 +368,38 @@ def describe_data(X, y, groups, mdir=''):
 
 from NGI.GM_Toolbox import evaluate_modeldist_norm
 
-def make_cv_excel(filename, data, groups):
+def make_cv_excel(filename, COMP_DF):
     """Creates a new excel file with the results of the model"""
     xl = "C:/Users/SjB/MSC2023/Results/NGI_stdd_{}.xlsx"
     wb = load_workbook(xl)
     # Open the worksheet q_c
     
     params = ['q_c', 'f_s', 'u_2']
-
-    g_data = data.groupby(groups)
-    for g in g_data.groups.keys():
-
-
-        std = evaluate_modeldist_norm(g_data.get_group(g))[4]
-
-    # All
     
-    ws = wb['q_c']
+    unit_mapping = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv', index_col=0)
+    
+    for g in COMP_DF.groupby('GGM'):
+        g_data = g[1]
 
+        for p in params:
+            ws = wb[p]
+            param = p.replace('_', '')
+            for method in ['CNN', 'RF', 'LGBM']:
+                std = evaluate_modeldist_norm(g_data['True_{}'.format(param)], g_data['{}_{}'.format(method, param)])[4]
+                
+                # Find the cell row by searching for the GGM in the first column
+                for row in range(1, ws.max_row + 1):
+                    if ws.cell(row=row, column=1).value == unit_mapping.iloc[g[0]]:
+                        cellrow = row
+                        break
+                # Find the cell column by searching for the method in the first row
+                for col in range(1, ws.max_column + 1):
+                    if '_'+method in ws.cell(row=1, column=col).value:
+                        cellcol = col
+                        break
 
-
+                # set the cell value to the std
+                ws.cell(row=cellrow, column=cellcol).value = std
 
     if not filename.endswith('.xlsx'):
         filename += '.xlsx'

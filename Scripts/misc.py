@@ -159,8 +159,12 @@ if __name__ == '__main__':
     #         continue
 
     
+
     full_args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
     X = full_args[0]
+
+    GGM = full_args[7]
+    GGM_unc = full_args[8]
 
     end = X.shape[0]
 
@@ -174,8 +178,14 @@ if __name__ == '__main__':
     Z2 = Z_nnorm**2
 
 
-    # args = create_sequence_dataset(zrange=zrange, n_bootstraps=1)
-    # X = args[0]
+    args = create_sequence_dataset(zrange=zrange, n_bootstraps=1)
+    X = args[0]
+    y = args[1]
+    z = args[3]
+    GGM = args[4]
+
+    assert z.shape == GGM.shape
+    print('X shape: {}'.format(X.shape))
 
     # # Normalize Z between 0 and 1
     # Z = args[3]
@@ -272,7 +282,7 @@ if __name__ == '__main__':
 
     # Plot the latent space
     fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-    ax.scatter(latent_space_2d[:, 0], latent_space_2d[:, 1])
+    ax.scatter(latent_space_2d[:, 0], latent_space_2d[:, 1], c=GGM, cmap='viridis', s=1)
 
     fig.savefig(img_dir + 'latent_space.png', dpi=500)
 

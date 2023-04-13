@@ -19,6 +19,7 @@ import numpy as np
 from Architectures import predict_encoded_tree
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import seaborn as sns
+from scipy.spatial import KDTree
 
 from Log import add_identity
 
@@ -74,6 +75,26 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
 
     match_dict = {}
 
+    with segyio.open('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel.sgy', ignore_geometry=True) as StructuralModel:
+        struct_model_z = StructuralModel.samples
+        X = segyio.collect(StructuralModel.attributes(segyio.TraceField.SourceX))
+        Y = segyio.collect(StructuralModel.attributes(segyio.TraceField.SourceY))
+
+        # Get structural model within zrange
+        GGM = segyio.collect(StructuralModel.trace)
+        GGM = GGM[:, (struct_model_z>=zrange[0])&(struct_model_z<zrange[1])]
+
+    with segyio.open('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_uncertainty.sgy', ignore_geometry=True) as StructuralModel_uncertainty:
+        GGM_unc = segyio.collect(StructuralModel_uncertainty.trace)
+        GGM_unc = GGM_unc[:, (struct_model_z>=zrange[0])&(struct_model_z<zrange[1])]
+
+    # Make X and Y arrays in 1D
+    X, Y = array(X)/100, array(Y)/100
+    # KDtree the structural model
+    xy = row_stack((X, Y)).T
+    tree = KDTree(xy)
+
+
 
     for i, row in CPT_match.iterrows():
         
@@ -96,7 +117,7 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
 
         X, Y = row['Location Eastings'], row['Location Northings']
 
-
+        dist, index = tree.query([[X, Y]], k=1)
 
         sys.stdout.write('\rRetrieving from {} \t\t'.format(cpt_key))
 
@@ -126,8 +147,8 @@ def match_cpt_to_seismic(n_neighboring_traces=0, zrange: tuple = (30, 100), to_f
                                        'z_traces'       : z_traces, 
                                        'z_cpt'          : z_cpt,
                                        'seafloor'       : SEAFLOOR,
-                                       'GGM'            : 0,
-                                       'GGM_unc'        : 0}
+                                       'GGM'            : GGM[index][0],
+                                       'GGM_unc'        : GGM_unc[index][0]}
     sys.stdout.flush()
     sys.stdout.write('\nDone!\n')
     
@@ -152,13 +173,14 @@ def create_sequence_dataset(n_neighboring_traces=5,
                             random_flip=False,
                             random_state=0,
                             groupby='cpt_loc',
+                            exclude_BH = False,
                             data_folder = 'FE_CPT',
                             y_scaler=None):
     """
     Creates a dataset with sections of seismic image and corresponding CPT data where
     none of the CPT data is missing.
     """
-    match_file = './Data/match_dict{}_z_{}-{}_ds_{}.pkl'.format(n_neighboring_traces, zrange[0], zrange[1], data_folder)
+    match_file = './Data/match_dict{}_z_{}-{}_ds_{}_GGM.pkl'.format(n_neighboring_traces, zrange[0], zrange[1], data_folder)
     if not Path(match_file).exists():
         print('Creating match file...')
         match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange, to_file=match_file)
@@ -171,6 +193,8 @@ def create_sequence_dataset(n_neighboring_traces=5,
     X, y = [], []
     Z = []
     groups = []
+    GGM = []
+    GGM_unc = []
 
     if y_scaler is not None:
         scaler = get_cpt_data_scaler()
@@ -181,6 +205,10 @@ def create_sequence_dataset(n_neighboring_traces=5,
         # Skip if distance to CDP is too large
         if abs(value['distance']) > max_distance_to_cdp:
             continue
+
+        if exclude_BH:
+            if 'BH' in key:
+                continue
 
         z_GM = np.arange(zrange[0], zrange[1], 0.1)
         cpt_vals = array(value['CPT_data'])
@@ -200,6 +228,9 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
         seismic_z = array(value['z_traces'])
 
+        ggm = value['GGM']
+        ggm_unc = value['GGM_unc']
+
         for bootstrap in bootstraps:
             # Split CPT data by nan values
             row_w_nan = lambda x: np.any(np.isnan(x))
@@ -211,7 +242,10 @@ def create_sequence_dataset(n_neighboring_traces=5,
             for section, z in zip(splits, splits_depth):
                 if (section.shape[0]-1) > sequence_length:
                     in_seis = np.where((seismic_z >= z.min()-1e-6) & (seismic_z < z.max()-1e-6)) # -1e-6 to avoid floating point errors
+                    in_GGM = np.where((z_GM >= z.min()-1e-6) & (z_GM < z.max()-1e-6))
                     seis_seq = seismic[:, in_seis][:, 0, :]
+                    GGM_seq = ggm[in_GGM]
+                    GGM_unc_seq = ggm_unc[in_GGM]
                     cpt_seq = section[:-1, :]
                     if not seis_seq.shape[1] == 2*cpt_seq.shape[0]:
                         print('Seismic sequences must represent the same interval as the CPT: {}'.format(key))
@@ -231,6 +265,8 @@ def create_sequence_dataset(n_neighboring_traces=5,
                         y_val = cpt_seq[i:i+sequence_length, :]
                         y.append(y_val)
                         Z.append(z[i:i+sequence_length])
+                        GGM.append(GGM_seq[i:i+sequence_length])
+                        GGM_unc.append(GGM_unc_seq[i:i+sequence_length])
                         if groupby == 'cpt_loc':
                             groups.append(int(value['cpt_loc']))
                         elif groupby == 'borehole':
@@ -240,7 +276,9 @@ def create_sequence_dataset(n_neighboring_traces=5,
     X = np.array(X)
     y = np.array(y)
     Z = np.array(Z)
-    groups = np.array(groups)   
+    groups = np.array(groups)
+    GGM = np.array(GGM)
+    GGM_unc = np.array(GGM_unc)
 
     # Randomly flip the X data about the 1 axis
     if random_flip:
@@ -249,11 +287,11 @@ def create_sequence_dataset(n_neighboring_traces=5,
                 X[i] = np.flip(X[i], 0)
 
     if random_state:
-        X, y, groups, Z = shuffle(X, y, groups, Z, random_state=random_state)
+        X, y, groups, Z, GGM, GGM_unc = shuffle(X, y, groups, Z, GGM, GGM_unc, random_state=random_state)
 
     print('Done!')
 
-    return X, y, groups, Z
+    return X, y, groups, Z, GGM, GGM_unc
 
 
 def create_full_trace_dataset(n_neighboring_traces=5,
@@ -267,12 +305,13 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                               groupby='cpt_loc',
                               data_folder='FE_CPT',
                               force_new_match_file=False,
+                              exclude_BH = False,
                               y_scaler=None,
                               ydata='mmm'):
     """ Creates a dataset with full seismic traces and corresponding CPT data with an array
         containing the indices where there are nan values in a row and one where are no nan values in a row.
     """
-    match_file = './Data/match_dict{}_z_{}-{}_ds_{}.pkl'.format(n_neighboring_traces, zrange[0], zrange[1], data_folder)
+    match_file = './Data/match_dict{}_z_{}-{}_ds_{}_GGM.pkl'.format(n_neighboring_traces, zrange[0], zrange[1], data_folder)
     if (not Path(match_file).exists()) or force_new_match_file:
         print('Creating match file...')
         match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange, to_file=match_file, data_folder=data_folder)
@@ -301,6 +340,10 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         # Skip if distance to CDP is too large
         if abs(value['distance']) > max_distance_to_cdp:
             continue
+        
+        if exclude_BH:
+            if 'BH' in key:
+                continue
 
         z_min, z_max = zrange[0], zrange[1]
 
@@ -338,8 +381,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
         sw_idx = np.apply_along_axis(is_sw, axis=0, arr=z_GM)
         
         # Assign GGM to the trace
-        ggm = np.ones_like(sw_idx) # value['GGM']
-        ggm_unc = np.ones_like(sw_idx) # value['GGM_unc']
+        ggm = value['GGM']
+        ggm_unc = value['GGM_unc']
         ggm[sw_idx] = 0
 
         if ydata == 'bootstraps':
@@ -400,6 +443,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
 
             # Adding GGM
             GGM.append(ggm)
+            GGM_unc.append(ggm_unc)
             # Adding extrapolated indices
             # extrapolated_idx = np.zeros(bootstrap.shape[0], dtype=bool)
             # last = np.where(~nan_idx)[0][-1]
@@ -439,6 +483,8 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     groups = np.array(groups)
     mins = np.array(mins)
     maxs = np.array(maxs)
+    GGM = np.array(GGM)
+    GGM_unc = np.array(GGM_unc)
 
     # Randomly flip the X data about the 1 axis
     if random_flip:
@@ -452,9 +498,9 @@ def create_full_trace_dataset(n_neighboring_traces=5,
     print('Done!')
 
     if ydata == 'mmm':
-        return X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs, GGM, (mins, maxs)
+        return X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs, GGM, GGM_unc, (mins, maxs)
 
-    return X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs, GGM
+    return X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs, GGM, GGM_unc
             
 
 def get_struct_model_picks(line_name, CDP):
@@ -800,10 +846,10 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     fig.subplots_adjust(left=0.05, top=0.9, right=0.85, bottom=0.1)
 
     # Give specific markers to points outside the valid indices
-    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], cmap=cmap, norm=norm, alpha=0.8, label='Extrapolated GGM')
+    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], cmap=cmap, norm=norm, alpha=0.8, label='Extrapolated Prediction')
     
     # Plot the valid indices
-    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], marker= 'o', c=GGM[valid_indices], cmap=cmap, norm=norm, alpha=0.8, label='Validated GGM')
+    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], marker= 'o', c=GGM[valid_indices], cmap=cmap, norm=norm, alpha=0.8, label='Verifiable Prediction')
 
     # Remove axis ticks
     ax.set_xticks([])
@@ -811,6 +857,7 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
 
     # Create a colorbar
     cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=np.arange(-0.5, n_colors-0.5, 1))
+    cbar.ax.invert_yaxis()
 
     cbar.ax.set_yticklabels(umap['unit'].unique())
     cbar.ax.tick_params(labelsize=15)
@@ -818,9 +865,10 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
 
     fig.suptitle('Latent space colored by Ground model units', fontsize=20)
 
-    # Insert a legend for the markers without color, and at alpha=1
-    handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles, labels, loc='upper left', fontsize=15)
+    # Predictions for nan values
+    if len(outside_indices) > 0:
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles, labels, loc='upper left', fontsize=15)
 
     # Remove the frame of the figure
     for spine in ax.spines.values():

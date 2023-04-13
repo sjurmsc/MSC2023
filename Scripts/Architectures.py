@@ -52,6 +52,7 @@ def CNN_pyramidal_encoder(latent_features, image_width):
 
     return cnn_encoder
 
+
 def CNN_pyramidal_decoder(latent_features, image_width):
     """This model uses the encoding of the CNN encoder to reconstruct the input image."""
 
@@ -81,9 +82,10 @@ def CNN_pyramidal_decoder(latent_features, image_width):
     x = keras.layers.Conv2DTranspose(1, (image_width, 1), activation='linear', padding='same')(x) # Increase horizontal dimension to image_width
     outp = keras.layers.Reshape((image_width, -1, 1))(x) # Reshape to get features in the second dimension
 
-    cnn_decoder = Model(inp, outp)
+    cnn_decoder = Model(inp, outp, name='Reconstruction')
 
     return cnn_decoder
+
 
 def pyramidal_residual_encoder(latent_features, image_width, nb_stacks=5, nb_filters=16, kernel_size=3, activation='relu'):
     """2D CNN encoder with skip connections collapsing the first dimension down to 1."""
@@ -138,7 +140,6 @@ def pyramidal_residual_encoder(latent_features, image_width, nb_stacks=5, nb_fil
     return model
 
 
-
 def LSTM_encoder(latent_features, image_width, mask=None):
     """LSTM encoder collapsing the dimension first dimension down to 1.
     Made to predict features at centered trace from seismic data."""
@@ -157,7 +158,6 @@ def LSTM_encoder(latent_features, image_width, mask=None):
     ], name='lstm_encoder')
 
     return lstm_encoder
-
 
 
 def LSTM_decoder(latent_features=16, i=0):
@@ -185,6 +185,7 @@ def CNN_decoder(latent_features=16, i=0):
 
     return cnn_decoder
 
+
 def ANN_decoder(latent_features=16, i=0):
     """1D CNN decoder with a committee of n_members."""
     ann_decoder = keras.models.Sequential([
@@ -196,6 +197,7 @@ def ANN_decoder(latent_features=16, i=0):
     ], name='ann_decoder_{}'.format(i))
 
     return ann_decoder
+
 
 def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001, enc='cnn', dec='cnn', reconstruct = False):
     # 
@@ -239,6 +241,7 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
     # model_mean = model
 
     return model, encoder, model_mean
+
 
 def predict_encoded_tree(encoder, tree, X): #, mask=None):
     """Predicts the target variable from encoded data using a tree based
