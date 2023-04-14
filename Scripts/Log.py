@@ -405,11 +405,15 @@ def describe_data(X, y, groups, GGM, mdir=''):
     string_GGM = np.vectorize(umap)(ggm_flatsort)
     ax.hist(string_GGM, bins=np.arange(len(np.unique(GGM))+1), color=msc_color, edgecolor='k')
     ax.set_xticks(np.arange(len(np.unique(GGM))) + 0.5)
-    ax.set_xticklabels(np.unique(string_GGM, return_counts=True)[0])
+    # ax.set_xticklabels(np.unique(string_GGM, return_counts=True)[0])
     # Rotate the xtick labels
     plt.setp(ax.get_xticklabels(), rotation=90, rotation_mode="anchor", ha="right", va="center")
     ax.set_xlabel('Unit')
     ax.set_ylabel('Count')
+
+    # set y axis to log scale
+    ax.set_yscale('log')
+
     fig.subplots_adjust(bottom=0.2)
     fig.suptitle('CPT values per GGM unit')
     fig.savefig(mdir + 'GGM_histogram.png', dpi=500)
