@@ -464,6 +464,27 @@ def make_cv_excel(filename, COMP_DF):
     
     unit_mapping = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv', index_col='uid')
     
+    for p in params:
+        ws = wb[p]
+        param = p.replace('_', '')
+        for method in ['CNN', 'RF', 'LGBM']:
+            true = COMP_DF['True_{}'.format(param)]
+            pred = COMP_DF['{}_{}'.format(method, param)]
+            std = evaluate_modeldist(true, pred)[4]
+
+            for row in range(2, ws.max_row + 1):
+                if ws.cell(row=row, column=1).value == 'all':
+                    cellrow = row
+                    break
+
+            for col in range(2, ws.max_column + 1):
+                if '_'+method in ws.cell(row=1, column=col).value:
+                    cellcol = col
+                    break
+
+            ws.cell(row=cellrow, column=cellcol).value = std
+
+
     for g in COMP_DF.groupby('GGM'):
         unit = unit_mapping['unit'][int(g[0])]
         g_data = g[1]
