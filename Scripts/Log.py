@@ -15,14 +15,13 @@ from git import Repo
 from matplotlib.pyplot import hist
 import numpy as np
 from numpy.linalg import norm
-from matplotlib.colors import Normalize, Colormap
+from matplotlib.colors import Normalize, Colormap, ListedColormap
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook
 from pandas import read_csv, DataFrame
 
 
 msc_color = '#6bb4edff'
-
 
 def gname(old_name):
     """ Takes in the state of group names and outputs the next one
@@ -322,9 +321,9 @@ def plot_history(History, filename=None):
             if key == 'loss':
                 plt.plot(History.history[key], label=key, color='k', linewidth=2, zorder=2)
             else:
-                plt.plot(History.history[key], label=key, color='red', linewidth=2, zorder=1, alpha=0.6)
+                plt.plot(History.history[key], label=key, linewidth=2, zorder=1)
     plt.yscale('log')
-    plt.title('Model loss')
+    plt.title('Model loss', fontsize=20)
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(loc='upper right')
@@ -377,18 +376,18 @@ def get_GGM_cmap(GGM):
     norm = BoundaryNorm(bounds, cmap.N)
 
     # Create a colorbar with only the unique GGM provided to the function given the right colors
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-    sm.set_array([])
-    cbar = plt.colorbar(sm, ticks=np.arange(n_colors)+0.5)
-    cbar.ax.set_yticklabels(GGM_names)
-
+    # sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    # sm.set_array([])
+    # cbar = plt.colorbar(sm, ticks=np.arange(len(unique_uid))+0.5)
+    # cbar.ax.set_yticklabels(GGM_names)
+    cbar = None
     return cmap, norm, cbar
 
 
 def describe_data(X, y, groups, GGM, mdir=''):
     """Creates a text file with the description of the data"""
 
-    unit_mapping = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv', index_col=0)
+    unit_mapping = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv', index_col='uid')
 
     filename = mdir + 'dataset_description.csv'
     latex_filename = mdir + 'dataset_description.tex'
@@ -399,7 +398,8 @@ def describe_data(X, y, groups, GGM, mdir=''):
     # Make histogram of the GGM counts with unit mapping on the x axis centered at the bars
     fig, ax = plt.subplots()
 
-    umap = lambda x: unit_mapping['unit'][x]
+    umap = lambda x: unit_mapping['unit'][int(x)]
+    
     # Make a flattened sorted array of the GGM values
     ggm_flatsort = np.sort(GGM.flatten())
     string_GGM = np.vectorize(umap)(ggm_flatsort)
@@ -412,7 +412,6 @@ def describe_data(X, y, groups, GGM, mdir=''):
     ax.set_ylabel('Count')
     fig.subplots_adjust(bottom=0.2)
     fig.suptitle('CPT values per GGM unit')
-    plt.show()
     fig.savefig(mdir + 'GGM_histogram.png', dpi=500)
     plt.close(fig)
 
@@ -424,9 +423,9 @@ def describe_data(X, y, groups, GGM, mdir=''):
     df.to_csv(mdir+'data.csv')
 
     for g in df.groupby('GGM'):
-        unit = unit_mapping.iloc[int(g[0])]['unit']
-        g_data = g[1].iloc[:, :-1]
+        unit = umap(g[0])
 
+        g_data = g[1].iloc[:, :-1]
         
         desc = g_data.describe().T
         desc.columns = ['n', '$\mu$', '$\sigma$', 'min', 'Q1', 'Q2', 'Q3', 'max']
@@ -444,9 +443,16 @@ def describe_data(X, y, groups, GGM, mdir=''):
         f.write(tex_string)
 
     
+def get_umap_func():
 
+    unit_mapping = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv', index_col='uid')
+
+    def umap(uid):
+        return unit_mapping['unit'][int(uid)]
+
+    return umap
     
-from NGI.GM_Toolbox import evaluate_modeldist_norm
+from NGI.GM_Toolbox import evaluate_modeldist
 
 def make_cv_excel(filename, COMP_DF):
     """Creates a new excel file with the results of the model"""
@@ -456,17 +462,19 @@ def make_cv_excel(filename, COMP_DF):
     
     params = ['q_c', 'f_s', 'u_2']
     
-    unit_mapping = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv', index_col=0)
+    unit_mapping = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv', index_col='uid')
     
     for g in COMP_DF.groupby('GGM'):
-        unit = unit_mapping.iloc[int(g[0])]['unit']
+        unit = unit_mapping['unit'][int(g[0])]
         g_data = g[1]
 
         for p in params:
             ws = wb[p]
             param = p.replace('_', '')
             for method in ['CNN', 'RF', 'LGBM']:
-                std = evaluate_modeldist_norm(g_data['True_{}'.format(param)], g_data['{}_{}'.format(method, param)])[4]
+                true = g_data['True_{}'.format(param)]
+                pred = g_data['{}_{}'.format(method, param)]
+                std = evaluate_modeldist(true, pred)[4]
                 
                 # Find the cell row by searching for the GGM in the first column
                 for row in range(2, ws.max_row + 1):
@@ -503,7 +511,8 @@ def add_identity(axes, *line_args, **line_kwargs):
 
 
 if __name__ == '__main__':
-    plt.imshow(np.array([1]))
+    pass
+    # plt.imshow(np.array([1]))
     # a = np.random.randint(1, 10, size=(20, 10))
     # b = np.random.random((20, 10))
 

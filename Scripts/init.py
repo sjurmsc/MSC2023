@@ -10,8 +10,6 @@ over these configurations are also defined in this script.
 from pathlib import Path
 from PIL import Image
 import numpy as np
-
-import numpy as np
 import json
 from sklearn.model_selection import LeaveOneGroupOut, cross_val_predict, train_test_split
 from sklearn.utils import shuffle
@@ -42,7 +40,7 @@ if __name__ == '__main__':
 
     dataset_params = {
         'n_neighboring_traces'  : 5,
-        'zrange'                : (30, 100),
+        'zrange'                : (35, 100),
         'n_bootstraps'          : 1,
         'add_noise'             : False,
         'max_distance_to_cdp'   : 0.5,
@@ -126,6 +124,14 @@ if __name__ == '__main__':
         y_test_full     = y_full[in_test].copy()
         minmax_test_full = (minmax_full[0][in_test].copy(), minmax_full[1][in_test].copy())
         GGM_test_full   = GGM[in_test].copy()
+
+        # Get the unique GGMs that are in the test set but not in the train set
+        GGM_test_not_in_train = np.setdiff1d(np.unique(GGM_train[test_index]), np.unique(GGM_train[train_index]))
+        if len(GGM_test_not_in_train) > 0:
+            tempdir = f'./Models/{gname}/Fold{i+1}'
+            if not Path(tempdir).exists(): Path(tempdir).mkdir()
+            with open(f'./Models/{gname}/Fold{i+1}/GGM_test_not_in_train.txt', 'w') as f:
+                f.write(str(GGM_test_not_in_train))
 
         # Getting the indices of the nan values for coloring plots
         full_nan_idx_train = full_nan_idx[in_train].copy()
@@ -312,6 +318,11 @@ if __name__ == '__main__':
     
     COMPARE_df = pd.DataFrame(comp)
     
+    pred_dir = f'./Models/{gname}/Predictions/'
+    if not Path(pred_dir).exists():
+        Path(pred_dir).mkdir(parents=True)
+    describe_data(X_train, preds, groups_train, ggms, mdir=pred_dir)
+
     # Save the predictions for each to a pickle
     with open(f'./Models/{gname}/Ensemble_CNN_preds.pkl', 'wb') as f:
         pickle.dump(COMPARE_df, f)

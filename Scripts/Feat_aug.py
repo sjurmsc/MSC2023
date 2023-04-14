@@ -20,8 +20,9 @@ from Architectures import predict_encoded_tree
 from matplotlib.colors import ListedColormap, BoundaryNorm
 import seaborn as sns
 from scipy.spatial import KDTree
+import matplotlib.cm as cm
 
-from Log import add_identity, get_GGM_cmap
+from Log import add_identity, get_GGM_cmap, get_umap_func
 
 
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
@@ -295,7 +296,7 @@ def create_sequence_dataset(n_neighboring_traces=5,
 
 
 def create_full_trace_dataset(n_neighboring_traces=5,
-                              zrange: tuple = (30, 100), 
+                              zrange: tuple = (35, 100), 
                               n_bootstraps=5,
                               max_distance_to_cdp=25, # in meters (largest value in dataset is 21)
                               add_noise=False,
@@ -827,39 +828,49 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     outside_indices = outside_indices.flatten()
     valid_indices = valid_indices.flatten()
     GGM = GGM.flatten()
-    
+    unique_GGM = np.sort(np.unique(GGM))
+
     umap = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv')
     GGM_names = []
-    for u in GGM:
+    for u in unique_GGM:
         GGM_names.append(umap.loc[umap['uid'] == u]['unit'].values[0])
 
     n_colors = len(np.unique(umap['uid']))
     # Add a segmented colorbar with unique colors for the different units
     cmap = plt.cm.get_cmap('gnuplot', n_colors)
 
-    bounds = np.arange(min(umap['uid']), max(umap['uid']), 1)
+    bounds = np.arange(len(umap['uid'])+1)
     norm = BoundaryNorm(bounds, cmap.N)
 
     fig, ax = plt.subplots(1, 1, figsize=(15, 10))
 
     # Set padding
-    fig.subplots_adjust(left=0.05, top=0.9, right=0.85, bottom=0.1)
+    fig.subplots_adjust(left=0.05, top=0.9, right=0.9, bottom=0.1)
 
     # Give specific markers to points outside the valid indices
-    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], cmap=cmap, norm=norm, alpha=0.8, label='Extrapolated Prediction')
+    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], cmap=cmap, alpha=0.8, label='Extrapolated Prediction')
     
     # Plot the valid indices
-    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], marker= 'o', c=GGM[valid_indices], cmap=cmap, norm=norm, alpha=0.8, label='Verifiable Prediction')
+    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], marker= 'o', c=GGM[valid_indices], cmap=cmap, alpha=0.8, label='Verifiable Prediction')
 
     # Remove axis ticks
     ax.set_xticks([])
     ax.set_yticks([])
 
     # Create a colorbar
-    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=np.arange(-0.5, n_colors-0.5, 1))
+    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=np.arange(len(umap['uid']))+0.5)
     cbar.ax.invert_yaxis()
 
-    cbar.ax.set_yticklabels(umap['unit'].unique())
+    # Set the tick labels to be umap uits and those in GGM names to be bold
+    cbar.ax.set_yticklabels(umap['unit'], fontsize=15)
+    for i, label in enumerate(cbar.ax.get_yticklabels()):
+        if label.get_text() in GGM_names:
+            label.set_weight('bold')
+            label.set_fontsize(20)
+    
+
+
+
     cbar.ax.tick_params(labelsize=15)
     cbar.set_label('Ground model units', fontsize=20)
 
@@ -921,9 +932,9 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
     fig.tight_layout()
     for i in range(3):
         for t in range(predictions.shape[0]):
-            ax[i].plot(predictions[t, :, i], z, 'k', alpha=0.1)
+            ax[i].plot(predictions[t, :, i], z, 'k', alpha=0.8, label='Predicted')
             # Plot test_y using only markers
-            ax[i].plot(test_y[t, :, i], z, pred_color[i], marker='.', alpha=0.5)
+            ax[i].plot(test_y[t, :, i], z, pred_color[i], marker='.', alpha=0.5, label='True')
             if minmax is not None:
                 ax[i].fill_betweenx(z, mins[t, :, i], maxs[t, :, i], color=pred_color[i], alpha=0.1)
         ax[i].set_title(units[i])
@@ -934,6 +945,7 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
         ax[i].set_xlabel(ax_labels[i])
 
         ax[i].invert_yaxis()
+        ax[i].legend()
     # Add super title
     fig.suptitle(title, fontsize=16)
     fig.subplots_adjust(left=0.05, bottom=0.09, top=0.85, wspace=0.19)
@@ -980,7 +992,7 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM=None, zrange=(30,
     pred_color = ['g', 'orange', 'b']
 
     # Create a figure for the predictions
-    fig, ax = plt.subplots(1, 4, figsize=(15, 5))
+    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
     fig.tight_layout()
     for i in range(3):
         for t in range(predictions.shape[0]):
@@ -1003,18 +1015,43 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM=None, zrange=(30,
 
     # Add visualization of GGM at depth colored by appropriate cmap with a colorbar
     if GGM is not None:
-        cmap, norm, cbar = get_GGM_cmap(GGM)
+        fig.subplots_adjust(right=0.95)
+        ax3 = fig.add_axes([0.965, 0.09, 0.02, 0.76])
+        cmap, norm, _ = get_GGM_cmap(GGM)
         # Get the depth of the CPT
         cpt_depth = z
         # Get the GGM at the depth of the CPT
-        GGM_at_depth = GGM[:, np.round(cpt_depth).astype(int)]
+        GGM_at_depth = GGM.T
+        changes = np.diff(GGM)[0]
+        depth_changes = z[np.where(changes != 0)[0]]
+        depth_changes = np.insert(depth_changes, 0, zrange[0])
+        depth_changes = np.append(depth_changes, zrange[1])
+        diff_changes = np.diff(depth_changes)
+        y_ticks = [depth_changes[i]+diff_changes[i]/2 for i in range(len(depth_changes)-1)]
         # Plot the GGM at the depth of the CPT
-        ax[3].imshow(GGM_at_depth, cmap=cmap, extent=[0, 1, zrange[1], zrange[0]])
-        ax[3].set_title('GGM at CPT depth')
-        ax[3].set_ylabel('Depth [mbsl]')
-        ax[3].invert_yaxis()
-        # Add colorbar to the right of the plot
-        fig.colorbar(cbar, ax=ax[3], orientation='vertical', fraction=0.046, pad=0.04)
+        ax3.imshow(GGM_at_depth, cmap=cmap, extent=[0, 5, zrange[1], zrange[0]])
+        ax3.set_title('GGM')
+        # ax[3].set_ylabel('Depth [mbsl]')
+        # Remove x ticks
+        ax3.set_xticks([])
+        ax3.set_yticks(y_ticks)
+        umap = get_umap_func()
+
+        # get the ggm where z is closest to the y ticks
+        GGM_at_yticks = np.array([GGM_at_depth[np.argmin(np.abs(z-y))] for y in y_ticks])
+        yticklabels = np.vectorize(umap)(GGM_at_yticks)
+        ax3.set_yticklabels(yticklabels)
+
+
+        # Add the colorbar to the right of the plot
+        
+        #cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+        #fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), cax=cbar_ax)
+
+    
+
+
+        
     
     if filename:
         fig.savefig(filename, dpi=500)
@@ -1264,6 +1301,18 @@ def get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/
     """
     cpt_dir = list(Path(cpt_folder_loc).glob('*.las'))
     cpt_keys = [cpt.name[:cpt.name.find('.las')] for cpt in cpt_dir]
+
+    
+    # Remove duplicates of data
+    for key in cpt_keys:
+        if key[-2:] == '-A':
+            cpt_keys.remove(key[:-2])
+        elif key[-2:] == '-B':
+            try: cpt_keys.remove(key[:-2]+'-A')
+            except: pass
+            try: cpt_keys.remove(key[:-2])
+            except: pass
+
 
     df_dict = {}
 
