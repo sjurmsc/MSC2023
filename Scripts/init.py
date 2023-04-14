@@ -43,7 +43,7 @@ if __name__ == '__main__':
         'zrange'                : (35, 100),
         'n_bootstraps'          : 5,
         'add_noise'             : False,
-        'max_distance_to_cdp'   : 25,
+        'max_distance_to_cdp'   : 0.4,
         'cumulative_seismic'    : False,
         'random_flip'           : False,
         'random_state'          : 1,
@@ -86,7 +86,7 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 1000,
+        'epochs'            : 1,
         'batch_size'        : 30
         }
     
