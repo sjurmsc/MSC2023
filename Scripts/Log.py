@@ -18,7 +18,7 @@ from numpy.linalg import norm
 from matplotlib.colors import Normalize, Colormap
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook
-from pandas import read_csv
+from pandas import read_csv, DataFrame
 
 
 msc_color = '#6bb4edff'
@@ -354,18 +354,98 @@ def create_results_xl():
 
     wb.save('results.xlsx')
 
+# import boundary norm
+from matplotlib.colors import BoundaryNorm
 
-def describe_data(X, y, groups, mdir=''):
+def get_GGM_cmap(GGM):
+    """Creates a segmented colorbar with units colored by their uid"""
+
+    umap = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv')
+    GGM_names = []
+
+    unique_uid = np.sort(np.unique(GGM.flatten())).astype(int)
+
+    for u in unique_uid:
+        GGM_names.append(umap.loc[umap['uid'] == u]['unit'].values[0])
+
+    n_colors = len(np.unique(umap['uid']))
+    # Add a segmented colorbar with unique colors for the different units
+    cmap = plt.cm.get_cmap('gnuplot', n_colors)
+
+    # Define the bins and normalize
+    bounds = np.linspace(0, n_colors, n_colors+1)
+    norm = BoundaryNorm(bounds, cmap.N)
+
+    # Create a colorbar with only the unique GGM provided to the function given the right colors
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+    cbar = plt.colorbar(sm, ticks=np.arange(n_colors)+0.5)
+    cbar.ax.set_yticklabels(GGM_names)
+
+    return cmap, norm, cbar
+
+
+def describe_data(X, y, groups, GGM, mdir=''):
     """Creates a text file with the description of the data"""
-    pass
-    
-    
-    # Create the text file
-    # with open(mdir + 'data_description.txt', 'w') as f:
-    #     f.
-# Only used for testing the code
 
+    unit_mapping = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv', index_col=0)
 
+    filename = mdir + 'dataset_description.csv'
+    latex_filename = mdir + 'dataset_description.tex'
+
+    tex_string = ''
+    data_df = DataFrame(columns=['qc', 'fs', 'u2', 'GGM'])
+
+    # Make histogram of the GGM counts with unit mapping on the x axis centered at the bars
+    fig, ax = plt.subplots()
+
+    umap = lambda x: unit_mapping['unit'][x]
+    # Make a flattened sorted array of the GGM values
+    ggm_flatsort = np.sort(GGM.flatten())
+    string_GGM = np.vectorize(umap)(ggm_flatsort)
+    ax.hist(string_GGM, bins=np.arange(len(np.unique(GGM))+1), color=msc_color, edgecolor='k')
+    ax.set_xticks(np.arange(len(np.unique(GGM))) + 0.5)
+    ax.set_xticklabels(np.unique(string_GGM, return_counts=True)[0])
+    # Rotate the xtick labels
+    plt.setp(ax.get_xticklabels(), rotation=90, rotation_mode="anchor", ha="right", va="center")
+    ax.set_xlabel('Unit')
+    ax.set_ylabel('Count')
+    fig.subplots_adjust(bottom=0.2)
+    fig.suptitle('CPT values per GGM unit')
+    plt.show()
+    fig.savefig(mdir + 'GGM_histogram.png', dpi=500)
+    plt.close(fig)
+
+    
+    ggm = GGM.reshape(*y.shape[:-1], 1)
+    flat_data = np.concatenate((y, ggm), axis=-1).reshape(-1, 4)
+
+    df = DataFrame(flat_data, columns=['$q_c$', '$f_s$', '$u_2$', 'GGM'])
+    df.to_csv(mdir+'data.csv')
+
+    for g in df.groupby('GGM'):
+        unit = unit_mapping.iloc[int(g[0])]['unit']
+        g_data = g[1].iloc[:, :-1]
+
+        
+        desc = g_data.describe().T
+        desc.columns = ['n', '$\mu$', '$\sigma$', 'min', 'Q1', 'Q2', 'Q3', 'max']
+
+        beg = '\\begin{table}[h]\n'
+        string = beg + f'\\caption{{Summary statistics for {unit}}}\n'
+        string += desc.to_latex(escape=False)
+        string += '\\end{table}\n\n'
+        tex_string += string
+
+        data_df = data_df.append(g[1].describe())
+
+    data_df.to_csv(filename)
+    with open(latex_filename, 'w') as f:
+        f.write(tex_string)
+
+    
+
+    
 from NGI.GM_Toolbox import evaluate_modeldist_norm
 
 def make_cv_excel(filename, COMP_DF):
@@ -379,7 +459,7 @@ def make_cv_excel(filename, COMP_DF):
     unit_mapping = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv', index_col=0)
     
     for g in COMP_DF.groupby('GGM'):
-
+        unit = unit_mapping.iloc[int(g[0])]['unit']
         g_data = g[1]
 
         for p in params:
@@ -390,7 +470,6 @@ def make_cv_excel(filename, COMP_DF):
                 
                 # Find the cell row by searching for the GGM in the first column
                 for row in range(2, ws.max_row + 1):
-                    unit = unit_mapping.iloc[int(g[0])]['unit']
                     if ws.cell(row=row, column=1).value == unit:
                         cellrow = row
                         break
@@ -399,7 +478,7 @@ def make_cv_excel(filename, COMP_DF):
                     if '_'+method in ws.cell(row=1, column=col).value:
                         cellcol = col
                         break
-
+                
                 # set the cell value to the std
                 ws.cell(row=cellrow, column=cellcol).value = std
 

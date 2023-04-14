@@ -117,6 +117,12 @@ if __name__ == '__main__':
     from Log import *
     from pathlib import Path
 
+    pred_results = r"C:\Users\SjB\MSC2023\Models\ARH\Ensemble_CNN_preds.pkl"
+
+    with open(pred_results, 'rb') as file:
+        preds = pickle.load(file)
+
+
     # illustrate_seq_lengths(zrange=(35, 50))
 
     # raise SystemExit
@@ -161,31 +167,31 @@ if __name__ == '__main__':
     
 
     full_args = create_full_trace_dataset(zrange=zrange, n_bootstraps=1)
-    X = full_args[0]
+    # X = full_args[0]
 
-    GGM = full_args[7]
-    GGM_unc = full_args[8]
+    # GGM = full_args[7]
+    # GGM_unc = full_args[8]
 
-    end = X.shape[0]
+    # end = X.shape[0]
 
-    Xflip = np.flip(X, axis=1)
+    # Xflip = np.flip(X, axis=1)
 
-    X = np.vstack((X, Xflip))
+    # X = np.vstack((X, Xflip))
 
     # Z_full = full_args[3]
-    Z_full = np.array([z for i in range(X.shape[0])])
-    Z_nnorm = np.array([z_norm for i in range(X.shape[0])])
-    Z2 = Z_nnorm**2
+    # Z_full = np.array([z for i in range(X.shape[0])])
+    # Z_nnorm = np.array([z_norm for i in range(X.shape[0])])
+    # Z2 = Z_nnorm**2
 
 
-    args = create_sequence_dataset(zrange=zrange, n_bootstraps=1)
-    X = args[0]
-    y = args[1]
-    z = args[3]
-    GGM = args[4]
+    # args = create_sequence_dataset(zrange=zrange, n_bootstraps=1)
+    # X = args[0]
+    # y = args[1]
+    # z = args[3]
+    # GGM = args[4]
 
-    assert z.shape == GGM.shape
-    print('X shape: {}'.format(X.shape))
+    # assert z.shape == GGM.shape
+    # print('X shape: {}'.format(X.shape))
 
     # # Normalize Z between 0 and 1
     # Z = args[3]
@@ -202,9 +208,9 @@ if __name__ == '__main__':
 
    
 
-    A = np.stack((Z_full, Z_nnorm, Z2), axis=2)
+    # A = np.stack((Z_full, Z_nnorm, Z2), axis=2)
     
-    X, A = shuffle(X, A, random_state=42)
+    # X, A = shuffle(X, A, random_state=42)
 
     latent_features = 16
 
@@ -234,8 +240,8 @@ if __name__ == '__main__':
 
     # plot_history(History, img_dir+'depth_model_auto.png')
 
-    model = keras.models.load_model('depth_model_auto1.h5')
-    encoder = keras.models.load_model('depth_model_encoder_auto1.h5')
+    model = keras.models.load_model(r'Models\ASV\Fold1\Ensemble_CNN_0.h5')
+    encoder = keras.models.load_model(r'Models\ASV\Fold1\Ensemble_CNN_encoder_0.h5')
 
     # Z_pred = model.predict(X)[:, :, 0]
 
@@ -259,7 +265,22 @@ if __name__ == '__main__':
 
     # fig.savefig(img_dir + 'depth_prediction.png', dpi=500)
 
-    X_pred = model.predict(X)[1]
+    # X, y, groups, nan_idxs, no_nan_idxs, sw_idxs, extrapolated_idxs, GGM, GGM_unc
+
+    # X_pred = model.predict(X)[1]
+
+    X_full = full_args[0]
+    y_full = full_args[1]
+    GGM_full = full_args[7]
+    minmax_full = full_args[-1]
+
+    # Have model only return the ann_decoder output
+
+    model = Model(inputs=model.inputs, outputs=model.get_layer('ann_decoder_0').output)
+
+
+
+    create_loo_trace_prediction_GGM(model, X_full[0], y_full[0], GGM_full[0], minmax=minmax_full[:][0])
 
     # Plot the predicted and true images
     fig, ax = plt.subplots(1, 2, figsize=(10, 10))

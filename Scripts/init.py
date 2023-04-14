@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     dataset_params = {
         'n_neighboring_traces'  : 5,
-        'zrange'                : (35, 50),
+        'zrange'                : (30, 100),
         'n_bootstraps'          : 1,
         'add_noise'             : False,
         'max_distance_to_cdp'   : 0.5,
@@ -50,25 +50,24 @@ if __name__ == '__main__':
         'random_flip'           : False,
         'random_state'          : 1,
         'groupby'               : 'cpt_loc',
-        'y_scaler'              : scaler
+        'y_scaler'              : 'minmax',
+        'exclude_BH'            : True
         }
-
-    X_train, y_train, groups_train, z_train, GGM_train, GGM_unc_train = create_sequence_dataset(sequence_length=100,
-                                                                                                stride=1,
-                                                                                                **dataset_params) # groupby can be 'cpt_loc' or 'borehole'
-
-    full_trace = create_full_trace_dataset(**dataset_params, ydata='mmm')
-    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM, GGM_unc, minmax_full = full_trace
-    del full_trace
-
-    # Make an array with every value of full_nan_idx repeated twice
-    xnanidx = np.array(zip(full_nan_idx, full_nan_idx)).flatten()
 
     g_name_gen = give_modelname()
     gname, _ = next(g_name_gen)
     if not Path(f'./Models/{gname}').exists(): Path(f'./Models/{gname}').mkdir()
 
-    describe_data(X_train, y_train, groups_train, mdir=f'./Models/{gname}/')
+    full_trace = create_full_trace_dataset(**dataset_params, ydata='mmm')
+    X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM, GGM_unc, minmax_full = full_trace
+    del full_trace
+
+    dataset_params['sequence_length'] = 100
+    dataset_params['stride'] = 1
+
+    X_train, y_train, groups_train, z_train, GGM_train, GGM_unc_train = create_sequence_dataset(**dataset_params)
+
+    describe_data(X_train, y_train, groups_train, GGM_train, mdir=f'./Models/{gname}/')
 
     # Configurations for models
     RF_param_dict = {
@@ -92,6 +91,10 @@ if __name__ == '__main__':
         'epochs'            : 1,
         'batch_size'        : 30
         }
+    
+    # Save all parameter dictionaries to a json file
+    with open(f'./Models/{gname}/param_dict.json', 'w') as f:
+        json.dump({'dataset' : dataset_params,'RF' : RF_param_dict, 'LGBM' : LGBM_param_dict, 'NN' : NN_param_dict}, f, indent=4)
     
     encoder_type = 'cnn'
     decoder_type = 'ann'
@@ -162,7 +165,8 @@ if __name__ == '__main__':
         Histories.append(History)
 
         encoder.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_encoder_{i}.h5')
-        model.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.h5')
+        model_mean.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.h5')
+        model.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_w_reconstruct_{i}.h5')
 
         with open(f'./Models/{gname}/Fold{i+1}/LOO_group.txt', 'w') as f:
             f.write(f'LOO group: {Test_group}')
@@ -311,7 +315,7 @@ if __name__ == '__main__':
     # Save the predictions for each to a pickle
     with open(f'./Models/{gname}/Ensemble_CNN_preds.pkl', 'wb') as f:
         pickle.dump(COMPARE_df, f)
-    
+
     # Calculate statisics, grouped by ggm unit
     filename = f'./Models/{gname}/Ensemble_CNN_stats.xlsx'
     make_cv_excel(filename, COMPARE_df)

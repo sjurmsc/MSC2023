@@ -21,7 +21,7 @@ from matplotlib.colors import ListedColormap, BoundaryNorm
 import seaborn as sns
 from scipy.spatial import KDTree
 
-from Log import add_identity
+from Log import add_identity, get_GGM_cmap
 
 
 # from JR.Seismic_interp_ToolBox import ai_to_reflectivity, reflectivity_to_ai
@@ -916,7 +916,7 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
     ax_labels = ['Measured tip resistance [MPa]', 'Sleeve Friction [MPa]', 'Pore pressure [MPa]']
     pred_color = ['g', 'orange', 'b']
 
-    # Create a figure for the predictions 
+    # Create a figure for the predictions
     fig, ax = plt.subplots(1, 3, figsize=(15, 5))
     fig.tight_layout()
     for i in range(3):
@@ -938,6 +938,84 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
     fig.suptitle(title, fontsize=16)
     fig.subplots_adjust(left=0.05, bottom=0.09, top=0.85, wspace=0.19)
 
+    # Add visualization of GGM at depth colored by appropriate cmap with a colorbar
+
+
+    if filename:
+        fig.savefig(filename, dpi=500)
+    else:
+        plt.show()
+    plt.close()
+
+
+def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM=None, zrange=(30, 100), filename='', title='', minmax=None, scale=True):
+    """Create a trace prediction for all CPT units with a thin plot of the GGM at the depth of the CPT"""
+
+    scaler = get_cpt_data_scaler()
+
+    test_X = test_X.copy()
+    test_y = test_y.copy()
+    mins = minmax[0].copy()
+    maxs = minmax[1].copy()
+
+    # Create predictions for the test set
+    if not type(model) == list:
+        predictions = model.predict(test_X)
+    else:
+        encoder, model = model
+        predictions = predict_encoded_tree(encoder, model, test_X)
+    
+    # Rescale the predictions
+    if scale:
+        for i in range(predictions.shape[0]):
+            predictions[i, :, :] = scaler.inverse_transform(predictions[i, :, :])
+            test_y[i, :, :] = scaler.inverse_transform(test_y[i, :, :])
+            mins[i, :, :] = scaler.inverse_transform(mins[i, :, :])
+            maxs[i, :, :] = scaler.inverse_transform(maxs[i, :, :])
+
+    z = np.arange(zrange[0], zrange[1], 0.1)
+
+    units = ['$q_c$', '$f_s$', '$u_2$']
+    ax_labels = ['Measured tip resistance [MPa]', 'Sleeve Friction [MPa]', 'Pore pressure [MPa]']
+    pred_color = ['g', 'orange', 'b']
+
+    # Create a figure for the predictions
+    fig, ax = plt.subplots(1, 4, figsize=(15, 5))
+    fig.tight_layout()
+    for i in range(3):
+        for t in range(predictions.shape[0]):
+            ax[i].plot(predictions[t, :, i], z, 'k', alpha=0.1)
+            # Plot test_y using only markers
+            ax[i].plot(test_y[t, :, i], z, pred_color[i], marker='.', alpha=0.5)
+            if minmax is not None:
+                ax[i].fill_betweenx(z, mins[t, :, i], maxs[t, :, i], color=pred_color[i], alpha=0.1)
+        ax[i].set_title(units[i])
+        ax[i].set_ylabel('Depth [mbsl]')
+
+        # Set the x axis label to the top
+        # ax[i].xaxis.set_label_position('top')
+        ax[i].set_xlabel(ax_labels[i])
+
+        ax[i].invert_yaxis()
+    # Add super title
+    fig.suptitle(title, fontsize=16)
+    fig.subplots_adjust(left=0.05, bottom=0.09, top=0.85, wspace=0.19)
+
+    # Add visualization of GGM at depth colored by appropriate cmap with a colorbar
+    if GGM is not None:
+        cmap, norm, cbar = get_GGM_cmap(GGM)
+        # Get the depth of the CPT
+        cpt_depth = z
+        # Get the GGM at the depth of the CPT
+        GGM_at_depth = GGM[:, np.round(cpt_depth).astype(int)]
+        # Plot the GGM at the depth of the CPT
+        ax[3].imshow(GGM_at_depth, cmap=cmap, extent=[0, 1, zrange[1], zrange[0]])
+        ax[3].set_title('GGM at CPT depth')
+        ax[3].set_ylabel('Depth [mbsl]')
+        ax[3].invert_yaxis()
+        # Add colorbar to the right of the plot
+        fig.colorbar(cbar, ax=ax[3], orientation='vertical', fraction=0.046, pad=0.04)
+    
     if filename:
         fig.savefig(filename, dpi=500)
     else:
