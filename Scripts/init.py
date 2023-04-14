@@ -236,6 +236,8 @@ if __name__ == '__main__':
         t_test_pred = test_prediction
         t_flat_y = flat_y_test
 
+        tree_scores = {}
+
         for dec in ['RF', 'LGBM']:
             if dec == 'RF':
                 print('Fitting RF')
@@ -247,7 +249,7 @@ if __name__ == '__main__':
                 
                 s = rf_decoder.score(t_test_pred, t_flat_y)
                 print('RF score: {}'.format(s))
-
+                tree_scores['RF'] = s
                 rf = predict_encoded_tree(encoder, rf_decoder, X_test_cv)
                 if i == 0:
                     rf_preds = rf
@@ -263,11 +265,16 @@ if __name__ == '__main__':
 
                 s = lgbm_decoder.score(t_test_pred, t_flat_y)
                 print('LGBM score: {}'.format(s))
+                tree_scores['LGBM'] = s
                 lgbm = predict_encoded_tree(encoder, lgbm_decoder, X_test_cv)
                 if i == 0:
                     lgbm_preds = lgbm
                 else:
                     lgbm_preds = np.vstack((lgbm_preds, lgbm))
+        
+        # export the tree scores
+        with open(f'./Models/{gname}/Fold{i+1}/tree_scores.json', 'w') as f:
+            json.dump(tree_scores, f, indent=4)
 
         # Plotting the predictions
         for m, title in zip([model_mean, [encoder, rf_decoder], [encoder, lgbm_decoder]], [decoder_type.upper(), 'RF', 'LGBM']):
