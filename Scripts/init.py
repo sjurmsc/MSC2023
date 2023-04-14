@@ -86,7 +86,7 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 500,
+        'epochs'            : 200,
         'batch_size'        : 30
         }
     
