@@ -41,9 +41,9 @@ if __name__ == '__main__':
     dataset_params = {
         'n_neighboring_traces'  : 5,
         'zrange'                : (35, 100),
-        'n_bootstraps'          : 1,
+        'n_bootstraps'          : 5,
         'add_noise'             : False,
-        'max_distance_to_cdp'   : 0.5,
+        'max_distance_to_cdp'   : 0.4,
         'cumulative_seismic'    : False,
         'random_flip'           : False,
         'random_state'          : 1,
@@ -108,6 +108,7 @@ if __name__ == '__main__':
     cols = ['Depth', 'GGM', 'GGM_uncertainty', 'True_qc', 'CNN_qc', 'RF_qc', 'LGBM_qc', 'True_fs', 'CNN_fs', 'RF_fs', 'LGBM_fs', 'True_u2', 'CNN_u2', 'RF_u2', 'LGBM_u2']
 
     COMPARE_df = pd.DataFrame(columns=cols)
+    loss_dict = {}
 
     for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
         Train_groups    = np.unique(groups_train[train_index])
@@ -169,6 +170,9 @@ if __name__ == '__main__':
         training_time_dict[i]['CNN'] = time() - t0
 
         Histories.append(History)
+
+        # Add loss to loss_dict
+        loss_dict[f'Fold{i+1}'] = History.history['loss']
 
         encoder.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_encoder_{i}.h5')
         model_mean.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.h5')
@@ -317,6 +321,10 @@ if __name__ == '__main__':
             }
     
     COMPARE_df = pd.DataFrame(comp)
+
+    # Save the losses of the different folds to a dict
+    with open(f'./Models/{gname}/loss_dict.json', 'w') as f:
+        json.dump(loss_dict, f, indent=4)
     
     pred_dir = f'./Models/{gname}/Predictions/'
     if not Path(pred_dir).exists():
