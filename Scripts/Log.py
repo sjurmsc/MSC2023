@@ -456,7 +456,7 @@ from NGI.GM_Toolbox import evaluate_modeldist
 
 def make_cv_excel(filename, COMP_DF):
     """Creates a new excel file with the results of the model"""
-    xl = "C:/Users/SjB/MSC2023/Results/NGI_stdd_{}.xlsx"
+    xl = "Results/NGI_stdd_{}.xlsx"
     wb = load_workbook(xl)
     # Open the worksheet q_c
     
