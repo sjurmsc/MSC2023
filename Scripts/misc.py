@@ -136,7 +136,7 @@ if __name__ == '__main__':
     image_width = 11
     encoder_type = 'cnn'
     decoder_type = 'cnn'
-    zrange = (35, 50)
+    zrange = (35, 100)
     
     z = np.arange(zrange[0], zrange[1], 0.1).reshape(-1, 1)
 
@@ -240,8 +240,8 @@ if __name__ == '__main__':
 
     # plot_history(History, img_dir+'depth_model_auto.png')
 
-    model = keras.models.load_model(r'Models\ASV\Fold1\Ensemble_CNN_0.h5')
-    encoder = keras.models.load_model(r'Models\ASV\Fold1\Ensemble_CNN_encoder_0.h5')
+    model = keras.models.load_model(r'Models\ATD\Fold1\Ensemble_CNN_0.h5')
+    encoder = keras.models.load_model(r'Models\ATD\Fold1\Ensemble_CNN_encoder_0.h5')
 
     # Z_pred = model.predict(X)[:, :, 0]
 
@@ -274,20 +274,18 @@ if __name__ == '__main__':
     GGM_full = full_args[7]
     minmax_full = full_args[-1]
 
-    # Have model only return the ann_decoder output
+    shpx = X_full[0].shape
+    shpg = GGM_full[0].shape
+    shp = y_full[0].shape
 
-    model = Model(inputs=model.inputs, outputs=model.get_layer('ann_decoder_0').output)
-
-
-
-    create_loo_trace_prediction_GGM(model, X_full[0], y_full[0], GGM_full[0], minmax=minmax_full[:][0])
+    create_loo_trace_prediction_GGM(model, X_full[0].reshape(1, *shpx), y_full[0].reshape(1, *shp), GGM_full[0].reshape(1, *shpg), minmax=(minmax_full[0][0].reshape(1, *shp), minmax_full[1][0].reshape(1, *shp)), zrange=zrange)
 
     # Plot the predicted and true images
-    fig, ax = plt.subplots(1, 2, figsize=(10, 10))
-    ax[0].imshow(X[0].reshape(11, -1).T, cmap='gray')
-    ax[1].imshow(X_pred[0].reshape(11, -1).T, cmap='gray')
+    # fig, ax = plt.subplots(1, 2, figsize=(10, 10))
+    # ax[0].imshow(X[0].reshape(11, -1).T, cmap='gray')
+    # ax[1].imshow(X_pred[0].reshape(11, -1).T, cmap='gray')
 
-    fig.savefig(img_dir + 'image_prediction.png', dpi=500)
+    # fig.savefig(img_dir + 'image_prediction.png', dpi=500)
 
 
 
