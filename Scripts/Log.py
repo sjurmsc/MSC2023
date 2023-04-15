@@ -402,10 +402,12 @@ def describe_data(X, y, groups, GGM, mdir=''):
     
     # Make a flattened sorted array of the GGM values
     ggm_flatsort = np.sort(GGM.flatten())
-    string_GGM = np.vectorize(umap)(ggm_flatsort)
-    ax.hist(string_GGM, bins=np.arange(len(np.unique(GGM))+1), color=msc_color, edgecolor='k')
-    ax.set_xticks(np.arange(len(np.unique(GGM))) + 0.5)
-    # ax.set_xticklabels(np.unique(string_GGM, return_counts=True)[0])
+    # ax.hist(string_GGM, bins=np.arange(len(np.unique(GGM))+1), color=msc_color, edgecolor='k')
+    unique_units = np.unique(ggm_flatsort, return_counts=True)
+    # Add a bar plot with the counts of the GGM values
+    ax.bar(np.arange(len(unique_units[0])), unique_units[1], color=msc_color, edgecolor='k')
+    ax.set_xticks(np.arange(len(unique_units[0])))
+    ax.set_xticklabels([umap(x) for x in unique_units[0]])
     # Rotate the xtick labels
     plt.setp(ax.get_xticklabels(), rotation=90, rotation_mode="anchor", ha="right", va="center")
     ax.set_xlabel('Unit')
