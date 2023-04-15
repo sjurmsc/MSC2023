@@ -344,15 +344,6 @@ def plot_histories(Histories, val=False, filename=None):
     plt.close()
 
 
-def create_results_xl():
-    """Creates a new excel file with the results of the model"""
-    xl = "C:/Users/SjB/MSC2023/Results/NGI_stdd_{}.xlsx"
-    wb = load_workbook(xl)
-    # Open the worksheet q_c
-    ws = wb['q_c']
-
-    wb.save('results.xlsx')
-
 # import boundary norm
 from matplotlib.colors import BoundaryNorm
 

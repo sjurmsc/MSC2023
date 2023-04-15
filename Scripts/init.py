@@ -96,7 +96,7 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 5,
+        'epochs'            : 200,
         'batch_size'        : 30
         }
     
@@ -104,8 +104,8 @@ if __name__ == '__main__':
     with open(f'./Models/{gname}/param_dict.json', 'w') as f:
         json.dump({'dataset' : dataset_params,'RF' : RF_param_dict, 'LGBM' : LGBM_param_dict, 'NN' : NN_param_dict}, f, indent=4)
     
-    encoder_type = 'depth'
-    decoder_type = 'lstm'
+    encoder_type = 'cnn'
+    decoder_type = 'ann'
     n_members    = 1
     latent_features = 16
 
@@ -181,8 +181,9 @@ if __name__ == '__main__':
 
         Histories.append(History)
 
-        # Add loss to loss_dict
-        loss_dict[f'Fold{i+1}'] = History.history['loss']
+        # Add all metrics to the loss_dict
+        for key in History.history.keys():
+            loss_dict[f'Fold{i+1}_{key}'] = History.history[key][-1]
 
         encoder.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_encoder_{i}.h5')
         model_mean.save(f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{i}.h5')
@@ -213,34 +214,34 @@ if __name__ == '__main__':
             z = np.vstack((z, z_train[test_index]))
             ggms = np.vstack((ggms, GGM_test_cv))
 
-        # encoded_data = encoder(X_train_full).numpy()
-        encoded_data = encoder(X_train_cv).numpy()
+        encoded_data = encoder(X_train_full).numpy()
+        # encoded_data = encoder(X_train_cv).numpy()
         tree_train_input_shape = (-1, encoded_data.shape[-1])
-        # idx_train = full_no_nan_idx_train.flatten()
+        idx_train = full_no_nan_idx_train.flatten()
         # idx_nan_train = full_nan_idx_train.flatten()
         encoded_data = encoded_data.reshape(tree_train_input_shape)
-        # flat_y_train = y_train_full.reshape(-1, y_train_full.shape[-1])
-        flat_y_train = y_train_cv.reshape(-1, y_train_cv.shape[-1])
+        flat_y_train = y_train_full.reshape(-1, y_train_full.shape[-1])
+        # flat_y_train = y_train_cv.reshape(-1, y_train_cv.shape[-1])
         
         
-        # test_prediction = encoder(X_test_full).numpy()
-        test_prediction = encoder(X_test_cv).numpy()
+        test_prediction = encoder(X_test_full).numpy()
+        # test_prediction = encoder(X_test_cv).numpy()
         tree_test_input_shape = (-1, test_prediction.shape[-1])
-        # idx_test = full_no_nan_idx_test.flatten()
+        idx_test = full_no_nan_idx_test.flatten()
         # idx_nan_test = full_nan_idx_test.flatten()
         test_prediction = test_prediction.reshape(tree_test_input_shape)
-        # flat_y_test = y_test_full.reshape(-1, y_test_full.shape[-1])
-        flat_y_test = y_test_cv.reshape(-1, y_test_cv.shape[-1])
+        flat_y_test = y_test_full.reshape(-1, y_test_full.shape[-1])
+        # flat_y_test = y_test_cv.reshape(-1, y_test_cv.shape[-1])
 
-        # t_train_pred = encoded_data[idx_train]
-        # t_flat_y_train = flat_y_train[idx_train]
+        t_train_pred = encoded_data[idx_train]
+        t_flat_y_train = flat_y_train[idx_train]
 
         # Temporary
-        t_train_pred = encoded_data
-        t_flat_y_train = flat_y_train
+        # t_train_pred = encoded_data
+        # t_flat_y_train = flat_y_train
 
-        # t_test_pred = test_prediction[idx_test]
-        # t_flat_y = flat_y_test[idx_test]
+        t_test_pred = test_prediction[idx_test]
+        t_flat_y = flat_y_test[idx_test]
 
         # Temporary
         t_test_pred = test_prediction
