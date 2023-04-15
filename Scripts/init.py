@@ -28,7 +28,17 @@ from NGI.GM_Toolbox import evaluate_modeldist_norm
 
 from time import time
 
-
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        logical_gpus = tf.config.list_logical_devices('GPU')
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+    except RuntimeError as e:
+        # Memory growth must be set before GPUs have been initialized
+        print(e)
 
 
 if __name__ == '__main__':
@@ -86,7 +96,7 @@ if __name__ == '__main__':
         }
 
     NN_param_dict = {
-        'epochs'            : 200,
+        'epochs'            : 5,
         'batch_size'        : 30
         }
     
@@ -95,7 +105,7 @@ if __name__ == '__main__':
         json.dump({'dataset' : dataset_params,'RF' : RF_param_dict, 'LGBM' : LGBM_param_dict, 'NN' : NN_param_dict}, f, indent=4)
     
     encoder_type = 'cnn'
-    decoder_type = 'ann'
+    decoder_type = 'lstm'
     n_members    = 1
     latent_features = 16
 
