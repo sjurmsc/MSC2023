@@ -243,9 +243,9 @@ if __name__ == '__main__':
         t_test_pred = test_prediction[idx_test]
         t_flat_y = flat_y_test[idx_test]
 
-        # Temporary
-        t_test_pred = test_prediction
-        t_flat_y = flat_y_test
+        # # Temporary
+        # t_test_pred = test_prediction
+        # t_flat_y = flat_y_test
 
         tree_scores = {}
 
