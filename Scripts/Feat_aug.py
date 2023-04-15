@@ -1300,20 +1300,21 @@ def get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/
     Returns a list of all las files in a given folder
     """
     cpt_dir = list(Path(cpt_folder_loc).glob('*.las'))
-    cpt_keys = [cpt.name[:cpt.name.find('.las')] for cpt in cpt_dir]
 
-    
-    # Remove duplicates of data
-    for key in cpt_keys:
+    for cpt in cpt_dir:
+        key = cpt.stem
         if key[-2:] == '-A':
-            cpt_keys.remove(key[:-2])
+            cpt_dir.remove(Path(str(cpt).replace(key, key[:-2])))
         elif key[-2:] == '-B':
-            try: cpt_keys.remove(key[:-2]+'-A')
+            try: cpt_keys.remove(Path(cpt.replace(key, key[:-2]+'-A')))
             except: pass
-            try: cpt_keys.remove(key[:-2])
+            try: cpt_keys.remove(Path(cpt.replace(key, key[:-2])))
             except: pass
 
+    cpt_keys = [cpt.stem for cpt in cpt_dir]
 
+    # Remove duplicates of data
+    
     df_dict = {}
 
     for key, cpt in zip(cpt_keys, cpt_dir):
