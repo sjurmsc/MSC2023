@@ -104,7 +104,7 @@ if __name__ == '__main__':
     with open(f'./Models/{gname}/param_dict.json', 'w') as f:
         json.dump({'dataset' : dataset_params,'RF' : RF_param_dict, 'LGBM' : LGBM_param_dict, 'NN' : NN_param_dict}, f, indent=4)
     
-    encoder_type = 'cnn'
+    encoder_type = 'depth'
     decoder_type = 'lstm'
     n_members    = 1
     latent_features = 16
