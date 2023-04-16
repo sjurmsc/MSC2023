@@ -317,11 +317,12 @@ def repo_push(fps, message):
 def plot_history(History, filename=None):
     """Plots the history of the model training"""
     for key in History.history.keys():
-        if 'loss' in key:
-            if key == 'loss':
-                plt.plot(History.history[key], label=key, color='k', linewidth=2, zorder=2)
-            else:
-                plt.plot(History.history[key], label=key, linewidth=2, zorder=1)
+        # if 'loss' in key:
+        #     if key == 'loss':
+        #         plt.plot(History.history[key], label=key, color='k', linewidth=2, zorder=2)
+        #     else:
+        if 'decoder' in key:    
+            plt.plot(History.history[key], label=key, c=msc_color, linewidth=2, zorder=1)
     plt.yscale('log')
     plt.title('Model loss', fontsize=20)
     plt.ylabel('Loss')
