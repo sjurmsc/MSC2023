@@ -49,6 +49,7 @@ if __name__ == '__main__':
     scaler = get_cpt_data_scaler()
 
     m_dist = [0.4, 1, 5, 10, 25]
+    
 
     distance_loss = 'Results/distance_loss_0.csv'
 
