@@ -156,7 +156,7 @@ if __name__ == '__main__':
                 tempdir = f'./Models/{gname}/Fold{i+1}'
                 if not Path(tempdir).exists(): Path(tempdir).mkdir()
                 with open(f'./Models/{gname}/Fold{i+1}/GGM_test_not_in_train.txt', 'w') as f:
-                    f.write(','.join([umap(g) for g in GGM_test_not_in_train]))
+                    f.write(', '.join([umap(g) for g in GGM_test_not_in_train]))
 
             # Getting the indices of the nan values for coloring plots
             full_nan_idx_train = full_nan_idx[in_train].copy()
