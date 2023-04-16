@@ -104,7 +104,7 @@ if __name__ == '__main__':
         LGBM_param_dict = {
             'num_leaves'        : 31,
             'max_depth'         : 20,
-            'n_estimators'      : 100,
+            'n_estimators'      : 60,
             'n_jobs'            : -1
             }
 
