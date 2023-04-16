@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     dataset_params = {
         'n_neighboring_traces'  : 5,
-        'zrange'                : (35, 100),
+        'zrange'                : (35, 60),
         'n_bootstraps'          : 5,
         'add_noise'             : False,
         'max_distance_to_cdp'   : 25,
