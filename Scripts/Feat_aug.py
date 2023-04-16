@@ -281,11 +281,15 @@ def create_sequence_dataset(n_neighboring_traces=5,
     GGM = np.array(GGM)
     GGM_unc = np.array(GGM_unc)
 
-    # Randomly flip the X data about the 1 axis
+    # Add flipped X data about the 1 axis
     if random_flip:
-        for i in range(len(X)):
-            if np.random.randint(2):
-                X[i] = np.flip(X[i], 0)
+        X_flip = np.flip(X, 1)
+        X = np.concatenate((X, X_flip), axis=0)
+        y = np.concatenate((y, y), axis=0)
+        Z = np.concatenate((Z, Z), axis=0)
+        groups = np.concatenate((groups, groups), axis=0)
+        GGM = np.concatenate((GGM, GGM), axis=0)
+        GGM_unc = np.concatenate((GGM_unc, GGM_unc), axis=0)
 
     if random_state:
         X, y, groups, Z, GGM, GGM_unc = shuffle(X, y, groups, Z, GGM, GGM_unc, random_state=random_state)

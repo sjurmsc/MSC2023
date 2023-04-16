@@ -11,8 +11,6 @@ def CNN_pyramidal_encoder(latent_features, image_width):
 
     assert image_width % 2 == 1, 'width % 2 != 1'
 
-    # input = keras.layers.Input(shape=(None, image_width, 1), ragged=True)
-
     image_shape = (image_width, None, 1) # None, because length is variable, 1 because monochromatic seismic
 
     # Input block
@@ -191,6 +189,7 @@ def ANN_decoder(latent_features=16, i=0):
     ann_decoder = keras.models.Sequential([
         keras.layers.InputLayer(input_shape=(None, latent_features)),
         keras.layers.Dense(64, activation='relu'),
+        keras.layers.Dropout(0.1),
         keras.layers.Dense(32, activation='relu'),
         keras.layers.Dense(16, activation='relu'),
         keras.layers.Dense(3)

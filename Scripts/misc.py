@@ -124,7 +124,8 @@ if __name__ == '__main__':
 
 
     # illustrate_seq_lengths(zrange=(35, 50))
-    get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/FE_CPT')
+    # get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/FE_CPT')
+
 
     raise SystemExit
 
