@@ -839,7 +839,8 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     # Add a segmented colorbar with unique colors for the different units
     cmap = plt.cm.get_cmap('gnuplot', n_colors)
 
-    bounds = np.arange(len(umap['uid'])+1)
+    bounds = [umap['uid'].iloc[0]-0.5, *umap['uid']+0.5]
+    # bounds = np.arange(len(umap['uid'])+1)
     norm = BoundaryNorm(bounds, cmap.N)
 
     fig, ax = plt.subplots(1, 1, figsize=(15, 10))
@@ -848,17 +849,18 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     fig.subplots_adjust(left=0.05, top=0.9, right=0.9, bottom=0.1)
 
     # Give specific markers to points outside the valid indices
-    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], cmap=cmap, alpha=0.8, label='Extrapolated Prediction')
+    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], cmap=cmap, norm=norm, alpha=0.8, label='Extrapolated Prediction')
     
     # Plot the valid indices
-    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], marker= 'o', c=GGM[valid_indices], cmap=cmap, alpha=0.8, label='Verifiable Prediction')
+    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], marker= 'o', c=GGM[valid_indices], cmap=cmap, norm=norm, alpha=0.8, label='Verifiable Prediction')
 
     # Remove axis ticks
     ax.set_xticks([])
     ax.set_yticks([])
 
     # Create a colorbar
-    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=np.arange(len(umap['uid']))+0.5)
+    a_bounds = np.array(bounds)
+    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=cmap), ax=ax, ticks=a_bounds[:-1]+0.5*np.diff(a_bounds), boundaries=a_bounds)
     cbar.ax.invert_yaxis()
 
     # Set the tick labels to be umap uits and those in GGM names to be bold
