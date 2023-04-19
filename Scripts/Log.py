@@ -345,6 +345,50 @@ def plot_histories(Histories, val=False, filename=None):
     plt.savefig(filename)
     plt.close()
 
+from pandas import read_excel
+import segyio
+def plot_reconstruction(reconstruct, cpt_loc=15, zrange = (35, 60), filename = ''):
+    d = read_excel('../OneDrive - NGI/Documents/NTNU/MSC_DATA/Distances_to_2Dlines_Revised.xlsx')
+    d = d.loc[d['Location no.'] == cpt_loc]
+    # Pick the first of the d
+    d = d.iloc[0]
+    # Get the 2D UHR line
+    line = d['2D UHR line']
+    CDP = d['CDP']
+
+    seis_file = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/{}.sgy'.format(line)
+
+    with segyio.open(seis_file, ignore_geometry=True) as f:
+        samples = f.samples
+        seis = segyio.collect(f.trace.raw[:])
+        cdps = segyio.collect(f.attributes(segyio.TraceField.CDP)[:])
+        # Get the index of the CDP
+        cdp_idx = np.where(abs(cdps - CDP)<600)[0]
+        seis = seis[cdp_idx][:, (samples >= zrange[0]) & (samples < zrange[1])]
+    
+    # Reshape the seismic into images of 11, depth, 1
+    X_seis = seis.reshape((-1, 11, seis.shape[1], 1))
+
+    pred = reconstruct.predict(X_seis)[1]
+    pred = pred.reshape((-1, seis.shape[1]))
+
+    fig, ax = plt.subplots(1, 2, figsize=(20, 10))
+    ax[0].imshow(seis.T, aspect='auto', cmap='gray')
+    ax[0].set_title('Seismic')
+    ax[1].imshow(pred.T, aspect='auto', cmap='gray')
+    ax[1].set_title('Reconstruction')
+    
+    if filename:
+        plt.savefig(filename)
+    else:
+        plt.show()
+    plt.close()
+
+    
+
+        
+
+
 
 # import boundary norm
 from matplotlib.colors import BoundaryNorm
@@ -618,7 +662,7 @@ def loss_dict_latex(loss_dict, destination_folder=''):
 
 def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/'):
     """Based on the models in the argument, this function creates updated figures for the assignment"""
-    from Feat_aug import create_full_trace_dataset, create_loo_trace_prediction_GGM, prediction_scatter_plot, plot_latent_space, predict_encoded_tree
+    from Feat_aug import create_full_trace_dataset, create_loo_trace_prediction_GGM, prediction_scatter_plot, plot_latent_space, predict_encoded_tree, get_cpt_name
     from sklearn.multioutput import MultiOutputRegressor
     from sklearn.ensemble import RandomForestRegressor
     from lightgbm import LGBMRegressor
@@ -714,10 +758,11 @@ def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/
             TRUE_u2 = minmax_test[1][no_nan_idxs_test].reshape(-1, 3)[:, 2]
             true_u2 = minmax_test[0][no_nan_idxs_test].reshape(-1, 3)[:, 2]
 
-            ggm = GGM_test[no_nan_idxs_test].flatten()
+            ggm = GGM_test[no_nan_idxs_test]
+            ggm_unc = np.zeros_like(ggm)
 
             
-            comp = {'Depth': depths.flatten(), 'GGM': ggm, 'GGM_uncertainty': np.zeros_like(ggm),
+            comp = {'Depth': depths.flatten(), 'GGM': ggm.flatten(), 'GGM_uncertainty': ggm_unc.flatten(),
                     'TRUE_qc': TRUE_qc.flatten(), 'true_qc': true_qc.flatten(), 'CNN_qc': ann_pred[:, 0], 'RF_qc': rf_pred[:, 0], 'LGBM_qc': lgbm_pred[:, 0],
                     'TRUE_fs': TRUE_fs.flatten(), 'true_fs': true_fs.flatten(), 'CNN_fs': ann_pred[:, 1], 'RF_fs': rf_pred[:, 1], 'LGBM_fs': lgbm_pred[:, 1],
                     'TRUE_u2': TRUE_u2.flatten(), 'true_u2': true_u2.flatten(), 'CNN_u2': ann_pred[:, 2], 'RF_u2': rf_pred[:, 2], 'LGBM_u2': lgbm_pred[:, 2]}
@@ -741,19 +786,19 @@ def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/
                                                 GGM_test,
                                                 zrange=temp_param_dict['zrange'],
                                                 filename=fold_folder + '/pred_' + title + '_{}{}.png'.format(mgroup, fold_number),
-                                                title=title,
+                                                title=title + ' ' + get_cpt_name(loo_group),
                                                 minmax=minmax_test)
                 
                 prediction_scatter_plot(m,
                                         X_test,
                                         y_test,
-                                        filename= fold_folder + '/scatter_' + title + '_{}{}.png'.format(mgroup, fold_number),
-                                        title=title,
+                                        filename=fold_folder + '/scatter_' + title + '_{}{}.png'.format(mgroup, fold_number),
+                                        title=title + ' ' + get_cpt_name(loo_group),
                                         bins=15)
 
 
             # Make illustration of the reconstruction model
-
+            plot_reconstruction(reconstruct, filename=fold_folder + '/reconstruction_{}{}.png'.format(mgroup, fold_number))
         # Make best and worst case cross validation excel file
         make_cv_excel_bestworst(filename=file_destination + mgroup + '/CV.xlsx', COMP_DF=COMP_df)
 
