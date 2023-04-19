@@ -387,6 +387,80 @@ def plot_reconstruction(reconstruct, cpt_loc=15, zrange = (35, 60), filename = '
     
 
         
+def plot_dontfit(filename='', zrange = (35, 60)):
+    from Feat_aug import create_full_trace_dataset, get_cpt_name
+
+    Full_args = create_full_trace_dataset(zrange=zrange)
+
+    y = Full_args[1]
+    z = np.arange(zrange[0], zrange[1], 0.1)
+    groups = Full_args[2]
+    minmax = Full_args[-1]
+    ggm = Full_args[7]
+
+    cmap, norm, _ = get_GGM_cmap(ggm)
+    umap = get_umap_func()
+
+    locations = [3, 6, 7, 33, 71, 72]
+
+    params = ['q_c', 'f_s', 'u_2']
+    colors = ['g', 'orange', 'b']
+
+    fig, ax = plt.subplots(6, 4, figsize=(6, 20))
+    fig.subplots_adjust(left = 0.076, bottom=0.05, right=0.92, top=0.93, wspace=0.32, hspace=0.3)
+
+    for i, cpt_loc in enumerate(locations):
+        cptname = get_cpt_name(cpt_loc)
+        y_loc = y[np.where(groups == cpt_loc)]
+        mins, maxs = (minmax[0][np.where(groups == cpt_loc)], minmax[1][np.where(groups == cpt_loc)])
+        g = ggm[np.where(groups == cpt_loc)]
+
+        for ii, cpt in enumerate(y_loc):
+            for j in range(3):
+                if j == 0: ax[i, j].set_ylabel(cptname)
+                if j == 2: ax[i, j].set_ylabel('Depth (m)'); ax[i, j].yaxis.set_label_position("right"); ax[i, j].yaxis.tick_right()
+                else: ax[i, j].set_yticks([])
+                ax[i, j].plot(y_loc[ii, :, j], z, color=colors[j], label=params[j])
+                ax[i, j].fill_betweenx(z, mins[ii, :, j], maxs[ii, :, j], alpha=0.5, color=colors[j])
+                if ii==0: ax[i, j].invert_yaxis()
+                if i == 5: ax[i, j].set_xlabel(f'${params[j]}$')
+            #    get the limits of the plots in row i
+
+        # set the first three plots in the row to the same y axis limits
+        ylims = [ax[i, j].get_ylim() for j in range(3)]
+        ylims = np.max(ylims, axis=0)
+        for j in range(3):
+            ax[i, j].set_ylim(ylims)
+
+        # set the limit of the plots in row i to the max of the limits in row i
+        gm = g[ii][np.where((z>=ylims[1])&(z<=ylims[0]))]
+        gm_z = z[np.where((z>=ylims[1])&(z<=ylims[0]))]
+        
+        ax[i, 3].imshow(gm.reshape(-1, 1), cmap=cmap, norm=norm, extent=[gm_z[0], gm_z[-1], gm_z[-1], gm_z[0]], aspect=8)
+        ax[i, 3].set_ylim(ylims)
+        changes = np.diff(gm)
+        depth_changes = gm_z[np.where(changes != 0)]
+        depth_changes = np.insert(depth_changes, 0, gm_z[0]); depth_changes = np.append(depth_changes, ylims[0])
+        depth_changes = np.sort(depth_changes)
+        diff_changes = np.diff(depth_changes)
+        y_ticks = depth_changes[:-1] + diff_changes/2
+        
+        yticklabels = [umap(x) for x in np.unique(gm.flatten())]
+        ax[i, 3].yaxis.tick_right()
+        ax[i, 3].set_yticks(y_ticks)
+        ax[i, 3].set_yticklabels(yticklabels, rotation=20, ha='left', va='bottom', fontsize=6)
+        ax[i, 3].set_xticks([])
+        
+        
+
+
+    # plt.legend()
+    fig.suptitle('Discarded CPT measurements', fontsize=16)
+    if filename:
+        plt.savefig(filename)
+    else:
+        plt.show()
+
 
 
 
@@ -660,14 +734,49 @@ def loss_dict_latex(loss_dict, destination_folder=''):
     return string
 
 
+def bar_plot_ggm(GGM, groups, filename=''):
+    """Creates a bar plot with one bar for each GGM"""
+    unique_ggm = np.unique(GGM)
+    unique_groups = np.unique(groups)
+    ggm_counts = np.zeros((len(unique_groups), len(unique_ggm)))
+
+    tmp = np.ones_like(GGM)
+    for i, g in enumerate(groups):
+        tmp[i] = np.ones_like(GGM[i])*g
+    groups = tmp
+
+    GGM = GGM.flatten()
+    groups = groups.flatten()
+
+    for i, ggm in enumerate(unique_ggm):
+        for j, group in enumerate(unique_groups):
+            ggm_counts[j,i] = np.sum((GGM == ggm) & (groups == group))
+
+
+    fig, ax = plt.subplots(figsize=(10,5))
+    # bar per for each ggm with colors indicating how many samples are in each group
+    
+    for i, ggm in enumerate(unique_groups):
+        ax.bar(unique_ggm, ggm_counts[i], bottom=np.sum(ggm_counts[:i], axis=0), label='Group {}'.format(ggm))
+
+    #ax.set_xticks(unique_ggm)
+
+    ax.legend()
+    if filename:
+        fig.savefig(filename, dpi=500)
+    else:
+        plt.show()
+
+    plt.close(fig)
+
+
 def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/'):
     """Based on the models in the argument, this function creates updated figures for the assignment"""
-    from Feat_aug import create_full_trace_dataset, create_loo_trace_prediction_GGM, prediction_scatter_plot, plot_latent_space, predict_encoded_tree, get_cpt_name
+    from Feat_aug import create_full_trace_dataset, create_sequence_dataset, create_loo_trace_prediction_GGM, prediction_scatter_plot, plot_latent_space, predict_encoded_tree, get_cpt_name
     from sklearn.multioutput import MultiOutputRegressor
     from sklearn.ensemble import RandomForestRegressor
     from lightgbm import LGBMRegressor
     from pandas import concat
-    # NB remember to reduce the bins for scatter plots
 
     for mgroup in mgroups:
         m_folder = 'Models/{}'.format(mgroup)
@@ -687,6 +796,15 @@ def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/
         Full_args = create_full_trace_dataset(**temp_param_dict)
         X, y, groups, nan_idxs, no_nan_idxs, _, _, GGM, _, minmax = Full_args
 
+        args = create_sequence_dataset(**param_dict['dataset'])
+        # X, y, groups, Z, GGM, GGM_unc
+        GGM_seq = args[4]
+        groups_seq = args[2]
+
+        bar_plot_ggm(GGM_seq, groups_seq)
+       
+
+        plot_dontfit(destination_folder+'/CPT_not_in_dataset')
 
         # Make excel table of the folds with loss values
         with open(m_folder + '/loss_dict.json') as f:
