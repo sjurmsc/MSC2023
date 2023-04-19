@@ -19,6 +19,7 @@ from matplotlib.colors import Normalize, Colormap, ListedColormap
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook
 from pandas import read_csv, DataFrame
+from keras.models import load_model
 
 
 msc_color = '#6bb4edff'
@@ -456,7 +457,6 @@ def make_cv_excel(filename, COMP_DF):
     """Creates a new excel file with the results of the model"""
     xl = "Results/NGI_stdd_{}.xlsx"
     wb = load_workbook(xl)
-    # Open the worksheet q_c
     
     params = ['q_c', 'f_s', 'u_2']
     
@@ -514,6 +514,58 @@ def make_cv_excel(filename, COMP_DF):
     wb.save(filename)
 
 
+def make_cv_excel_bestworst(filename, COMP_DF):
+    """ Creates an excel file with the prediction std each for the best and worst case"""
+
+    xl = "Results/NGI_stdd_{}.xlsx"
+    # load a copy of the excel file
+
+    wb_best = load_workbook(xl)
+
+    wb_worst = load_workbook(xl)
+
+    params = ['q_c', 'f_s', 'u_2']
+
+    for p in params:
+        ws = wb_best[p]
+        ws_worst = wb_worst[p]
+        param = p.replace('_', '')
+        for method in ['CNN', 'RF', 'LGBM']:
+            TRUE = COMP_DF['TRUE_{}'.format(param)]
+            true = COMP_DF['true_{}'.format(param)]
+            pred = COMP_DF['{}_{}'.format(method, param)]
+
+            # Pick out the values of TRUE and true which gives the best and worst std
+            DIFF = pred - TRUE
+            diff = pred - true
+            
+            d = np.stack((DIFF, diff))
+            min_d = np.amin(d, axis=0)
+            max_d = np.amax(d, axis=0)
+            best_std = np.std(min_d)
+            worst_std = np.std(max_d)
+
+
+            for row in range(2, ws.max_row + 1):
+                if ws.cell(row=row, column=1).value == 'all':
+                    cellrow = row
+                    break
+
+            for col in range(2, ws.max_column + 1):
+                if '_'+method in ws.cell(row=1, column=col).value:
+                    cellcol = col
+                    break
+
+            ws.cell(row=cellrow, column=cellcol).value = best_std
+            ws_worst.cell(row=cellrow, column=cellcol).value = worst_std
+    
+    if not filename.endswith('.xlsx'):
+        filename += '.xlsx'
+    
+    wb_best.save(filename.replace('.xlsx', '_best.xlsx'))
+    wb_worst.save(filename.replace('.xlsx', '_worst.xlsx'))
+
+
 def add_identity(axes, *line_args, **line_kwargs):
     """Author: JaminSore (https://stackoverflow.com/users/1940479/jaminsore)"""
     identity, = axes.plot([], [], *line_args, **line_kwargs)
@@ -529,8 +581,195 @@ def add_identity(axes, *line_args, **line_kwargs):
     return axes
 
 
+def loss_dict_latex(loss_dict, destination_folder=''):
+    """Creates a latex table from a loss dictionary"""
+    folds = np.unique([f[:f.find('_')] for f in loss_dict.keys() if f.startswith('Fold')])
+
+    df = DataFrame([], columns = ['Fold', 'MAE_decoder', 'MSE_decoder', 'MAE_Rec', 'MSE_Rec'])
+
+    for fold in folds:
+        tempdict = {}
+        tempdict['Fold'] = fold[4:]
+        for key in loss_dict.keys():
+            if key.startswith(fold):
+                if 'decoder' in key:
+                    if 'mae' in key:
+                        tempdict['MAE_decoder'] = loss_dict[key]
+                    elif 'mse' in key:
+                        tempdict['MSE_decoder'] = loss_dict[key]
+                elif 'Rec' in key:
+                    if 'mae' in key:
+                        tempdict['MAE_Rec'] = loss_dict[key]
+                    elif 'mse' in key:
+                        tempdict['MSE_Rec'] = loss_dict[key]
+        
+        df = df.append(tempdict, ignore_index=True)
+
+    df.to_excel(destination_folder+'loss_dict.xlsx', index=False)
+    string = df.to_latex(escape=False, index=False)
+    return string
+
+
+    df = DataFrame(loss_dict)
+    
+    string = df.to_latex(escape=False)
+    return string
+
+
+def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/'):
+    """Based on the models in the argument, this function creates updated figures for the assignment"""
+    from Feat_aug import create_full_trace_dataset, create_loo_trace_prediction_GGM, prediction_scatter_plot, plot_latent_space, predict_encoded_tree
+    from sklearn.multioutput import MultiOutputRegressor
+    from sklearn.ensemble import RandomForestRegressor
+    from lightgbm import LGBMRegressor
+    from pandas import concat
+    # NB remember to reduce the bins for scatter plots
+
+    for mgroup in mgroups:
+        m_folder = 'Models/{}'.format(mgroup)
+        destination_folder = file_destination + mgroup
+        Path(destination_folder).mkdir(parents=True, exist_ok=True)
+
+        with open(m_folder + '/param_dict.json') as f:
+            param_dict = json.load(f)
+        
+        temp_param_dict = param_dict['dataset'].copy()
+        temp_param_dict.pop('sequence_length')
+        temp_param_dict.pop('stride')
+        rf_params = param_dict['RF']
+        lgbm_params = param_dict['LGBM']
+
+        # Data
+        Full_args = create_full_trace_dataset(**temp_param_dict)
+        X, y, groups, nan_idxs, no_nan_idxs, _, _, GGM, _, minmax = Full_args
+
+
+        # Make excel table of the folds with loss values
+        with open(m_folder + '/loss_dict.json') as f:
+            loss_dict = json.load(f)
+            loss_dict_latex(loss_dict, destination_folder=file_destination+mgroup+'/')
+
+        COMP_df = DataFrame([], columns = ['Depth', 'GGM', 'GGM_uncertainty', 'TRUE_qc', 'true_qc', 'CNN_qc', 'RF_qc', 'LGBM_qc', 'TRUE_fs', 'true_fs', 'CNN_fs', 'RF_fs', 'LGBM_fs', 'TRUE_u2', 'true_u2', 'CNN_u2', 'RF_u2', 'LGBM_u2'])
+
+        # iterate over the folders which are named after the k-fold
+        for fold in Path(m_folder).glob('Fold*'):
+            fold_number = fold.name[4:]
+            fold_folder = file_destination + mgroup + '/' + str(fold.name)
+            Path(fold_folder).mkdir(parents=True, exist_ok=True)
+
+            with open(fold / 'LOO_group.txt') as f:
+                loo_group = int(f.read()[11:].strip('[]'))
+            
+            with open(fold_folder + '/LOO_group.txt', 'w') as f:
+                f.write(str(loo_group))
+            
+            # iterate over the files in the folder
+            modelnames = [i for i in fold.glob('*.h5')]
+            # Pop encoder and reconstruct models from the list
+            encname = modelnames.pop([i for i, j in enumerate(modelnames) if 'encoder' in str(j)][0])
+            recname = modelnames.pop([i for i, j in enumerate(modelnames) if 'reconstruct' in str(j)][0])
+            modelname = modelnames[0]
+
+            model = load_model(modelname)
+            encoder = load_model(encname)
+            reconstruct = load_model(recname)
+
+            # Train and test data
+            test_idxs = np.where(groups.astype(int)==loo_group)[0]
+            X_test = X[test_idxs]
+            y_test = y[test_idxs]
+            GGM_test = GGM[test_idxs]
+            nan_idxs_test = nan_idxs[test_idxs]
+            no_nan_idxs_test = no_nan_idxs[test_idxs]
+            minmax_test = (minmax[0][test_idxs], minmax[1][test_idxs])
+
+            train_idxs = np.where(groups.astype(int)!=loo_group)[0]
+            X_train = X[train_idxs]
+            y_train = y[train_idxs]
+            nan_idxs_train = nan_idxs[train_idxs]
+            no_nan_idxs_train = no_nan_idxs[train_idxs]
+
+            # Create RF and LGBM models
+            rf = MultiOutputRegressor(RandomForestRegressor(**rf_params))
+            lgbm = MultiOutputRegressor(LGBMRegressor(**lgbm_params))
+
+            encoding = encoder.predict(X_train)[no_nan_idxs_train].reshape(-1, 16)
+            rf.fit(encoding, y_train[no_nan_idxs_train].reshape(-1, 3))
+            lgbm.fit(encoding, y_train[no_nan_idxs_train].reshape(-1, 3))
+
+            # Predictions for comparison
+            depth = np.arange(temp_param_dict['zrange'][0], temp_param_dict['zrange'][1], 0.1)
+            depths = []
+            for i in range(X_test.shape[0]):
+                depths.append(depth.copy())
+            depths = np.array(depths)
+            depths = depths[no_nan_idxs_test]
+            ann_pred = model.predict(X_test)[no_nan_idxs_test].reshape(-1, 3)
+            rf_pred = predict_encoded_tree(encoder, rf, X_test)[no_nan_idxs_test].reshape(-1, 3)
+            lgbm_pred = predict_encoded_tree(encoder, lgbm, X_test)[no_nan_idxs_test].reshape(-1, 3)
+            TRUE_qc = minmax_test[1][no_nan_idxs_test].reshape(-1, 3)[:, 0]
+            true_qc = minmax_test[0][no_nan_idxs_test].reshape(-1, 3)[:, 0]
+            TRUE_fs = minmax_test[1][no_nan_idxs_test].reshape(-1, 3)[:, 1]
+            true_fs = minmax_test[0][no_nan_idxs_test].reshape(-1, 3)[:, 1]
+            TRUE_u2 = minmax_test[1][no_nan_idxs_test].reshape(-1, 3)[:, 2]
+            true_u2 = minmax_test[0][no_nan_idxs_test].reshape(-1, 3)[:, 2]
+
+            ggm = GGM_test[no_nan_idxs_test].flatten()
+
+            
+            comp = {'Depth': depths.flatten(), 'GGM': ggm, 'GGM_uncertainty': np.zeros_like(ggm),
+                    'TRUE_qc': TRUE_qc.flatten(), 'true_qc': true_qc.flatten(), 'CNN_qc': ann_pred[:, 0], 'RF_qc': rf_pred[:, 0], 'LGBM_qc': lgbm_pred[:, 0],
+                    'TRUE_fs': TRUE_fs.flatten(), 'true_fs': true_fs.flatten(), 'CNN_fs': ann_pred[:, 1], 'RF_fs': rf_pred[:, 1], 'LGBM_fs': lgbm_pred[:, 1],
+                    'TRUE_u2': TRUE_u2.flatten(), 'true_u2': true_u2.flatten(), 'CNN_u2': ann_pred[:, 2], 'RF_u2': rf_pred[:, 2], 'LGBM_u2': lgbm_pred[:, 2]}
+
+            COMP_df = concat([COMP_df, DataFrame(comp)], ignore_index=True)
+
+            # Make new figures
+            latent_space_name = 'Latent_space_{}{}.png'.format(mgroup, fold_number)
+            plot_latent_space(encoder,
+                              latent_features=16,
+                              X=X_test, 
+                              valid_indices=no_nan_idxs_test, 
+                              outside_indices=nan_idxs_test, 
+                              GGM=GGM_test, 
+                              filename= fold_folder + '/' + latent_space_name)
+
+            for m, title in zip([model, [encoder, rf], [encoder, lgbm]], ['ANN', 'RF', 'LGBM']):
+                create_loo_trace_prediction_GGM(m,
+                                                X_test,
+                                                y_test,
+                                                GGM_test,
+                                                zrange=temp_param_dict['zrange'],
+                                                filename=fold_folder + '/pred_' + title + '_{}{}.png'.format(mgroup, fold_number),
+                                                title=title,
+                                                minmax=minmax_test)
+                
+                prediction_scatter_plot(m,
+                                        X_test,
+                                        y_test,
+                                        filename= fold_folder + '/scatter_' + title + '_{}{}.png'.format(mgroup, fold_number),
+                                        title=title,
+                                        bins=15)
+
+
+            # Make illustration of the reconstruction model
+
+        # Make best and worst case cross validation excel file
+        make_cv_excel_bestworst(filename=file_destination + mgroup + '/CV.xlsx', COMP_DF=COMP_df)
+
+
 if __name__ == '__main__':
-    pass
+    import json
+
+    renew_figs(['AVP', 'AVO'])
+
+    # with open(r"C:\Users\SjB\Downloads\loss_dict_AVW.json") as f:
+    #     loss_dict = json.load(f)
+
+    # print(loss_dict_latex(loss_dict))
+
+
+
     # plt.imshow(np.array([1]))
     # a = np.random.randint(1, 10, size=(20, 10))
     # b = np.random.random((20, 10))
