@@ -1066,7 +1066,7 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM=None, zrange=(30,
     plt.close()
 
 
-def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=True):
+def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=True, bins=15):
     """Plot the predictions of the model as a scatter plot, with density contours"""
     
     # Get scaler
@@ -1115,8 +1115,8 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=
         ax[0, i].set_ylabel('Predicted {} [MPa]'.format(units[i]))
 
         # Plot the histogram of the residuals
-        ax[1, i].hist((p-t), bins=50, color=pred_color[i], edgecolor='k')
-        ax[1, i].set_xlabel('Residuals')
+        ax[1, i].hist((p-t), bins=bins, color=pred_color[i], edgecolor='k')
+        ax[1, i].set_xlabel('$\hat{{{}}}-{}$'.format(units[i][1:-1], units[i][1:-1]))
         ax[1, i].set_ylabel('Frequency')
 
         
