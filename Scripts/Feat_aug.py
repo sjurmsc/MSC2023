@@ -1003,9 +1003,9 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM, zrange=(30, 100)
         fig.tight_layout()
         for i in range(3):
             for t in range(predictions.shape[0]):
-                ax[i].plot(predictions[t, :, i], z, 'k', alpha=0.1)
+                ax[i].plot(predictions[t, :, i], z, 'k', alpha=0.7, label='Predicted')
                 # Plot test_y using only markers
-                ax[i].plot(test_y[t, :, i], z, pred_color[i], marker='.', alpha=0.5)
+                ax[i].plot(test_y[t, :, i], z, pred_color[i], marker='.', alpha=0.5, label='True')
                 if minmax is not None:
                     ax[i].fill_betweenx(z, mins[t, :, i], maxs[t, :, i], color=pred_color[i], alpha=0.1)
             ax[i].set_title(units[i])
@@ -1016,6 +1016,7 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM, zrange=(30, 100)
             ax[i].set_xlabel(ax_labels[i])
 
             ax[i].invert_yaxis()
+            ax[i].legend()
 
         cmap, norm, _ = get_GGM_cmap(GGM)
 
@@ -1037,7 +1038,7 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM, zrange=(30, 100)
         umap = get_umap_func()
         GGM_at_yticks = np.array([GGM_at_depth[np.argmin(np.abs(z-y))] for y in y_ticks])
         yticklabels = np.vectorize(umap)(GGM_at_yticks)
-        ax[3].set_yticklabels(yticklabels, rotation=-30, fontsize=8)
+        ax[3].set_yticklabels(yticklabels, rotation=-30, fontsize=8, va='bottom')
 
 
         # Add super title
