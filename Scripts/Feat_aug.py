@@ -498,7 +498,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                 X[i] = np.flip(X[i], 0)
     
     if random_state:
-        X, y, groups, nan_idxs, no_nan_idxs, mins, maxs = shuffle(X, y, groups, nan_idxs, no_nan_idxs, mins, maxs, random_state=random_state)
+        X, y, groups, GGM, GGM_unc, nan_idxs, no_nan_idxs, mins, maxs = shuffle(X, y, groups, GGM, GGM_unc, nan_idxs, no_nan_idxs, mins, maxs, random_state=random_state)
 
     print('Done!')
 
@@ -845,7 +845,7 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     umap_tot = read_csv(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\StructuralModel_unit_mapping.csv')
     bounds = [umap_tot['uid'].iloc[0]-0.5, *umap_tot['uid']+0.5]
     # bounds = np.arange(len(umap['uid'])+1)
-    # norm = BoundaryNorm(bounds, cmap.N)
+    norm = BoundaryNorm(bounds, cmap.N)
 
     fig, ax = plt.subplots(1, 1, figsize=(15, 10))
 
