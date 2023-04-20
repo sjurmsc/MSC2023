@@ -679,6 +679,44 @@ def make_cv_excel_bestworst(filename, COMP_DF):
             ws.cell(row=cellrow, column=cellcol).value = best_std
             ws_worst.cell(row=cellrow, column=cellcol).value = worst_std
     
+    for g in COMP_DF.groupby('GGM'):
+        g_data = g[1]
+
+        for p in params:
+            ws = wb_best[p]
+            ws_worst = wb_worst[p]
+            param = p.replace('_', '')
+            for method in ['CNN', 'RF', 'LGBM']:
+                TRUE = g_data['TRUE_{}'.format(param)]
+                true = g_data['true_{}'.format(param)]
+                pred = g_data['{}_{}'.format(method, param)]
+
+                # Pick out the values of TRUE and true which gives the best and worst std
+                DIFF = pred - TRUE
+                diff = pred - true
+                
+                d = np.stack((DIFF, diff))
+                d = d[:, ~np.isnan(d).any(axis=0)]
+                min_d = np.amin(d, axis=0)
+                max_d = np.amax(d, axis=0)
+                best_std = np.std(min_d)
+                worst_std = np.std(max_d)
+
+                # Find the cell row by searching for the GGM in the first column
+                for row in range(2, ws.max_row + 1):
+                    if ws.cell(row=row, column=1).value == g[0]:
+                        cellrow = row
+                        break
+                # Find the cell column by searching for the method in the first row
+                for col in range(2, ws.max_column + 1):
+                    if '_'+method in ws.cell(row=1, column=col).value:
+                        cellcol = col
+                        break
+                
+                # set the cell value to the std
+                ws.cell(row=cellrow, column=cellcol).value = best_std
+                ws_worst.cell(row=cellrow, column=cellcol).value = worst_std
+
     if not filename.endswith('.xlsx'):
         filename += '.xlsx'
     
@@ -755,7 +793,7 @@ def bar_plot_ggm(GGM, groups, filename=''):
     columns = ['GGM']*len(unique_ggm)
     rows = ['Group']*len(unique_groups)
     for i, ggm in enumerate(unique_ggm):
-        columns[i] = ggm
+        columns[i] = umap(ggm)
         for j, group in enumerate(unique_groups):
             ggm_counts[i,j] = np.sum((GGM == ggm) & (groups == group))
             rows[j] = get_cpt_name(group)
@@ -782,7 +820,7 @@ def bar_plot_ggm(GGM, groups, filename=''):
 
     #ax.set_xticks(unique_ggm)
 
-    ax.legend()
+    ax.legend(fontsize=5.5, ncol=2)
     if filename:
         fig.savefig(filename, dpi=500)
     else:
@@ -799,7 +837,7 @@ def bar_plot_ggm(GGM, groups, filename=''):
 
 def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/'):
     """Based on the models in the argument, this function creates updated figures for the assignment"""
-    from Feat_aug import create_full_trace_dataset, create_sequence_dataset, create_loo_trace_prediction_GGM, prediction_scatter_plot, plot_latent_space, predict_encoded_tree, get_cpt_name
+    from Feat_aug import create_full_trace_dataset, create_sequence_dataset, create_loo_trace_prediction_GGM, prediction_scatter_plot, plot_latent_space, predict_encoded_tree, get_cpt_name, get_cpt_data_scaler
     from sklearn.multioutput import MultiOutputRegressor
     from sklearn.ensemble import RandomForestRegressor
     from lightgbm import LGBMRegressor
@@ -825,19 +863,31 @@ def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/
 
         args = create_sequence_dataset(**param_dict['dataset'])
         # X, y, groups, Z, GGM, GGM_unc
+        X_seq = args[0]
+        y_seq = args[1]
         GGM_seq = args[4]
         groups_seq = args[2]
 
 
         bar_plot_ggm(GGM_seq, groups_seq, filename=destination_folder+'/GGM_cptloc_distribution')
-       
+
+        scaler = get_cpt_data_scaler()
+        scaled_back_y = np.ones_like(y_seq)
+        for i in range(len(y_seq)):
+            scaled_back_y[i] = scaler.inverse_transform(y_seq[i])
+        describe_data(X_seq, scaled_back_y, groups_seq, GGM_seq, mdir=destination_folder+'/')
+        del scaled_back_y, X_seq, y_seq
 
         plot_dontfit(destination_folder+'/CPT_not_in_dataset')
 
         # Make excel table of the folds with loss values
-        with open(m_folder + '/loss_dict.json') as f:
-            loss_dict = json.load(f)
-            loss_dict_latex(loss_dict, destination_folder=file_destination+mgroup+'/')
+        try:
+            with open(m_folder + '/loss_dict.json') as f:
+                loss_dict = json.load(f)
+                loss_dict_latex(loss_dict, destination_folder=destination_folder+'/')
+        except Exception as e:
+            print(e)
+
 
         COMP_df = DataFrame([], columns = ['Depth', 'GGM', 'GGM_uncertainty', 'TRUE_qc', 'true_qc', 'CNN_qc', 'RF_qc', 'LGBM_qc', 'TRUE_fs', 'true_fs', 'CNN_fs', 'RF_fs', 'LGBM_fs', 'TRUE_u2', 'true_u2', 'CNN_u2', 'RF_u2', 'LGBM_u2'])
 
@@ -951,6 +1001,6 @@ def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/
 
 if __name__ == '__main__':
 
-    renew_figs(['AVP', 'AVO'])
+    renew_figs(['AVY'])
 
     
