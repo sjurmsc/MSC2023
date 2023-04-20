@@ -658,7 +658,7 @@ def make_cv_excel_bestworst(filename, COMP_DF):
             DIFF = pred - TRUE
             diff = pred - true
             
-            d = np.stack((DIFF, diff))
+            d = np.stack((DIFF, diff)).dropna(axis=1)
             min_d = np.amin(d, axis=0)
             max_d = np.amax(d, axis=0)
             best_std = np.std(min_d)
@@ -739,8 +739,8 @@ def bar_plot_ggm(GGM, groups, filename=''):
     """Creates a bar plot with all occurrences of each group in the GGMs"""
     from Feat_aug import get_cpt_name
     umap = get_umap_func()
-    unique_ggm = np.unique(GGM)
-    unique_groups = np.unique(groups)
+    unique_ggm = np.sort(np.unique(GGM))
+    unique_groups = np.sort(np.unique(groups))
     ggm_counts = np.zeros((len(unique_ggm), len(unique_groups)))
 
     tmp = np.ones_like(GGM)

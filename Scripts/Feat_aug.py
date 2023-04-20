@@ -823,7 +823,7 @@ def plot_cpt_pred(model, cpt, save = False, image_width = 11):
 
 def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_indices, GGM, filename=''):
     """Use t-SNE to plot the latent space"""
-
+    from Log import get_GGM_cmap
     # Plot TSNE of the latent model
     tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
     prediction = latent_model.predict(X).reshape((-1, latent_features))
@@ -834,18 +834,18 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     GGM = GGM.flatten()
     unique_GGM = np.sort(np.unique(GGM))
 
-    umap = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv')
-    GGM_names = []
-    for u in unique_GGM:
-        GGM_names.append(umap.loc[umap['uid'] == u]['unit'].values[0])
+    umap = get_umap_func()
+    cmap, norm, _ = get_GGM_cmap(GGM)
+    
+    GGM_names = [umap(x) for x in unique_GGM]
 
-    n_colors = len(np.unique(umap['uid']))
-    # Add a segmented colorbar with unique colors for the different units
-    cmap = plt.cm.get_cmap('gnuplot', n_colors)
-
-    bounds = [umap['uid'].iloc[0]-0.5, *umap['uid']+0.5]
+    # n_colors = len(np.unique(umap['uid']))
+    # # Add a segmented colorbar with unique colors for the different units
+    # cmap = plt.cm.get_cmap('gnuplot', n_colors)
+    umap_tot = read_csv(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\StructuralModel_unit_mapping.csv')
+    bounds = [umap_tot['uid'].iloc[0]-0.5, *umap_tot['uid']+0.5]
     # bounds = np.arange(len(umap['uid'])+1)
-    norm = BoundaryNorm(bounds, cmap.N)
+    # norm = BoundaryNorm(bounds, cmap.N)
 
     fig, ax = plt.subplots(1, 1, figsize=(15, 10))
 
@@ -868,7 +868,7 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     cbar.ax.invert_yaxis()
 
     # Set the tick labels to be umap uits and those in GGM names to be bold
-    cbar.ax.set_yticklabels(umap['unit'], fontsize=15)
+    cbar.ax.set_yticklabels(umap_tot['unit'], fontsize=15)
     for i, label in enumerate(cbar.ax.get_yticklabels()):
         if label.get_text() in GGM_names:
             label.set_weight('bold')
@@ -1037,7 +1037,7 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM, zrange=(30, 100)
         umap = get_umap_func()
         GGM_at_yticks = np.array([GGM_at_depth[np.argmin(np.abs(z-y))] for y in y_ticks])
         yticklabels = np.vectorize(umap)(GGM_at_yticks)
-        ax[3].set_yticklabels(yticklabels)
+        ax[3].set_yticklabels(yticklabels, rotation=-30, fontsize=8)
 
 
         # Add super title
