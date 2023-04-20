@@ -1,0 +1,58 @@
+Model: "model_33"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ input_34 (InputLayer)       [(None, 11, None, 1)]     0         
+                                                                 
+ gaussian_noise_11 (Gaussian  (None, 11, None, 1)      0         
+ Noise)                                                          
+                                                                 
+ zero_padding2d_88 (ZeroPadd  (None, 11, None, 1)      0         
+ ing2D)                                                          
+                                                                 
+ conv2d_132 (Conv2D)         (None, 7, None, 16)       416       
+                                                                 
+ conv2d_133 (Conv2D)         (None, 7, None, 16)       6416      
+                                                                 
+ conv2d_134 (Conv2D)         (None, 7, None, 16)       6416      
+                                                                 
+ conv2d_135 (Conv2D)         (None, 7, None, 16)       6416      
+                                                                 
+ zero_padding2d_89 (ZeroPadd  (None, 7, None, 16)      0         
+ ing2D)                                                          
+                                                                 
+ spatial_dropout2d_22 (Spati  (None, 7, None, 16)      0         
+ alDropout2D)                                                    
+                                                                 
+ conv2d_136 (Conv2D)         (None, 5, None, 32)       4640      
+                                                                 
+ conv2d_137 (Conv2D)         (None, 5, None, 32)       9248      
+                                                                 
+ conv2d_138 (Conv2D)         (None, 5, None, 32)       9248      
+                                                                 
+ zero_padding2d_90 (ZeroPadd  (None, 5, None, 32)      0         
+ ing2D)                                                          
+                                                                 
+ spatial_dropout2d_23 (Spati  (None, 5, None, 32)      0         
+ alDropout2D)                                                    
+                                                                 
+ conv2d_139 (Conv2D)         (None, 3, None, 64)       18496     
+                                                                 
+ conv2d_140 (Conv2D)         (None, 3, None, 64)       36928     
+                                                                 
+ conv2d_141 (Conv2D)         (None, 3, None, 64)       36928     
+                                                                 
+ zero_padding2d_91 (ZeroPadd  (None, 3, None, 64)      0         
+ ing2D)                                                          
+                                                                 
+ conv2d_142 (Conv2D)         (None, 1, None, 32)       18464     
+                                                                 
+ conv2d_143 (Conv2D)         (None, 1, None, 16)       4624      
+                                                                 
+ reshape_33 (Reshape)        (None, None, 16)          0         
+                                                                 
+=================================================================
+Total params: 158,240
+Trainable params: 158,240
+Non-trainable params: 0
+_________________________________________________________________

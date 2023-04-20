@@ -1,0 +1,63 @@
+Model: "model_34"
+__________________________________________________________________________________________________
+ Layer (type)                   Output Shape         Param #     Connected to                     
+==================================================================================================
+ input_34 (InputLayer)          [(None, 11, None, 1  0           []                               
+                                )]                                                                
+                                                                                                  
+ gaussian_noise_11 (GaussianNoi  (None, 11, None, 1)  0          ['input_34[0][0]']               
+ se)                                                                                              
+                                                                                                  
+ zero_padding2d_88 (ZeroPadding  (None, 11, None, 1)  0          ['gaussian_noise_11[0][0]']      
+ 2D)                                                                                              
+                                                                                                  
+ conv2d_132 (Conv2D)            (None, 7, None, 16)  416         ['zero_padding2d_88[0][0]']      
+                                                                                                  
+ conv2d_133 (Conv2D)            (None, 7, None, 16)  6416        ['conv2d_132[0][0]']             
+                                                                                                  
+ conv2d_134 (Conv2D)            (None, 7, None, 16)  6416        ['conv2d_133[0][0]']             
+                                                                                                  
+ conv2d_135 (Conv2D)            (None, 7, None, 16)  6416        ['conv2d_134[0][0]']             
+                                                                                                  
+ zero_padding2d_89 (ZeroPadding  (None, 7, None, 16)  0          ['conv2d_135[0][0]']             
+ 2D)                                                                                              
+                                                                                                  
+ spatial_dropout2d_22 (SpatialD  (None, 7, None, 16)  0          ['zero_padding2d_89[0][0]']      
+ ropout2D)                                                                                        
+                                                                                                  
+ conv2d_136 (Conv2D)            (None, 5, None, 32)  4640        ['spatial_dropout2d_22[0][0]']   
+                                                                                                  
+ conv2d_137 (Conv2D)            (None, 5, None, 32)  9248        ['conv2d_136[0][0]']             
+                                                                                                  
+ conv2d_138 (Conv2D)            (None, 5, None, 32)  9248        ['conv2d_137[0][0]']             
+                                                                                                  
+ zero_padding2d_90 (ZeroPadding  (None, 5, None, 32)  0          ['conv2d_138[0][0]']             
+ 2D)                                                                                              
+                                                                                                  
+ spatial_dropout2d_23 (SpatialD  (None, 5, None, 32)  0          ['zero_padding2d_90[0][0]']      
+ ropout2D)                                                                                        
+                                                                                                  
+ conv2d_139 (Conv2D)            (None, 3, None, 64)  18496       ['spatial_dropout2d_23[0][0]']   
+                                                                                                  
+ conv2d_140 (Conv2D)            (None, 3, None, 64)  36928       ['conv2d_139[0][0]']             
+                                                                                                  
+ conv2d_141 (Conv2D)            (None, 3, None, 64)  36928       ['conv2d_140[0][0]']             
+                                                                                                  
+ zero_padding2d_91 (ZeroPadding  (None, 3, None, 64)  0          ['conv2d_141[0][0]']             
+ 2D)                                                                                              
+                                                                                                  
+ conv2d_142 (Conv2D)            (None, 1, None, 32)  18464       ['zero_padding2d_91[0][0]']      
+                                                                                                  
+ conv2d_143 (Conv2D)            (None, 1, None, 16)  4624        ['conv2d_142[0][0]']             
+                                                                                                  
+ reshape_33 (Reshape)           (None, None, 16)     0           ['conv2d_143[0][0]']             
+                                                                                                  
+ ann_decoder_0 (Sequential)     (None, None, 3)      3747        ['reshape_33[0][0]']             
+                                                                                                  
+ Reconstruction (Functional)    (None, 11, None, 1)  184689      ['reshape_33[0][0]']             
+                                                                                                  
+==================================================================================================
+Total params: 346,676
+Trainable params: 346,676
+Non-trainable params: 0
+__________________________________________________________________________________________________
