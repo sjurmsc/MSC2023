@@ -658,7 +658,8 @@ def make_cv_excel_bestworst(filename, COMP_DF):
             DIFF = pred - TRUE
             diff = pred - true
             
-            d = np.stack((DIFF, diff)).dropna(axis=1)
+            d = np.stack((DIFF, diff))
+            d = d[:, ~np.isnan(d).any(axis=0)]
             min_d = np.amin(d, axis=0)
             max_d = np.amax(d, axis=0)
             best_std = np.std(min_d)
@@ -751,9 +752,13 @@ def bar_plot_ggm(GGM, groups, filename=''):
     GGM = GGM.flatten()
     groups = groups.flatten()
 
+    columns = ['GGM']*len(unique_ggm)
+    rows = ['Group']*len(unique_groups)
     for i, ggm in enumerate(unique_ggm):
+        columns[i] = ggm
         for j, group in enumerate(unique_groups):
             ggm_counts[i,j] = np.sum((GGM == ggm) & (groups == group))
+            rows[j] = get_cpt_name(group)
 
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -783,9 +788,9 @@ def bar_plot_ggm(GGM, groups, filename=''):
     else:
         plt.show()
 
-    count_df = DataFrame(ggm_counts.T, columns=[umap(x) for x in unique_ggm])
+    count_df = DataFrame(ggm_counts.T, columns=columns)
     # Add a column to the left of the dataframe with the group names
-    count_df.insert(0, 'CPT Location', [get_cpt_name(x) for x in unique_groups])
+    count_df.insert(0, 'CPT Location', rows)
     if filename:
         count_df.to_excel(filename + '.xlsx', index=False)
 
