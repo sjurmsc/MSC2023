@@ -406,58 +406,59 @@ def plot_dontfit(filename='', zrange = (35, 60)):
     params = ['q_c', 'f_s', 'u_2']
     colors = ['g', 'orange', 'b']
 
-    fig, ax = plt.subplots(6, 4, figsize=(6, 20))
+    fig, ax = plt.subplots(4, 8, figsize=(20, 30))
     fig.subplots_adjust(left = 0.076, bottom=0.05, right=0.92, top=0.93, wspace=0.32, hspace=0.3)
 
-    for i, cpt_loc in enumerate(locations):
+    lens = np.array([len(y[np.where(groups==cpt_loc)]) for cpt_loc in locations])[:-1]-1
+    i_list = np.arange(0, len(locations))
+    i_list[1:] = i_list[1:] + np.cumsum(lens)
+
+    for i, cpt_loc in zip(i_list, locations):
         cptname = get_cpt_name(cpt_loc)
         y_loc = y[np.where(groups == cpt_loc)]
         mins, maxs = (minmax[0][np.where(groups == cpt_loc)], minmax[1][np.where(groups == cpt_loc)])
         g = ggm[np.where(groups == cpt_loc)]
 
-        for ii, cpt in enumerate(y_loc):
+        for ii in range(i, y_loc.shape[0]+i):
             for j in range(3):
-                if j == 0: ax[i, j].set_ylabel(cptname)
-                if j == 2: ax[i, j].set_ylabel('Depth (m)'); ax[i, j].yaxis.set_label_position("right"); ax[i, j].yaxis.tick_right()
-                else: ax[i, j].set_yticks([])
-                ax[i, j].plot(y_loc[ii, :, j], z, color=colors[j], label=params[j])
-                ax[i, j].fill_betweenx(z, mins[ii, :, j], maxs[ii, :, j], alpha=0.5, color=colors[j])
-                if ii==0: ax[i, j].invert_yaxis()
-                if i == 5: ax[i, j].set_xlabel(f'${params[j]}$')
+                if j == 0: ax[ii%4, j+4*(ii//4)].set_ylabel(cptname)
+                if j == 2: ax[ii%4, j+4*(ii//4)].set_ylabel('Depth (m)'); ax[ii%4, j+4*(ii//4)].yaxis.set_label_position("right"); ax[ii%4, j+4*(ii//4)].yaxis.tick_right()
+                else: ax[ii%4, j+4*(ii//4)].set_yticks([])
+                ax[ii%4, j+4*(ii//4)].plot(y_loc[(ii-i)%4, :, j], z, color=colors[j], label=params[j])
+                ax[ii%4, j+4*(ii//4)].fill_betweenx(z, mins[(ii-i)%4, :, j], maxs[(ii-i)%4, :, j], alpha=0.5, color=colors[j])
+                ax[ii%4, j+4*(ii//4)].invert_yaxis()
+                if ii%4 == 3: ax[ii%4, j+4*(ii//4)].set_xlabel(f'${params[j]}$')
             #    get the limits of the plots in row i
 
-        # set the first three plots in the row to the same y axis limits
-        ylims = [ax[i, j].get_ylim() for j in range(3)]
-        ylims = np.max(ylims, axis=0)
-        for j in range(3):
-            ax[i, j].set_ylim(ylims)
+            # set the first three plots in the row to the same y axis limits
+            ylims = [ax[ii%4, j+4*(ii//4)].get_ylim() for j in range(3)]
+            ylims = np.max(ylims, axis=0)
 
-        # set the limit of the plots in row i to the max of the limits in row i
-        gm = g[ii][np.where((z>=ylims[1])&(z<=ylims[0]))]
-        gm_z = z[np.where((z>=ylims[1])&(z<=ylims[0]))]
+            # set the limit of the plots in row i to the max of the limits in row i
+            gm = g[int(ii-i)][np.where((z>=ylims[1])&(z<=ylims[0]))]
+            gm_z = z[np.where((z>=ylims[1])&(z<=ylims[0]))]
+            
+            ax[ii%4, 3 + 4*(ii//4)].imshow(gm.reshape(-1, 1), cmap=cmap, norm=norm, extent=[gm_z[0], gm_z[-1], gm_z[-1], gm_z[0]], aspect=8)
+            ylims = ax[ii%4, 3 + 4*(ii//4)].get_ylim()
+            [ax[ii%4, j+4*(ii//4)].set_ylim(ylims) for j in range(3)]
+            changes = np.diff(gm)
+            depth_changes = gm_z[np.where(changes != 0)]
+            depth_changes = np.insert(depth_changes, 0, gm_z[0]); depth_changes = np.append(depth_changes, ylims[0])
+            depth_changes = np.sort(depth_changes)
+            diff_changes = np.diff(depth_changes)
+            y_ticks = depth_changes[:-1] + diff_changes/2
+            
+            yticklabels = [umap(x) for x in np.unique(gm.flatten())]
+            ax[ii%4, 3 + 4*(ii//4)].yaxis.tick_right()
+            ax[ii%4, 3 + 4*(ii//4)].set_yticks(y_ticks)
+            ax[ii%4, 3 + 4*(ii//4)].set_yticklabels(yticklabels, rotation=20, ha='left', va='bottom', fontsize=6)
+            ax[ii%4, 3 + 4*(ii//4)].set_xticks([])
         
-        ax[i, 3].imshow(gm.reshape(-1, 1), cmap=cmap, norm=norm, extent=[gm_z[0], gm_z[-1], gm_z[-1], gm_z[0]], aspect=8)
-        ax[i, 3].set_ylim(ylims)
-        changes = np.diff(gm)
-        depth_changes = gm_z[np.where(changes != 0)]
-        depth_changes = np.insert(depth_changes, 0, gm_z[0]); depth_changes = np.append(depth_changes, ylims[0])
-        depth_changes = np.sort(depth_changes)
-        diff_changes = np.diff(depth_changes)
-        y_ticks = depth_changes[:-1] + diff_changes/2
-        
-        yticklabels = [umap(x) for x in np.unique(gm.flatten())]
-        ax[i, 3].yaxis.tick_right()
-        ax[i, 3].set_yticks(y_ticks)
-        ax[i, 3].set_yticklabels(yticklabels, rotation=20, ha='left', va='bottom', fontsize=6)
-        ax[i, 3].set_xticks([])
-        
-        
-
 
     # plt.legend()
     fig.suptitle('Discarded CPT measurements', fontsize=16)
     if filename:
-        plt.savefig(filename)
+        plt.savefig(filename, dpi=500)
     else:
         plt.show()
 
@@ -735,10 +736,12 @@ def loss_dict_latex(loss_dict, destination_folder=''):
 
 
 def bar_plot_ggm(GGM, groups, filename=''):
-    """Creates a bar plot with one bar for each GGM"""
+    """Creates a bar plot with all occurrences of each group in the GGMs"""
+    from Feat_aug import get_cpt_name
+    umap = get_umap_func()
     unique_ggm = np.unique(GGM)
     unique_groups = np.unique(groups)
-    ggm_counts = np.zeros((len(unique_groups), len(unique_ggm)))
+    ggm_counts = np.zeros((len(unique_ggm), len(unique_groups)))
 
     tmp = np.ones_like(GGM)
     for i, g in enumerate(groups):
@@ -750,14 +753,27 @@ def bar_plot_ggm(GGM, groups, filename=''):
 
     for i, ggm in enumerate(unique_ggm):
         for j, group in enumerate(unique_groups):
-            ggm_counts[j,i] = np.sum((GGM == ggm) & (groups == group))
+            ggm_counts[i,j] = np.sum((GGM == ggm) & (groups == group))
 
 
-    fig, ax = plt.subplots(figsize=(10,5))
-    # bar per for each ggm with colors indicating how many samples are in each group
-    
-    for i, ggm in enumerate(unique_groups):
-        ax.bar(unique_ggm, ggm_counts[i], bottom=np.sum(ggm_counts[:i], axis=0), label='Group {}'.format(ggm))
+    fig, ax = plt.subplots(figsize=(10, 5))
+    for i, group in enumerate(unique_groups):
+        ax.bar(np.arange(len(unique_ggm)), ggm_counts[:,i], bottom=np.sum(ggm_counts[:,:i], axis=1), label=get_cpt_name(group), zorder=3)
+
+    # Set bar label to be the number of containers in each GGM
+    bar_labels = [len(l[l!=0]) for l in ggm_counts]
+    ax.bar_label(ax.containers[-1], labels=bar_labels, zorder=4, padding=3)
+    # increase room over the bars
+    ax.set_ylim(top=ax.get_ylim()[1]*1.1)
+    ax.set_xticks(np.arange(len(unique_ggm)))
+    ax.set_xticklabels([umap(x) for x in unique_ggm], rotation=45, ha='right')
+    ax.set_ylabel('Number of samples')
+    # Set horizontal grid lines
+    ax.yaxis.grid(True, zorder=1)
+
+    fig.suptitle('Distribution of GGM in various CPT locations')
+
+    fig.subplots_adjust(bottom=0.15, top=0.91)
 
     #ax.set_xticks(unique_ggm)
 
@@ -766,6 +782,12 @@ def bar_plot_ggm(GGM, groups, filename=''):
         fig.savefig(filename, dpi=500)
     else:
         plt.show()
+
+    count_df = DataFrame(ggm_counts.T, columns=[umap(x) for x in unique_ggm])
+    # Add a column to the left of the dataframe with the group names
+    count_df.insert(0, 'CPT Location', [get_cpt_name(x) for x in unique_groups])
+    if filename:
+        count_df.to_excel(filename + '.xlsx', index=False)
 
     plt.close(fig)
 
@@ -801,7 +823,8 @@ def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/
         GGM_seq = args[4]
         groups_seq = args[2]
 
-        bar_plot_ggm(GGM_seq, groups_seq)
+
+        bar_plot_ggm(GGM_seq, groups_seq, filename=destination_folder+'/GGM_cptloc_distribution')
        
 
         plot_dontfit(destination_folder+'/CPT_not_in_dataset')
@@ -922,20 +945,7 @@ def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/
 
 
 if __name__ == '__main__':
-    import json
 
     renew_figs(['AVP', 'AVO'])
 
-    # with open(r"C:\Users\SjB\Downloads\loss_dict_AVW.json") as f:
-    #     loss_dict = json.load(f)
-
-    # print(loss_dict_latex(loss_dict))
-
-
-
-    # plt.imshow(np.array([1]))
-    # a = np.random.randint(1, 10, size=(20, 10))
-    # b = np.random.random((20, 10))
-
-    # e = create_ai_error_image(b, a, filename = 'test.png')
-    # print(e)
+    
