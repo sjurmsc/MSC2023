@@ -498,7 +498,7 @@ def create_full_trace_dataset(n_neighboring_traces=5,
                 X[i] = np.flip(X[i], 0)
     
     if random_state:
-        X, y, groups, nan_idxs, no_nan_idxs, mins, maxs = shuffle(X, y, groups, nan_idxs, no_nan_idxs, mins, maxs, random_state=random_state)
+        X, y, groups, GGM, GGM_unc, nan_idxs, no_nan_idxs, mins, maxs = shuffle(X, y, groups, GGM, GGM_unc, nan_idxs, no_nan_idxs, mins, maxs, random_state=random_state)
 
     print('Done!')
 
@@ -823,7 +823,7 @@ def plot_cpt_pred(model, cpt, save = False, image_width = 11):
 
 def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_indices, GGM, filename=''):
     """Use t-SNE to plot the latent space"""
-
+    from Log import get_GGM_cmap
     # Plot TSNE of the latent model
     tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
     prediction = latent_model.predict(X).reshape((-1, latent_features))
@@ -834,16 +834,16 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     GGM = GGM.flatten()
     unique_GGM = np.sort(np.unique(GGM))
 
-    umap = read_csv('../OneDrive - NGI/Documents/NTNU/MSC_DATA/StructuralModel_unit_mapping.csv')
-    GGM_names = []
-    for u in unique_GGM:
-        GGM_names.append(umap.loc[umap['uid'] == u]['unit'].values[0])
+    umap = get_umap_func()
+    cmap, norm, _ = get_GGM_cmap(GGM)
+    
+    GGM_names = [umap(x) for x in unique_GGM]
 
-    n_colors = len(np.unique(umap['uid']))
-    # Add a segmented colorbar with unique colors for the different units
-    cmap = plt.cm.get_cmap('gnuplot', n_colors)
-
-    bounds = [umap['uid'].iloc[0]-0.5, *umap['uid']+0.5]
+    # n_colors = len(np.unique(umap['uid']))
+    # # Add a segmented colorbar with unique colors for the different units
+    # cmap = plt.cm.get_cmap('gnuplot', n_colors)
+    umap_tot = read_csv(r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\StructuralModel_unit_mapping.csv')
+    bounds = [umap_tot['uid'].iloc[0]-0.5, *umap_tot['uid']+0.5]
     # bounds = np.arange(len(umap['uid'])+1)
     norm = BoundaryNorm(bounds, cmap.N)
 
@@ -868,7 +868,7 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     cbar.ax.invert_yaxis()
 
     # Set the tick labels to be umap uits and those in GGM names to be bold
-    cbar.ax.set_yticklabels(umap['unit'], fontsize=15)
+    cbar.ax.set_yticklabels(umap_tot['unit'], fontsize=15)
     for i, label in enumerate(cbar.ax.get_yticklabels()):
         if label.get_text() in GGM_names:
             label.set_weight('bold')
@@ -966,7 +966,7 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
     plt.close()
 
 
-def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM=None, zrange=(30, 100), filename='', title='', minmax=None, scale=True):
+def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM, zrange=(30, 100), filename='', title='', minmax=None, scale=True):
     """Create a trace prediction for all CPT units with a thin plot of the GGM at the depth of the CPT"""
 
     scaler = get_cpt_data_scaler()
@@ -997,68 +997,54 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM=None, zrange=(30,
     ax_labels = ['Measured tip resistance [MPa]', 'Sleeve Friction [MPa]', 'Pore pressure [MPa]']
     pred_color = ['g', 'orange', 'b']
 
-    # Create a figure for the predictions
-    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    fig.tight_layout()
-    for i in range(3):
-        for t in range(predictions.shape[0]):
-            ax[i].plot(predictions[t, :, i], z, 'k', alpha=0.1)
-            # Plot test_y using only markers
-            ax[i].plot(test_y[t, :, i], z, pred_color[i], marker='.', alpha=0.5)
-            if minmax is not None:
-                ax[i].fill_betweenx(z, mins[t, :, i], maxs[t, :, i], color=pred_color[i], alpha=0.1)
-        ax[i].set_title(units[i])
-        ax[i].set_ylabel('Depth [mbsl]')
+    for image_num in range(predictions.shape[0]):
+        # Create a figure for the predictions
+        fig, ax = plt.subplots(1, 4, figsize=(15, 5))
+        fig.tight_layout()
+        for i in range(3):
+            for t in range(predictions.shape[0]):
+                ax[i].plot(predictions[t, :, i], z, 'k', alpha=0.7, label='Predicted')
+                # Plot test_y using only markers
+                ax[i].plot(test_y[t, :, i], z, pred_color[i], marker='.', alpha=0.5, label='True')
+                if minmax is not None:
+                    ax[i].fill_betweenx(z, mins[t, :, i], maxs[t, :, i], color=pred_color[i], alpha=0.1)
+            ax[i].set_title(units[i])
+            ax[i].set_ylabel('Depth [mbsl]')
 
-        # Set the x axis label to the top
-        # ax[i].xaxis.set_label_position('top')
-        ax[i].set_xlabel(ax_labels[i])
+            # Set the x axis label to the top
+            # ax[i].xaxis.set_label_position('top')
+            ax[i].set_xlabel(ax_labels[i])
 
-        ax[i].invert_yaxis()
-    # Add super title
-    fig.suptitle(title, fontsize=16)
-    fig.subplots_adjust(left=0.05, bottom=0.09, top=0.85, wspace=0.19)
+            ax[i].invert_yaxis()
+            ax[i].legend()
 
-    # Add visualization of GGM at depth colored by appropriate cmap with a colorbar
-    if GGM is not None:
-        fig.subplots_adjust(right=0.95)
-        ax3 = fig.add_axes([0.965, 0.09, 0.02, 0.76])
         cmap, norm, _ = get_GGM_cmap(GGM)
-        # Get the depth of the CPT
-        cpt_depth = z
-        # Get the GGM at the depth of the CPT
-        GGM_at_depth = GGM.T
-        changes = np.diff(GGM)[0]
+
+        ax[3].set_title('GGM')
+        ax[3].set_ylabel('Depth [mbsl]')
+
+        ax[3].imshow(GGM[image_num, :].reshape(-1, 1), cmap=cmap, norm=norm, aspect=8, extent=[zrange[1], zrange[0], zrange[1], zrange[0]])
+
+        GGM_at_depth = GGM[image_num].T
+        changes = np.diff(GGM[image_num])
         depth_changes = z[np.where(changes != 0)[0]]
         depth_changes = np.insert(depth_changes, 0, zrange[0])
         depth_changes = np.append(depth_changes, zrange[1])
         diff_changes = np.diff(depth_changes)
         y_ticks = [depth_changes[i]+diff_changes[i]/2 for i in range(len(depth_changes)-1)]
-        # Plot the GGM at the depth of the CPT
-        ax3.imshow(GGM_at_depth, cmap=cmap, extent=[0, 5, zrange[1], zrange[0]])
-        ax3.set_title('GGM')
-        # ax[3].set_ylabel('Depth [mbsl]')
-        # Remove x ticks
-        ax3.set_xticks([])
-        ax3.set_yticks(y_ticks)
-        umap = get_umap_func()
 
-        # get the ggm where z is closest to the y ticks
+        ax[3].set_xticks([])
+        ax[3].set_yticks(y_ticks)
+        umap = get_umap_func()
         GGM_at_yticks = np.array([GGM_at_depth[np.argmin(np.abs(z-y))] for y in y_ticks])
         yticklabels = np.vectorize(umap)(GGM_at_yticks)
-        ax3.set_yticklabels(yticklabels)
+        ax[3].set_yticklabels(yticklabels, rotation=-30, fontsize=8, va='bottom')
 
 
-        # Add the colorbar to the right of the plot
-        
-        #cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-        #fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), cax=cbar_ax)
+        # Add super title
+        fig.suptitle(title, fontsize=16)
+        fig.subplots_adjust(left=0.05, bottom=0.09, top=0.85, wspace=0.19)
 
-    
-
-
-        
-    
     if filename:
         fig.savefig(filename, dpi=500)
     else:
@@ -1066,7 +1052,7 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM=None, zrange=(30,
     plt.close()
 
 
-def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=True):
+def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=True, bins=15):
     """Plot the predictions of the model as a scatter plot, with density contours"""
     
     # Get scaler
@@ -1115,8 +1101,8 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=
         ax[0, i].set_ylabel('Predicted {} [MPa]'.format(units[i]))
 
         # Plot the histogram of the residuals
-        ax[1, i].hist((p-t), bins=50, color=pred_color[i], edgecolor='k')
-        ax[1, i].set_xlabel('Residuals')
+        ax[1, i].hist((p-t), bins=bins, color=pred_color[i], edgecolor='k')
+        ax[1, i].set_xlabel('$\hat{{{}}}-{}$'.format(units[i][1:-1], units[i][1:-1]))
         ax[1, i].set_ylabel('Frequency')
 
         

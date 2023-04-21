@@ -19,6 +19,7 @@ from matplotlib.colors import Normalize, Colormap, ListedColormap
 import matplotlib.pyplot as plt
 from openpyxl import load_workbook
 from pandas import read_csv, DataFrame
+from keras.models import load_model
 
 
 msc_color = '#6bb4edff'
@@ -344,6 +345,125 @@ def plot_histories(Histories, val=False, filename=None):
     plt.savefig(filename)
     plt.close()
 
+from pandas import read_excel
+import segyio
+def plot_reconstruction(reconstruct, cpt_loc=15, zrange = (35, 60), filename = ''):
+    d = read_excel('../OneDrive - NGI/Documents/NTNU/MSC_DATA/Distances_to_2Dlines_Revised.xlsx')
+    d = d.loc[d['Location no.'] == cpt_loc]
+    # Pick the first of the d
+    d = d.iloc[0]
+    # Get the 2D UHR line
+    line = d['2D UHR line']
+    CDP = d['CDP']
+
+    seis_file = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/2DUHRS_06_MIG_DEPTH/{}.sgy'.format(line)
+
+    with segyio.open(seis_file, ignore_geometry=True) as f:
+        samples = f.samples
+        seis = segyio.collect(f.trace.raw[:])
+        cdps = segyio.collect(f.attributes(segyio.TraceField.CDP)[:])
+        # Get the index of the CDP
+        cdp_idx = np.where(abs(cdps - CDP)<600)[0]
+        seis = seis[cdp_idx][:, (samples >= zrange[0]) & (samples < zrange[1])]
+    
+    # Reshape the seismic into images of 11, depth, 1
+    X_seis = seis.reshape((-1, 11, seis.shape[1], 1))
+
+    pred = reconstruct.predict(X_seis)[1]
+    pred = pred.reshape((-1, seis.shape[1]))
+
+    fig, ax = plt.subplots(1, 2, figsize=(20, 10))
+    ax[0].imshow(seis.T, aspect='auto', cmap='gray')
+    ax[0].set_title('Seismic')
+    ax[1].imshow(pred.T, aspect='auto', cmap='gray')
+    ax[1].set_title('Reconstruction')
+    
+    if filename:
+        plt.savefig(filename)
+    else:
+        plt.show()
+    plt.close()
+
+    
+
+        
+def plot_dontfit(filename='', zrange = (35, 60)):
+    from Feat_aug import create_full_trace_dataset, get_cpt_name
+
+    Full_args = create_full_trace_dataset(zrange=zrange)
+
+    y = Full_args[1]
+    z = np.arange(zrange[0], zrange[1], 0.1)
+    groups = Full_args[2]
+    minmax = Full_args[-1]
+    ggm = Full_args[7]
+
+    cmap, norm, _ = get_GGM_cmap(ggm)
+    umap = get_umap_func()
+
+    locations = [3, 6, 7, 33, 71, 72]
+
+    params = ['q_c', 'f_s', 'u_2']
+    colors = ['g', 'orange', 'b']
+
+    fig, ax = plt.subplots(4, 8, figsize=(20, 30))
+    fig.subplots_adjust(left = 0.076, bottom=0.05, right=0.92, top=0.93, wspace=0.32, hspace=0.3)
+
+    lens = np.array([len(y[np.where(groups==cpt_loc)]) for cpt_loc in locations])[:-1]-1
+    i_list = np.arange(0, len(locations))
+    i_list[1:] = i_list[1:] + np.cumsum(lens)
+
+    for i, cpt_loc in zip(i_list, locations):
+        cptname = get_cpt_name(cpt_loc)
+        y_loc = y[np.where(groups == cpt_loc)]
+        mins, maxs = (minmax[0][np.where(groups == cpt_loc)], minmax[1][np.where(groups == cpt_loc)])
+        g = ggm[np.where(groups == cpt_loc)]
+
+        for ii in range(i, y_loc.shape[0]+i):
+            for j in range(3):
+                if j == 0: ax[ii%4, j+4*(ii//4)].set_ylabel(cptname)
+                if j == 2: ax[ii%4, j+4*(ii//4)].set_ylabel('Depth (m)'); ax[ii%4, j+4*(ii//4)].yaxis.set_label_position("right"); ax[ii%4, j+4*(ii//4)].yaxis.tick_right()
+                else: ax[ii%4, j+4*(ii//4)].set_yticks([])
+                ax[ii%4, j+4*(ii//4)].plot(y_loc[(ii-i)%4, :, j], z, color=colors[j], label=params[j])
+                ax[ii%4, j+4*(ii//4)].fill_betweenx(z, mins[(ii-i)%4, :, j], maxs[(ii-i)%4, :, j], alpha=0.5, color=colors[j])
+                ax[ii%4, j+4*(ii//4)].invert_yaxis()
+                if ii%4 == 3: ax[ii%4, j+4*(ii//4)].set_xlabel(f'${params[j]}$')
+            #    get the limits of the plots in row i
+
+            # set the first three plots in the row to the same y axis limits
+            ylims = [ax[ii%4, j+4*(ii//4)].get_ylim() for j in range(3)]
+            ylims = np.max(ylims, axis=0)
+
+            # set the limit of the plots in row i to the max of the limits in row i
+            gm = g[int(ii-i)][np.where((z>=ylims[1])&(z<=ylims[0]))]
+            gm_z = z[np.where((z>=ylims[1])&(z<=ylims[0]))]
+            
+            ax[ii%4, 3 + 4*(ii//4)].imshow(gm.reshape(-1, 1), cmap=cmap, norm=norm, extent=[gm_z[0], gm_z[-1], gm_z[-1], gm_z[0]], aspect=8)
+            ylims = ax[ii%4, 3 + 4*(ii//4)].get_ylim()
+            [ax[ii%4, j+4*(ii//4)].set_ylim(ylims) for j in range(3)]
+            changes = np.diff(gm)
+            depth_changes = gm_z[np.where(changes != 0)]
+            depth_changes = np.insert(depth_changes, 0, gm_z[0]); depth_changes = np.append(depth_changes, ylims[0])
+            depth_changes = np.sort(depth_changes)
+            diff_changes = np.diff(depth_changes)
+            y_ticks = depth_changes[:-1] + diff_changes/2
+            
+            yticklabels = [umap(x) for x in np.unique(gm.flatten())]
+            ax[ii%4, 3 + 4*(ii//4)].yaxis.tick_right()
+            ax[ii%4, 3 + 4*(ii//4)].set_yticks(y_ticks)
+            ax[ii%4, 3 + 4*(ii//4)].set_yticklabels(yticklabels, rotation=20, ha='left', va='bottom', fontsize=6)
+            ax[ii%4, 3 + 4*(ii//4)].set_xticks([])
+        
+
+    # plt.legend()
+    fig.suptitle('Discarded CPT measurements', fontsize=16)
+    if filename:
+        plt.savefig(filename, dpi=500)
+    else:
+        plt.show()
+
+
+
 
 # import boundary norm
 from matplotlib.colors import BoundaryNorm
@@ -456,7 +576,6 @@ def make_cv_excel(filename, COMP_DF):
     """Creates a new excel file with the results of the model"""
     xl = "Results/NGI_stdd_{}.xlsx"
     wb = load_workbook(xl)
-    # Open the worksheet q_c
     
     params = ['q_c', 'f_s', 'u_2']
     
@@ -514,6 +633,97 @@ def make_cv_excel(filename, COMP_DF):
     wb.save(filename)
 
 
+def make_cv_excel_bestworst(filename, COMP_DF):
+    """ Creates an excel file with the prediction std each for the best and worst case"""
+
+    xl = "Results/NGI_stdd_{}.xlsx"
+    # load a copy of the excel file
+
+    wb_best = load_workbook(xl)
+
+    wb_worst = load_workbook(xl)
+
+    params = ['q_c', 'f_s', 'u_2']
+
+    for p in params:
+        ws = wb_best[p]
+        ws_worst = wb_worst[p]
+        param = p.replace('_', '')
+        for method in ['CNN', 'RF', 'LGBM']:
+            TRUE = COMP_DF['TRUE_{}'.format(param)]
+            true = COMP_DF['true_{}'.format(param)]
+            pred = COMP_DF['{}_{}'.format(method, param)]
+
+            # Pick out the values of TRUE and true which gives the best and worst std
+            DIFF = pred - TRUE
+            diff = pred - true
+            
+            d = np.stack((DIFF, diff))
+            d = d[:, ~np.isnan(d).any(axis=0)]
+            min_d = np.amin(d, axis=0)
+            max_d = np.amax(d, axis=0)
+            best_std = np.std(min_d)
+            worst_std = np.std(max_d)
+
+
+            for row in range(2, ws.max_row + 1):
+                if ws.cell(row=row, column=1).value == 'all':
+                    cellrow = row
+                    break
+
+            for col in range(2, ws.max_column + 1):
+                if '_'+method in ws.cell(row=1, column=col).value:
+                    cellcol = col
+                    break
+
+            ws.cell(row=cellrow, column=cellcol).value = best_std
+            ws_worst.cell(row=cellrow, column=cellcol).value = worst_std
+    
+    for g in COMP_DF.groupby('GGM'):
+        g_data = g[1]
+
+        for p in params:
+            ws = wb_best[p]
+            ws_worst = wb_worst[p]
+            param = p.replace('_', '')
+            for method in ['CNN', 'RF', 'LGBM']:
+                TRUE = g_data['TRUE_{}'.format(param)]
+                true = g_data['true_{}'.format(param)]
+                pred = g_data['{}_{}'.format(method, param)]
+
+                # Pick out the values of TRUE and true which gives the best and worst std
+                DIFF = pred - TRUE
+                diff = pred - true
+                
+                d = np.stack((DIFF, diff))
+                d = d[:, ~np.isnan(d).any(axis=0)]
+                min_d = np.amin(d, axis=0)
+                max_d = np.amax(d, axis=0)
+                best_std = np.std(min_d)
+                worst_std = np.std(max_d)
+
+                # Find the cell row by searching for the GGM in the first column
+                for row in range(2, ws.max_row + 1):
+                    if ws.cell(row=row, column=1).value == g[0]:
+                        cellrow = row
+                        break
+                # Find the cell column by searching for the method in the first row
+                for col in range(2, ws.max_column + 1):
+                    if '_'+method in ws.cell(row=1, column=col).value:
+                        cellcol = col
+                        break
+                
+                # set the cell value to the std
+                ws.cell(row=cellrow, column=cellcol).value = best_std
+                ws_worst.cell(row=cellrow, column=cellcol).value = worst_std
+
+    if not filename.endswith('.xlsx'):
+        filename += '.xlsx'
+    
+    wb_best.save(filename.replace('.xlsx', '_best.xlsx'))
+    wb_worst.save(filename.replace('.xlsx', '_worst.xlsx'))
+
+
 def add_identity(axes, *line_args, **line_kwargs):
     """Author: JaminSore (https://stackoverflow.com/users/1940479/jaminsore)"""
     identity, = axes.plot([], [], *line_args, **line_kwargs)
@@ -529,11 +739,268 @@ def add_identity(axes, *line_args, **line_kwargs):
     return axes
 
 
-if __name__ == '__main__':
-    pass
-    # plt.imshow(np.array([1]))
-    # a = np.random.randint(1, 10, size=(20, 10))
-    # b = np.random.random((20, 10))
+def loss_dict_latex(loss_dict, destination_folder=''):
+    """Creates a latex table from a loss dictionary"""
+    folds = np.unique([f[:f.find('_')] for f in loss_dict.keys() if f.startswith('Fold')])
 
-    # e = create_ai_error_image(b, a, filename = 'test.png')
-    # print(e)
+    df = DataFrame([], columns = ['Fold', 'MAE_decoder', 'MSE_decoder', 'MAE_Rec', 'MSE_Rec'])
+
+    for fold in folds:
+        tempdict = {}
+        tempdict['Fold'] = fold[4:]
+        for key in loss_dict.keys():
+            if key.startswith(fold):
+                if 'decoder' in key:
+                    if 'mae' in key:
+                        tempdict['MAE_decoder'] = loss_dict[key]
+                    elif 'mse' in key:
+                        tempdict['MSE_decoder'] = loss_dict[key]
+                elif 'Rec' in key:
+                    if 'mae' in key:
+                        tempdict['MAE_Rec'] = loss_dict[key]
+                    elif 'mse' in key:
+                        tempdict['MSE_Rec'] = loss_dict[key]
+        
+        df = df.append(tempdict, ignore_index=True)
+
+    df.to_excel(destination_folder+'loss_dict.xlsx', index=False)
+    string = df.to_latex(escape=False, index=False)
+    return string
+
+
+    df = DataFrame(loss_dict)
+    
+    string = df.to_latex(escape=False)
+    return string
+
+
+def bar_plot_ggm(GGM, groups, filename=''):
+    """Creates a bar plot with all occurrences of each group in the GGMs"""
+    from Feat_aug import get_cpt_name
+    umap = get_umap_func()
+    unique_ggm = np.sort(np.unique(GGM))
+    unique_groups = np.sort(np.unique(groups))
+    ggm_counts = np.zeros((len(unique_ggm), len(unique_groups)))
+
+    tmp = np.ones_like(GGM)
+    for i, g in enumerate(groups):
+        tmp[i] = np.ones_like(GGM[i])*g
+    groups = tmp
+
+    GGM = GGM.flatten()
+    groups = groups.flatten()
+
+    columns = ['GGM']*len(unique_ggm)
+    rows = ['Group']*len(unique_groups)
+    for i, ggm in enumerate(unique_ggm):
+        columns[i] = umap(ggm)
+        for j, group in enumerate(unique_groups):
+            ggm_counts[i,j] = np.sum((GGM == ggm) & (groups == group))
+            rows[j] = get_cpt_name(group)
+
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    for i, group in enumerate(unique_groups):
+        ax.bar(np.arange(len(unique_ggm)), ggm_counts[:,i], bottom=np.sum(ggm_counts[:,:i], axis=1), label=get_cpt_name(group), zorder=3)
+
+    # Set bar label to be the number of containers in each GGM
+    bar_labels = [len(l[l!=0]) for l in ggm_counts]
+    ax.bar_label(ax.containers[-1], labels=bar_labels, zorder=4, padding=3)
+    # increase room over the bars
+    ax.set_ylim(top=ax.get_ylim()[1]*1.1)
+    ax.set_xticks(np.arange(len(unique_ggm)))
+    ax.set_xticklabels([umap(x) for x in unique_ggm], rotation=45, ha='right')
+    ax.set_ylabel('Number of samples')
+    # Set horizontal grid lines
+    ax.yaxis.grid(True, zorder=1)
+
+    fig.suptitle('Distribution of GGM in various CPT locations')
+
+    fig.subplots_adjust(bottom=0.15, top=0.91)
+
+    #ax.set_xticks(unique_ggm)
+
+    ax.legend(fontsize=5.5, ncol=2)
+    if filename:
+        fig.savefig(filename, dpi=500)
+    else:
+        plt.show()
+
+    count_df = DataFrame(ggm_counts.T, columns=columns)
+    # Add a column to the left of the dataframe with the group names
+    count_df.insert(0, 'CPT Location', rows)
+    if filename:
+        count_df.to_excel(filename + '.xlsx', index=False)
+
+    plt.close(fig)
+
+
+def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/'):
+    """Based on the models in the argument, this function creates updated figures for the assignment"""
+    from Feat_aug import create_full_trace_dataset, create_sequence_dataset, create_loo_trace_prediction_GGM, prediction_scatter_plot, plot_latent_space, predict_encoded_tree, get_cpt_name, get_cpt_data_scaler
+    from sklearn.multioutput import MultiOutputRegressor
+    from sklearn.ensemble import RandomForestRegressor
+    from lightgbm import LGBMRegressor
+    from pandas import concat
+
+    for mgroup in mgroups:
+        m_folder = 'Models/{}'.format(mgroup)
+        destination_folder = file_destination + mgroup
+        Path(destination_folder).mkdir(parents=True, exist_ok=True)
+
+        with open(m_folder + '/param_dict.json') as f:
+            param_dict = json.load(f)
+        
+        temp_param_dict = param_dict['dataset'].copy()
+        temp_param_dict.pop('sequence_length')
+        temp_param_dict.pop('stride')
+        rf_params = param_dict['RF']
+        lgbm_params = param_dict['LGBM']
+
+        # Data
+        Full_args = create_full_trace_dataset(**temp_param_dict)
+        X, y, groups, nan_idxs, no_nan_idxs, _, _, GGM, _, minmax = Full_args
+
+        args = create_sequence_dataset(**param_dict['dataset'])
+        # X, y, groups, Z, GGM, GGM_unc
+        X_seq = args[0]
+        y_seq = args[1]
+        GGM_seq = args[4]
+        groups_seq = args[2]
+
+
+        bar_plot_ggm(GGM_seq, groups_seq, filename=destination_folder+'/GGM_cptloc_distribution')
+
+        scaler = get_cpt_data_scaler()
+        scaled_back_y = np.ones_like(y_seq)
+        for i in range(len(y_seq)):
+            scaled_back_y[i] = scaler.inverse_transform(y_seq[i])
+        describe_data(X_seq, scaled_back_y, groups_seq, GGM_seq, mdir=destination_folder+'/')
+        del scaled_back_y, X_seq, y_seq
+
+        plot_dontfit(destination_folder+'/CPT_not_in_dataset')
+
+        # Make excel table of the folds with loss values
+        try:
+            with open(m_folder + '/loss_dict.json') as f:
+                loss_dict = json.load(f)
+                loss_dict_latex(loss_dict, destination_folder=destination_folder+'/')
+        except Exception as e:
+            print(e)
+
+
+        COMP_df = DataFrame([], columns = ['Depth', 'GGM', 'GGM_uncertainty', 'TRUE_qc', 'true_qc', 'CNN_qc', 'RF_qc', 'LGBM_qc', 'TRUE_fs', 'true_fs', 'CNN_fs', 'RF_fs', 'LGBM_fs', 'TRUE_u2', 'true_u2', 'CNN_u2', 'RF_u2', 'LGBM_u2'])
+
+        # iterate over the folders which are named after the k-fold
+        for fold in Path(m_folder).glob('Fold*'):
+            fold_number = fold.name[4:]
+            fold_folder = file_destination + mgroup + '/' + str(fold.name)
+            Path(fold_folder).mkdir(parents=True, exist_ok=True)
+
+            with open(fold / 'LOO_group.txt') as f:
+                loo_group = int(f.read()[11:].strip('[]'))
+            
+            with open(fold_folder + '/LOO_group.txt', 'w') as f:
+                f.write(str(loo_group))
+            
+            # iterate over the files in the folder
+            modelnames = [i for i in fold.glob('*.h5')]
+            # Pop encoder and reconstruct models from the list
+            encname = modelnames.pop([i for i, j in enumerate(modelnames) if 'encoder' in str(j)][0])
+            recname = modelnames.pop([i for i, j in enumerate(modelnames) if 'reconstruct' in str(j)][0])
+            modelname = modelnames[0]
+
+            model = load_model(modelname)
+            encoder = load_model(encname)
+            reconstruct = load_model(recname)
+
+            # Train and test data
+            test_idxs = np.where(groups.astype(int)==loo_group)[0]
+            X_test = X[test_idxs]
+            y_test = y[test_idxs]
+            GGM_test = GGM[test_idxs]
+            nan_idxs_test = nan_idxs[test_idxs]
+            no_nan_idxs_test = no_nan_idxs[test_idxs]
+            minmax_test = (minmax[0][test_idxs], minmax[1][test_idxs])
+
+            train_idxs = np.where(groups.astype(int)!=loo_group)[0]
+            X_train = X[train_idxs]
+            y_train = y[train_idxs]
+            nan_idxs_train = nan_idxs[train_idxs]
+            no_nan_idxs_train = no_nan_idxs[train_idxs]
+
+            # Create RF and LGBM models
+            rf = MultiOutputRegressor(RandomForestRegressor(**rf_params))
+            lgbm = MultiOutputRegressor(LGBMRegressor(**lgbm_params))
+
+            encoding = encoder.predict(X_train)[no_nan_idxs_train].reshape(-1, 16)
+            rf.fit(encoding, y_train[no_nan_idxs_train].reshape(-1, 3))
+            lgbm.fit(encoding, y_train[no_nan_idxs_train].reshape(-1, 3))
+
+            # Predictions for comparison
+            depth = np.arange(temp_param_dict['zrange'][0], temp_param_dict['zrange'][1], 0.1)
+            depths = []
+            for i in range(X_test.shape[0]):
+                depths.append(depth.copy())
+            depths = np.array(depths)
+            depths = depths[no_nan_idxs_test]
+            ann_pred = model.predict(X_test)[no_nan_idxs_test].reshape(-1, 3)
+            rf_pred = predict_encoded_tree(encoder, rf, X_test)[no_nan_idxs_test].reshape(-1, 3)
+            lgbm_pred = predict_encoded_tree(encoder, lgbm, X_test)[no_nan_idxs_test].reshape(-1, 3)
+            TRUE_qc = minmax_test[1][no_nan_idxs_test].reshape(-1, 3)[:, 0]
+            true_qc = minmax_test[0][no_nan_idxs_test].reshape(-1, 3)[:, 0]
+            TRUE_fs = minmax_test[1][no_nan_idxs_test].reshape(-1, 3)[:, 1]
+            true_fs = minmax_test[0][no_nan_idxs_test].reshape(-1, 3)[:, 1]
+            TRUE_u2 = minmax_test[1][no_nan_idxs_test].reshape(-1, 3)[:, 2]
+            true_u2 = minmax_test[0][no_nan_idxs_test].reshape(-1, 3)[:, 2]
+
+            ggm = GGM_test[no_nan_idxs_test]
+            ggm_unc = np.zeros_like(ggm)
+
+            
+            comp = {'Depth': depths.flatten(), 'GGM': ggm.flatten(), 'GGM_uncertainty': ggm_unc.flatten(),
+                    'TRUE_qc': TRUE_qc.flatten(), 'true_qc': true_qc.flatten(), 'CNN_qc': ann_pred[:, 0], 'RF_qc': rf_pred[:, 0], 'LGBM_qc': lgbm_pred[:, 0],
+                    'TRUE_fs': TRUE_fs.flatten(), 'true_fs': true_fs.flatten(), 'CNN_fs': ann_pred[:, 1], 'RF_fs': rf_pred[:, 1], 'LGBM_fs': lgbm_pred[:, 1],
+                    'TRUE_u2': TRUE_u2.flatten(), 'true_u2': true_u2.flatten(), 'CNN_u2': ann_pred[:, 2], 'RF_u2': rf_pred[:, 2], 'LGBM_u2': lgbm_pred[:, 2]}
+
+            COMP_df = concat([COMP_df, DataFrame(comp)], ignore_index=True)
+
+            # Make new figures
+            latent_space_name = 'Latent_space_{}{}.png'.format(mgroup, fold_number)
+            plot_latent_space(encoder,
+                              latent_features=16,
+                              X=X_test, 
+                              valid_indices=no_nan_idxs_test, 
+                              outside_indices=nan_idxs_test, 
+                              GGM=GGM_test, 
+                              filename= fold_folder + '/' + latent_space_name)
+
+            for m, title in zip([model, [encoder, rf], [encoder, lgbm]], ['ANN', 'RF', 'LGBM']):
+                create_loo_trace_prediction_GGM(m,
+                                                X_test,
+                                                y_test,
+                                                GGM_test,
+                                                zrange=temp_param_dict['zrange'],
+                                                filename=fold_folder + '/pred_' + title + '_{}{}.png'.format(mgroup, fold_number),
+                                                title=title + ' ' + get_cpt_name(loo_group),
+                                                minmax=minmax_test)
+                
+                prediction_scatter_plot(m,
+                                        X_test,
+                                        y_test,
+                                        filename=fold_folder + '/scatter_' + title + '_{}{}.png'.format(mgroup, fold_number),
+                                        title=title + ' ' + get_cpt_name(loo_group),
+                                        bins=15)
+
+
+            # Make illustration of the reconstruction model
+            plot_reconstruction(reconstruct, filename=fold_folder + '/reconstruction_{}{}.png'.format(mgroup, fold_number))
+        # Make best and worst case cross validation excel file
+        make_cv_excel_bestworst(filename=file_destination + mgroup + '/CV.xlsx', COMP_DF=COMP_df)
+
+
+if __name__ == '__main__':
+
+    renew_figs(['AVY'])
+
+    
