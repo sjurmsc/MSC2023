@@ -48,7 +48,7 @@ if __name__ == '__main__':
     # Getting scaler for the data
     scaler = get_cpt_data_scaler()
 
-    m_dist = [0.4, 1, 5, 10, 25]
+    m_dist = [5, 10, 25]
 
 
     distance_loss = 'Results/distance_loss_0.csv'
@@ -134,6 +134,7 @@ if __name__ == '__main__':
         loss_dict = {}
 
         for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
+            if i < 47: continue
             Train_groups    = np.unique(groups_train[train_index])
             Test_group      = np.unique(groups_train[test_index])
 
