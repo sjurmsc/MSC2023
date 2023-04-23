@@ -48,7 +48,7 @@ if __name__ == '__main__':
     # Getting scaler for the data
     scaler = get_cpt_data_scaler()
 
-    m_dist = [5, 10, 25]
+    m_dist = [10, 25]
 
 
     distance_loss = 'Results/distance_loss_0.csv'
@@ -134,7 +134,6 @@ if __name__ == '__main__':
         loss_dict = {}
 
         for i, (train_index, test_index) in enumerate(cv.split(X_train, y_train, groups_train)):
-            if i < 47: continue
             Train_groups    = np.unique(groups_train[train_index])
             Test_group      = np.unique(groups_train[test_index])
 
@@ -223,7 +222,7 @@ if __name__ == '__main__':
 
 
             # Adding predictions to a numpy array
-            if i == 0:
+            if (i == 0):
                 trues = y_test_cv
                 preds = model_mean.predict(X_test_cv)
                 z = z_train[test_index]
@@ -282,7 +281,7 @@ if __name__ == '__main__':
                     print('RF score: {}'.format(s))
                     tree_scores['RF'] = s
                     rf = predict_encoded_tree(encoder, rf_decoder, X_test_cv)
-                    if i == 0:
+                    if (i == 0):
                         rf_preds = rf
                     else:
                         rf_preds = np.vstack((rf_preds, rf))
@@ -298,7 +297,7 @@ if __name__ == '__main__':
                     print('LGBM score: {}'.format(s))
                     tree_scores['LGBM'] = s
                     lgbm = predict_encoded_tree(encoder, lgbm_decoder, X_test_cv)
-                    if i == 0:
+                    if (i == 0):
                         lgbm_preds = lgbm
                     else:
                         lgbm_preds = np.vstack((lgbm_preds, lgbm))
