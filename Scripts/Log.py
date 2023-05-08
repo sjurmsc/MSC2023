@@ -1220,10 +1220,5 @@ if __name__ == '__main__':
     # print(mcolors.to_hex('orange'))
     # print(mcolors.to_hex('b'))
 
-    s = ''
-    for i in range(16):
-        s += f'c{i+1} '
-    print(s)
-
 
     

@@ -190,6 +190,7 @@ if __name__ == '__main__':
             t0 = time()
 
             # Training the model
+            print(X_train_cv.shape, y_train_cv.shape, X_test_cv.shape, y_test_cv.shape)
             History = model.fit(X_train_cv, [y_train_cv, X_train_cv], **NN_param_dict)
 
             # Save the model metrics
