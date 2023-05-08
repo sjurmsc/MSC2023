@@ -120,7 +120,7 @@ if __name__ == '__main__':
         encoder_type = 'cnn'
         decoder_type = 'ann'
         n_members    = 1
-        latent_features = 8
+        latent_features = 4
 
         # Training time dict
         training_time_dict = {}

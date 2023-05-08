@@ -656,7 +656,7 @@ def evalueate_UK_at_well():
 
 #### Image creation functions ####
 
-def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_width = 11, groupby='cpt_loc', img_dir = ''):
+def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_width = 11, latent_units = 16, groupby='cpt_loc', img_dir = ''):
     distances = r'..\OneDrive - NGI\Documents\NTNU\MSC_DATA\Distances_to_2Dlines_old.xlsx'
     CPT_match = read_excel(distances)
 
@@ -669,7 +669,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
         Path(img_dir).mkdir(parents=True)
 
     if groupby == 'latent_unit':
-        pred_image = array([]).reshape((16, len(CPT_match['Location no.'].unique()), neighbors*2+1, seis.shape[0]))
+        pred_image = array([]).reshape((latent_units, len(CPT_match['Location no.'].unique()), neighbors*2+1, seis.shape[0]))
 
     for i, row in CPT_match.iterrows():
         cpt_loc = row['Location no.']
@@ -681,7 +681,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
             
             CDP_index = np.where(array(f.attributes(segyio.TraceField.CDP)) == CDP)[0][0]
             
-        pred_image = array([]).reshape((0, seis.shape[1]//2, 16))
+        pred_image = array([]).reshape((0, seis.shape[1]//2, latent_units))
         
         img_left = CDP_index-neighbors
         img_right = min([CDP_index+neighbors, seis.shape[0]-(img_neighbors+1)]) # CDP 79 is close to the edge of the image
@@ -695,9 +695,9 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
             pred_image = row_stack((pred_image, latent_pred))
         
         if groupby == 'latent_unit':
-            pred = pred_image.reshape((16, 1, neighbors*2+1, seis.shape[0]))
+            pred = pred_image.reshape((latent_units, 1, neighbors*2+1, seis.shape[0]))
             if i == 0:
-                unit_pred = np.array(pred).reshape((16, 0, neighbors*2+1, seis.shape[0]))
+                unit_pred = np.array(pred).reshape((latent_units, 0, neighbors*2+1, seis.shape[0]))
             else:
                 unit_pred = np.concatenate((unit_pred, pred), axis=1)
             
@@ -719,7 +719,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
 
     if groupby == 'latent_unit':
 
-        for i in range(16):
+        for i in range(latent_units):
             preds = unit_pred[i, :, :, :]
             fig, ax = plt.subplots(9, 11, figsize=(20, 15))
             fig.tight_layout()
