@@ -20,29 +20,31 @@ def CNN_pyramidal_encoder(latent_features, image_width):
 
     # First convolutional block
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (2, 2)))(x)
-    x = keras.layers.Conv2D(16, (5, 5), activation='relu')(x) # Reduce horizontal dimension by 2
-    x = keras.layers.Conv2D(16, (5, 5), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2D(16, (5, 5), activation='relu', padding='same')(x)
-    b1 = keras.layers.Conv2D(16, (5, 5), activation='relu', padding='same')(x)
+    b1 = keras.layers.Conv2D(16, (5, 5), activation='relu')(x) # Reduce horizontal dimension by 2
+    x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
+    b1 = keras.layers.Add()([b1, x])
 
     # Second convolutional block
-    x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(b1) # 1, 1 padding because kernel is 3x3
+    x = keras.layers.ZeroPadding2D(padding=((0, 0), (2, 2)))(b1) # 1, 1 padding because kernel is 3x3
     x = keras.layers.SpatialDropout2D(0.1)(x)
-    x = keras.layers.Conv2D(32, (3, 3), strides=(1, 2), activation='relu', name='strided_conv2d')(x) # Reduce horizontal dimension by 2, and vertical by factor 2
+    b2 = keras.layers.Conv2D(32, (5, 5), strides=(1, 2), activation='relu', name='strided_conv2d')(x) # Reduce horizontal dimension by 2, and vertical by factor 2
     x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
-    b2 = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
+    b2 = keras.layers.Add()([b2, x])
 
     # Third convolutional block
-    x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(b2) # 2, 2 padding because kernel is 5x5
-    x = keras.layers.SpatialDropout2D(0.1)(x)
-    x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x) # Reduce horizontal dimension by 4
-    x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
-    b3 = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    # x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(b2) # 2, 2 padding because kernel is 5x5
+    # x = keras.layers.SpatialDropout2D(0.1)(x)
+    # x = keras.layers.Conv2D(64, (3, 3), activation='relu')(x) # Reduce horizontal dimension by 4
+    # x = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
+    # b3 = keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same')(x)
 
 
     # Add more layers for shape reduction
-    x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(b3) # 1, 1 padding because kernel is 3x3
-    x = keras.layers.Conv2D(32, (3, 3), activation='relu')(x) # Reduce horizontal dimension by 2
+    x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(b2) # 1, 1 padding because kernel is 3x3
+    # x = keras.layers.Conv2D(32, (3, 3), activation='relu')(x) # Reduce horizontal dimension by 2
     x = keras.layers.Conv2D(latent_features, (3, 3), activation='relu', padding='same')(x)
     outp = keras.layers.Reshape((-1, latent_features))(x) # Reshape to get features in the second dimension
 
