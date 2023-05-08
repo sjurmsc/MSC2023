@@ -70,7 +70,7 @@ def CNN_pyramidal_decoder(latent_features, image_width):
     # x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu', padding='same')(x) # Increase horizontal dimension by 2
 
     x = keras.layers.ZeroPadding2D(padding=((2, 2), (0, 0)))(x)
-    b2 = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
+    b2 = keras.layers.Conv2DTranspose(32, (5, 5), activation='relu', padding='same')(x)
     x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(b2)
     x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', strides=(1, 2), padding='same')(x) # Increase horizontal dimension by 2, and vertical by factor 2
     b2 = keras.layers.Add()([b2, x])
@@ -78,7 +78,6 @@ def CNN_pyramidal_decoder(latent_features, image_width):
     x = keras.layers.ZeroPadding2D(padding=((2, 2), (0, 0)))(x)
     b3 = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
     x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(b3)
-    x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
     x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x) # Increase horizontal dimension by 4
     b3 = keras.layers.Add()([b3, x])
 
