@@ -21,7 +21,7 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     # First convolutional block
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (2, 2)))(x)
     b1 = keras.layers.Conv2D(16, (5, 5), activation='relu')(x) # Reduce horizontal dimension by 2
-    x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(b1)
     x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
     x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
     b1 = keras.layers.Add()([b1, x])
@@ -30,7 +30,7 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (2, 2)))(b1) # 1, 1 padding because kernel is 3x3
     x = keras.layers.SpatialDropout2D(0.1)(x)
     b2 = keras.layers.Conv2D(32, (5, 5), strides=(1, 2), activation='relu', name='strided_conv2d')(x) # Reduce horizontal dimension by 2, and vertical by factor 2
-    x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(b2)
     x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
     b2 = keras.layers.Add()([b2, x])
 
@@ -59,25 +59,28 @@ def CNN_pyramidal_decoder(latent_features, image_width):
     inp = keras.layers.Input(shape=(None, latent_features))
     x = keras.layers.Reshape((1, -1, latent_features))(inp) # Reshape to get features in the third dimension
     x = keras.layers.ZeroPadding2D(padding=((1, 1), (0, 0)))(x)
-    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
+    b1 = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(b1)
     x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x) # Increase horizontal dimension by 2
+    b1 = keras.layers.Add()([b1, x])
 
-    x = keras.layers.ZeroPadding2D(padding=((1, 1), (0, 0)))(x)
-    x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu', padding='same')(x) # Increase horizontal dimension by 2
-
-    x = keras.layers.ZeroPadding2D(padding=((1, 1), (0, 0)))(x)
-    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', strides=(1, 2), padding='same')(x) # Increase horizontal dimension by 2, and vertical by factor 2
+    # x = keras.layers.ZeroPadding2D(padding=((1, 1), (0, 0)))(x)
+    # x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu', padding='same')(x)
+    # x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu', padding='same')(x)
+    # x = keras.layers.Conv2DTranspose(64, (3, 3), activation='relu', padding='same')(x) # Increase horizontal dimension by 2
 
     x = keras.layers.ZeroPadding2D(padding=((2, 2), (0, 0)))(x)
-    x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
-    x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
+    b2 = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', padding='same')(b2)
+    x = keras.layers.Conv2DTranspose(32, (3, 3), activation='relu', strides=(1, 2), padding='same')(x) # Increase horizontal dimension by 2, and vertical by factor 2
+    b2 = keras.layers.Add()([b2, x])
+
+    x = keras.layers.ZeroPadding2D(padding=((2, 2), (0, 0)))(x)
+    b3 = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(b3)
     x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x)
     x = keras.layers.Conv2DTranspose(16, (5, 5), activation='relu', padding='same')(x) # Increase horizontal dimension by 4
+    b3 = keras.layers.Add()([b3, x])
 
     x = keras.layers.Conv2DTranspose(1, (image_width, 1), activation='linear', padding='same')(x) # Increase horizontal dimension to image_width
     outp = keras.layers.Reshape((image_width, -1, 1))(x) # Reshape to get features in the second dimension
@@ -190,9 +193,9 @@ def ANN_decoder(latent_features=16, i=0):
     """1D CNN decoder with a committee of n_members."""
     
     inp = keras.layers.Input(shape=(None, latent_features))
-    x = keras.layers.Dense(64, activation='relu')(inp)
+    # x = keras.layers.Dense(64, activation='relu')(inp)
+    x = keras.layers.Dense(32, activation='relu')(inp)
     x = keras.layers.Dropout(0.1)(x)
-    x = keras.layers.Dense(32, activation='relu')(x)
     x = keras.layers.Dense(16, activation='relu')(x)
     out = keras.layers.Dense(3)(x)
 

@@ -83,8 +83,8 @@ if __name__ == '__main__':
         X_full, y_full, groups_full, full_nan_idx, full_no_nan_idx, sw_idxs, extr_idxs, GGM, GGM_unc, minmax_full = full_trace
         del full_trace
 
-        dataset_params['sequence_length'] = 100
-        dataset_params['stride'] = 1
+        dataset_params['sequence_length'] = 20
+        dataset_params['stride'] = 10
 
         X_train, y_train, groups_train, z_train, GGM_train, GGM_unc_train = create_sequence_dataset(**dataset_params)
 
@@ -120,7 +120,7 @@ if __name__ == '__main__':
         encoder_type = 'cnn'
         decoder_type = 'ann'
         n_members    = 1
-        latent_features = 16
+        latent_features = 8
 
         # Training time dict
         training_time_dict = {}
