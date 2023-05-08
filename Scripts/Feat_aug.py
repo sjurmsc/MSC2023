@@ -713,7 +713,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
                 ax[ii//8, ii%8].axis('off')
                 ax[ii//8, ii%8].set_title('Latent {}'.format(ii+1))
             fig.suptitle('Latent space prediction for CPT location {}'.format(cpt_loc))
-            fig.savefig(img_dir + 'Latent_space_units_{}.png'.format(cpt_loc), dpi=500)
+            fig.savefig(img_dir + 'Latent_space_units_{}.png'.format(cpt_loc), dpi=400)
             plt.close()
             print('\nSaved image for CPT location {}'.format(cpt_loc))
 
@@ -730,7 +730,7 @@ def create_latent_space_prediction_images(model, oob='', neighbors = 200, image_
                 ax[ii//11, ii%11].axis('off')
                 ax[ii//11, ii%11].set_title('CPT {}'.format(CPT_match['Location no.'].unique()[ii]))
             fig.suptitle('Latent space prediction for latent unit {}'.format(i+1))
-            fig.savefig('./Assignment Figures/Latent_units/Latent_space_unit_{}.png'.format(i+1), dpi=500)
+            fig.savefig('./Assignment Figures/Latent_units/Latent_space_unit_{}.png'.format(i+1), dpi=400)
             plt.close()
             print('\nSaved image for latent unit {}'.format(i+1))
 
@@ -813,7 +813,7 @@ def plot_cpt_pred(model, cpt, save = False, image_width = 11):
         # Create Interpolation directory if it doesn't exist
         if not Path('./Assignment Figures/Interpolation').exists():
             Path('./Assignment Figures/Interpolation').mkdir()
-        fig.savefig('./Assignment Figures/Interpolation/Interpolation_{}.png'.format(cpt), dpi=500)
+        fig.savefig('./Assignment Figures/Interpolation/Interpolation_{}.png'.format(cpt), dpi=400)
     
     else:
         plt.show()
@@ -825,7 +825,7 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     """Use t-SNE to plot the latent space"""
     from Log import get_GGM_cmap
     # Plot TSNE of the latent model
-    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300, learning_rate='auto')
     prediction = latent_model.predict(X).reshape((-1, latent_features))
     tsne_results = tsne.fit_transform(prediction)
 
@@ -847,16 +847,16 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     # bounds = np.arange(len(umap['uid'])+1)
     norm = BoundaryNorm(bounds, cmap.N)
 
-    fig, ax = plt.subplots(1, 1, figsize=(15, 10))
+    fig, ax = plt.subplots(1, 1, figsize=(10, 7))
 
     # Set padding
     fig.subplots_adjust(left=0.05, top=0.9, right=0.9, bottom=0.1)
 
     # Give specific markers to points outside the valid indices
-    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], cmap=cmap, norm=norm, alpha=0.8, label='Extrapolated Prediction')
+    ax.scatter(tsne_results[outside_indices, 0], tsne_results[outside_indices, 1], marker='x', c=GGM[outside_indices], cmap=cmap, norm=norm, alpha=0.8, label='Extrapolated Prediction', s=20)
     
     # Plot the valid indices
-    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], marker= 'o', c=GGM[valid_indices], cmap=cmap, norm=norm, alpha=0.8, label='Verifiable Prediction')
+    ax.scatter(tsne_results[valid_indices, 0], tsne_results[valid_indices, 1], marker= 'o', c=GGM[valid_indices], cmap=cmap, norm=norm, alpha=0.8, label='Verifiable Prediction', s=20)
 
     # Remove axis ticks
     ax.set_xticks([])
@@ -868,24 +868,23 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     cbar.ax.invert_yaxis()
 
     # Set the tick labels to be umap uits and those in GGM names to be bold
-    cbar.ax.set_yticklabels(umap_tot['unit'], fontsize=15)
+    cbar.ax.set_yticklabels(umap_tot['unit'], fontsize=11)
     for i, label in enumerate(cbar.ax.get_yticklabels()):
         if label.get_text() in GGM_names:
             label.set_weight('bold')
-            label.set_fontsize(20)
     
 
 
 
-    cbar.ax.tick_params(labelsize=15)
-    cbar.set_label('Ground model units', fontsize=20)
+    cbar.ax.tick_params(labelsize=10)
+    cbar.set_label('Ground model units', fontsize=12)
 
     fig.suptitle('Latent space colored by Ground model units', fontsize=20)
 
     # Predictions for nan values
     if len(outside_indices) > 0:
         handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles, labels, loc='upper left', fontsize=15)
+        ax.legend(handles, labels, fontsize=12)
 
     # Remove the frame of the figure
     for spine in ax.spines.values():
@@ -894,7 +893,7 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
 
 
     if filename:
-        fig.savefig(filename, dpi=500)
+        fig.savefig(filename, dpi=400)
     else:
         plt.show()
     plt.close()
@@ -960,7 +959,7 @@ def create_loo_trace_prediction(model, test_X, test_y, zrange=(30, 100), filenam
 
 
     if filename:
-        fig.savefig(filename, dpi=500)
+        fig.savefig(filename, dpi=400)
     else:
         plt.show()
     plt.close()
@@ -998,7 +997,14 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM, zrange=(30, 100)
     pred_color = ['g', 'orange', 'b']
 
     for image_num in range(predictions.shape[0]):
+        
+        GGM_at_depth = GGM[image_num].T
+        changes = np.diff(GGM[image_num])
+        depth_changes = z[np.where(changes != 0)[0]]
+        depth_changes = np.insert(depth_changes, 0, zrange[0])
+        depth_changes = np.append(depth_changes, zrange[1])
         # Create a figure for the predictions
+
         fig, ax = plt.subplots(1, 4, figsize=(15, 5))
         fig.tight_layout()
         for i in range(3):
@@ -1009,7 +1015,6 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM, zrange=(30, 100)
                 if minmax is not None:
                     ax[i].fill_betweenx(z, mins[t, :, i], maxs[t, :, i], color=pred_color[i], alpha=0.1)
             ax[i].set_title(units[i])
-            ax[i].set_ylabel('Depth [mbsl]')
 
             # Set the x axis label to the top
             # ax[i].xaxis.set_label_position('top')
@@ -1018,18 +1023,19 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM, zrange=(30, 100)
             ax[i].invert_yaxis()
             ax[i].legend()
 
+            # add lines where GGM changes
+            for d in depth_changes:
+                ax[i].axhline(d, color='k', alpha=0.2, linestyle='--', linewidth=0.5)
+
+        ax[0].set_ylabel('Depth [mLAT]')
+
         cmap, norm, _ = get_GGM_cmap(GGM)
 
         ax[3].set_title('GGM')
-        ax[3].set_ylabel('Depth [mbsl]')
 
         ax[3].imshow(GGM[image_num, :].reshape(-1, 1), cmap=cmap, norm=norm, aspect=8, extent=[zrange[1], zrange[0], zrange[1], zrange[0]])
 
-        GGM_at_depth = GGM[image_num].T
-        changes = np.diff(GGM[image_num])
-        depth_changes = z[np.where(changes != 0)[0]]
-        depth_changes = np.insert(depth_changes, 0, zrange[0])
-        depth_changes = np.append(depth_changes, zrange[1])
+        
         diff_changes = np.diff(depth_changes)
         y_ticks = [depth_changes[i]+diff_changes[i]/2 for i in range(len(depth_changes)-1)]
 
@@ -1040,13 +1046,15 @@ def create_loo_trace_prediction_GGM(model, test_X, test_y, GGM, zrange=(30, 100)
         yticklabels = np.vectorize(umap)(GGM_at_yticks)
         ax[3].set_yticklabels(yticklabels, rotation=-30, fontsize=8, va='bottom')
 
+        ylim = ax[3].get_ylim()
+        [ax[j].set_ylim(ylim) for j in range(3)]
 
         # Add super title
         fig.suptitle(title, fontsize=16)
         fig.subplots_adjust(left=0.05, bottom=0.09, top=0.85, wspace=0.19)
 
     if filename:
-        fig.savefig(filename, dpi=500)
+        fig.savefig(filename, dpi=400)
     else:
         plt.show()
     plt.close()
@@ -1082,6 +1090,10 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=
     for i in range(3):
         p = predictions[:, :, i].flatten()
         t = test_y[:, :, i].flatten()
+        
+        if np.all(np.isnan(t)):
+            continue
+
         # Plot predictions using only markers
         ax[0, i].scatter(t, p, c=pred_color[i], marker='.', alpha=0.5)
 
@@ -1102,7 +1114,7 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=
 
         # Plot the histogram of the residuals
         ax[1, i].hist((p-t), bins=bins, color=pred_color[i], edgecolor='k')
-        ax[1, i].set_xlabel('$\hat{{{}}}-{}$'.format(units[i][1:-1], units[i][1:-1]))
+        ax[1, i].set_xlabel('$\hat{{{}}}-{}$[MPa]'.format(units[i][1:-1], units[i][1:-1]))
         ax[1, i].set_ylabel('Frequency')
 
         
@@ -1111,7 +1123,7 @@ def prediction_scatter_plot(model, test_X, test_y, filename='', title='', scale=
     fig.subplots_adjust(top=0.9, wspace=0.3, hspace=0.3)
 
     if filename:
-        fig.savefig(filename, dpi=500)
+        fig.savefig(filename, dpi=400)
     else:
         plt.show()
     plt.close()

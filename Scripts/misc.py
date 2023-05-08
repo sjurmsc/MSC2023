@@ -24,17 +24,16 @@ def find_all_relevant_soil_units():
 
 
 def illustrate_seq_lengths(n_neighboring_traces=5, 
-                            zrange: tuple = (30, 100), 
-                            n_bootstraps=20,
+                            zrange: tuple = (35, 60), 
+                            n_bootstraps=5,
                             max_distance_to_cdp=25, # in meters (largest value in dataset is 21)
-                            cumulative_seismic=False,
                             data_folder = 'FE_CPT',
                             y_scaler=None):
     """
     Creates a dataset with sections of seismic image and corresponding CPT data where
     none of the CPT data is missing.
     """
-    match_file = './Data/match_dict{}_z_{}-{}_ds_{}.pkl'.format(n_neighboring_traces, zrange[0], zrange[1], data_folder)
+    match_file = './Data/match_dict{}_z_{}-{}_ds_{}_GGM.pkl'.format(n_neighboring_traces, zrange[0], zrange[1], data_folder)
     if not Path(match_file).exists():
         print('Creating match file...')
         match_dict = match_cpt_to_seismic(n_neighboring_traces, zrange, to_file=match_file)
@@ -80,7 +79,7 @@ def illustrate_seq_lengths(n_neighboring_traces=5,
             splits_depth = np.split(z_GM, split_indices)
             for s, sz in zip(splits, splits_depth):
                 if np.all(np.isnan(s)): continue
-                if (s.shape[0] > 1): # and (s.shape[0] < 100):
+                if (s.shape[0] > 1) and (s.shape[0] < 100):
                     y.append(s.shape[0])
                     Z.append(sz)
     y = np.array(y)
@@ -88,13 +87,18 @@ def illustrate_seq_lengths(n_neighboring_traces=5,
     data = np.vstack((y, Z)).reshape(-1, 2)
 
     fig, ax = plt.subplots(1, 1, figsize=(2.5, 2))
-    ax.hist(data, bins=20) # , color=[msc_color, 'g'], edgecolor='k', stacked=True)
-    ax.set_xlabel('Length of sequence', fontsize=8)
-    ax.set_ylabel('Count', fontsize=8)
-    fig.suptitle('Continuous CPT sequence lengths', fontsize=12)
+    ax.grid(zorder=0)
+    ax.hist(y, bins=20, color=msc_color, edgecolor='k', zorder=3)
+
+    ax.tick_params(axis='both', which='major', labelsize=6)
+
+    ax.set_xlabel('Length of sequence', fontsize=6)
+    ax.set_ylabel('Count', fontsize=6)
+    fig.suptitle('Continuous CPT sequence <100', fontsize=10)
     fig.tight_layout()
-    fig.subplots_adjust(bottom=0.236, left=0.279)
-    fig.savefig('./Assignment Figures/Shallow_Sequence_lengths.png', dpi=500)
+    fig.subplots_adjust(bottom=0.236, left=0.2, top=0.86)
+    
+    fig.savefig('./Assignment Figures/Shallow_Sequence_lengths_lessthan100.png', dpi=500)
     plt.show()
 
 def get_traces(fp, mmap=True, zrange: tuple = (None, 100)):
@@ -111,21 +115,114 @@ def get_traces(fp, mmap=True, zrange: tuple = (None, 100)):
     traces, z = traces[:, z<zrange[1]], z[z<zrange[1]]
     return traces, z
 
+
+def cpt_loc_dataset():
+    data_dir = '../OneDrive - NGI/Documents/NTNU/MSC_DATA/'
+
+    distances = data_dir + 'Distances_to_2Dlines_Revised.xlsx'
+
+    df = pd.read_excel(distances)
+
+    # create a column of empty string values
+    df['min_len'] = '100'
+
+    m_dist = [0.4, 1, 5, 10, 25]
+
+    gname = ['AVW', 'AVX', 'AVY', 'AVZ', 'AWA']
+
+    #match_dict = match_cpt_to_seismic(n_neighboring_traces=5, zrange=(35, 60), data_folder='FE_CPT')
+
+    dataset_params = {
+            'n_neighboring_traces'  : 5,
+            'zrange'                : (35, 60),
+            'n_bootstraps'          : 1,
+            'max_distance_to_cdp'   : 25,
+            'groupby'               : 'cpt_loc',
+            'exclude_BH'            : True
+            }
+    ds = create_sequence_dataset(sequence_length=100, **dataset_params)
+        
+    groups = np.unique(ds[2])
+    df = df[([not ('BH' in x) for x in df['Borehole']])].copy()
+    
+    for d, name in zip(m_dist, gname):
+        # df_sub = df[(df['Distance to CDP']<d)&([not ('BH' in x) for x in df['Borehole']])&(np.isin(df['Location no.'], groups))].copy()
+        section = df[df['Distance to CDP']<d]
+        for i in section.index:
+            df.loc[i, 'min_len'] = np.min([float(section.loc[i, 'min_len']), d])
+            if not np.isin(df.loc[i, 'Location no.'], groups):
+                df.loc[i, 'min_len'] = 100
+
+    df.to_excel(data_dir + 'Distance_model_groupings.xlsx'.format(name), index=False)
+
+
+def plot_select_figures(model_list):
+    destination = './Assignment Figures/Remade_figs/'
+
+    for model in model_list:
+        model_name = model.split('\\')[-1].split('.')[0]
+        model = load_model(model)
+        model.summary()
+
+
+def n_dim_straight_line(n):
+    """This function returns a funciton that when called on a value x, returns the values which correspond to a straight line in n-dimensional space."""
+    x = np.linspace(0, 1, 400)
+    for i in range(n):
+        x = np.row_stack((x, np.zeros(400)))
+    x = x.T
+
+    return x
+
+
+def plot_tsne_of_straight_line(n=16):
+    """This function samples from a straight line in n-dimensional space and plots the tsne of the samples."""
+    from sklearn.manifold import TSNE
+
+    # Create a straight line in n-dimensional space
+
+    straight_line = n_dim_straight_line(n)
+
+
+    # Create a tsne object
+    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+
+    # Fit the tsne object to the data
+    X_tsne = tsne.fit_transform(straight_line)
+
+    # Plot the data
+    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    ax.scatter(X_tsne[:, 0], X_tsne[:, 1], c=straight_line[:, 0], cmap='cool')
+
+    # Remove axis ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+
+    fig.suptitle('TSNE of a straight line in {} dimensions'.format(n), fontsize=18)
+
+    fig.savefig('./Assignment Figures/tsne_of_straight_line.png', dpi=350)
+
+
 if __name__ == '__main__':
     from Feat_aug import *
     from Architectures import *
     from Log import *
     from pathlib import Path
 
-    pred_results = r"C:\Users\SjB\MSC2023\Models\ARH\Ensemble_CNN_preds.pkl"
+    # pred_results = r"C:\Users\SjB\MSC2023\Models\ARH\Ensemble_CNN_preds.pkl"
 
-    with open(pred_results, 'rb') as file:
-        preds = pickle.load(file)
+    # with open(pred_results, 'rb') as file:
+    #     preds = pickle.load(file)
 
-
-    # illustrate_seq_lengths(zrange=(35, 50))
+    # cpt_loc_dataset()
+    # illustrate_seq_lengths(zrange=(35, 60))
     # get_cpt_las_files(cpt_folder_loc='../OneDrive - NGI/Documents/NTNU/MSC_DATA/FE_CPT')
 
+    
+    plot_tsne_of_straight_line(n=16)
 
     raise SystemExit
 

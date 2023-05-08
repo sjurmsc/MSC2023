@@ -1498,3 +1498,246 @@ def negative_ai_values():
     print('Minimum on the plot is: {}'.format(np.min(t_b_z[r])))
     print('Total minimum is {}'.format(np.min(t_b_z)))
     plt.show()
+
+
+
+
+##################### from Log.py #############################
+
+
+
+def update_scores(modelname, score):
+    score_file = 'Models/_scores.json'
+    
+    with open(score_file, 'r') as readfile:
+        scores = json.loads(readfile.read()) # Make sure score file is not empty
+
+    if len([score])>1:
+        regression_score, reconstruction_score = score
+        if np.any([regression_score < x for x in scores['regression_scores'].values()]):
+            scores['regression_scores'][modelname] = regression_score
+
+    else: reconstruction_score = score
+
+    if np.any([reconstruction_score < x for x in scores['recon_scores'].values()]):
+        scores['recon_scores'][modelname] = reconstruction_score
+    else:
+        return False
+
+    # Pruning condition (Amount of etries must not exceed 10)
+
+    with open(score_file, 'w') as writefile:
+        writefile.write(json.dumps(scores, indent=2))
+
+
+    return True
+
+
+
+
+def replace_md_image(filepath, score):
+    """
+    Replaces the image in the github markdown document with the image at
+    the given filepath
+    """
+
+
+    if len([score])>1:
+        score = score[1]
+
+    with open('README.md', 'r') as readfile:
+        lines = readfile.readlines()
+
+    # Truncates filepath
+    abs_fp_idx = 0
+    if 'MSC2023' in filepath:
+        abs_fp_idx = filepath.find('MSC2023') + len('MSC2023')
+    
+    trunc_filepath = '.' + filepath[abs_fp_idx:]
+
+    # Gets first instance of markdown image
+    j = [i for i, str in enumerate(lines) if str.startswith('!')][0]
+
+    # Gets old score
+    score_loc = j-1
+    score_line = lines[score_loc]
+    old_score_idx = score_line.find('score ') + len('score ')
+    old_score = float(score_line[old_score_idx:score_line.find(':')])
+
+    if score > old_score: return # The image only gets replaced if the score is better
+    
+    new_score_line = score_line[:old_score_idx] + str(score) + ':\n'
+    lines[score_loc] = new_score_line
+
+    # Adds the new image
+    lines[j] = f'![]({trunc_filepath})\n'
+
+    # Adds descriptive text underneath the image
+    if '.jpg' in lines[j+1]: lines[j+1] = f'{trunc_filepath}\n'
+    else: lines[j] += f'*{trunc_filepath}*\n'
+
+    with open('README.md', 'w') as writefile:
+        writefile.writelines(lines)
+
+    with open('.gitignore', 'a') as file:
+        file.write('\n!' + trunc_filepath[3:])  # 3 at the start to skip ./
+        
+    fps = ['.gitignore', 'README.md', 'Models/_scores.json']
+    message = 'Replacing Markdown Image'
+    repo_push(fps, message)
+
+
+def create_ai_error_image(e, seismic_array, image_normalize=True, filename = False):
+    """
+    e: prediction error
+    This function presumes that the depth of e and the seismic image is the same
+    seismic image is presumed to be raw data
+    """
+    seismic_array = np.array(seismic_array).T
+    e = np.array(e, dtype=float).T
+
+    alpha_norm = Normalize(np.min(e, axis=None), np.max(e, axis=None))
+    
+    norm = Normalize(np.min(seismic_array, axis=None), np.max(seismic_array, axis=None))
+    seismic_alpha = np.ones_like(seismic_array)-norm(seismic_array)
+
+    if image_normalize:
+        seismic_image = Image.fromarray((plt.cm.gray(norm(seismic_array), alpha=seismic_alpha)*255).astype(np.uint8), mode='RGBA')
+    else:
+        seismic_image = Image.fromarray((plt.cm.gray(np.array(seismic_array), alpha=seismic_alpha)*255).astype(np.uint8), mode='RGBA')
+
+    cmap = lambda x: plt.cm.Reds(alpha_norm(x), alpha=(np.ones_like(x)-alpha_norm(x)))*255
+    scaled_e = Image.fromarray(cmap(e).astype(np.uint8), mode='RGBA').resize(seismic_image.size)
+
+    error_image = Image.new('RGBA', scaled_e.size)
+    error_image = Image.alpha_composite(error_image, seismic_image)
+    error_image = Image.alpha_composite(error_image, scaled_e)
+
+    if filename:
+        error_image.save(filename)
+    return error_image
+
+
+def compare_pred_to_gt_image(fp, im_pred, im_true, imagesize=(3508, 2480), font = 'carlito', fontsize=20, dpi=300):
+    """
+    Function creates a side by side image of the prediction versus the
+    ground truth image
+    """
+    from PIL import PSDraw
+    
+    d = PSDraw.PSDraw('TEMP/test') # fp?
+    d.begin_document()
+    d.setfont(font, fontsize)
+    raise_text = 20
+
+    # Predicted image
+    l_box = None #pass
+    d.image(l_box, im_pred, dpi=dpi)
+    tl_loc = (l_box[0], l_box[1]-raise_text) # Text raised by 20 px
+    d.text(tl_loc, 'Predicted image')
+
+    # True image
+    r_box = None #pass
+    d.image(r_box, im_true, dpi=dpi)
+    tr_loc = (r_box[0], r_box[1]-raise_text)
+    d.text(tr_loc, 'Ground Truth')
+    
+    d.end_document()
+
+
+def create_pred_image(model, gt_data, aspect_r=1.33333, mode='sbs'):
+    # Decide based on stats which section is the best predicting
+    # Moving window statistics
+    X, truth = gt_data
+    truth = np.array(truth)
+    pred = model.predict(X)
+    if len(pred) == 2: 
+        pred, pred_recon = pred
+        
+
+    if len(truth.shape) == 3:
+        num_images, num_traces, samples = truth.shape
+        width_of_image = num_images*num_traces
+        truth = np.reshape(truth, (width_of_image, samples))
+        X = np.reshape(X, (width_of_image, samples))
+        pred = np.reshape(pred, (width_of_image, samples))
+        pred_recon = np.reshape(pred_recon, (width_of_image, samples))
+
+    elif len(truth.shape) == 2:
+        num_traces, samples = truth.shape #pass # Amount of columns (to be rows)
+        pred = np.reshape(pred, truth.shape)
+        pred_recon = np.reshape(pred_recon, X.shape)
+    
+    traces = int(aspect_r*samples)  #the breadth of the image is the aspect_ratio*height
+    
+    if mode == 'sbs':
+        traces //= 2
+
+    # Decide what slice is best, by loss (l2 error norm)
+    target_pred_diff = pred-truth
+    norm_list = norm(pred-truth, 2, axis=0)
+    norm_arr = np.array(norm_list)
+    moving_window_mean = list(np.convolve(norm_arr, np.ones(traces), mode='valid'))
+
+    slce = moving_window_mean.index(np.min(moving_window_mean))
+    s = slice(slce, slce+traces)
+
+    pred_matrix = pred[s] ; gt_matrix = truth[s]
+    pred_recon_matrix = pred_recon[s] ; gt_recon_matrix = X[s]
+
+    target_pred_compare = np.row_stack((pred_matrix, gt_matrix))
+    recon_pred_compare = np.row_stack((pred_recon_matrix, gt_recon_matrix))
+
+    return target_pred_compare.T, recon_pred_compare.T, target_pred_diff
+
+
+def save_training_progression(data, model_fp):
+    """Dumps the progression into npz file, so that it may be plotted with
+    different rcParams in the future
+    """
+    filename = 'train_progress'
+    data = np.array(data)
+    np.savez(model_fp + '/' + filename, data)
+
+
+def save_config(model_loc, config):
+    with open(model_loc + '/' + 'config.json', 'w') as w_file:
+        dummy_config = config.copy()
+        if not isinstance(config['activation'], str):
+            dummy_config['activation'] = str(config['activation'].name)
+        dummy_config['convolusion_func'] = str(config['convolution_func'].__name__)
+        w_file.write(json.dumps(dummy_config, indent=2))
+
+def prediction_histogram(pred, true, **kwargs):
+    pred = np.array(pred) ; true = np.array(true)
+    pred = pred.flatten() ; true = true.flatten()
+    return hist((pred, true), **kwargs)
+
+
+def prediction_crossplot(pred, 
+                         true, 
+                         title='',
+                         xlabel='Estimated property',
+                         ylabel='Ground Truth',
+                         save=False):
+    plt.scatter(pred, true)
+    plt.grid()
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if save:
+        plt.savefig('prediction_crossplot')
+
+
+def plot_histories(Histories, val=False, filename=None):
+    """Plots the history of the model training"""
+    for i, History in enumerate(Histories):
+        plt.plot(History.history['loss'], label='Train', color='red', linewidth=2)
+        # if val:
+        #     plt.plot(History.history['val_loss'], label=f'Validation {i}', color='k', linewidth=2, linestyle='--')
+        plt.title('Model loss')
+        plt.ylabel('Loss')
+        plt.xlabel('Epoch')
+    plt.legend(loc='upper right')
+    plt.savefig(filename)
+    plt.close()

@@ -28,7 +28,7 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     # Second convolutional block
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(b1) # 1, 1 padding because kernel is 3x3
     x = keras.layers.SpatialDropout2D(0.1)(x)
-    x = keras.layers.Conv2D(32, (3, 3), strides=(1, 2), activation='relu')(x) # Reduce horizontal dimension by 2, and vertical by factor 2
+    x = keras.layers.Conv2D(32, (3, 3), strides=(1, 2), activation='relu', name='strided_conv2d')(x) # Reduce horizontal dimension by 2, and vertical by factor 2
     x = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
     b2 = keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same')(x)
 
@@ -46,7 +46,7 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     x = keras.layers.Conv2D(latent_features, (3, 3), activation='relu', padding='same')(x)
     outp = keras.layers.Reshape((-1, latent_features))(x) # Reshape to get features in the second dimension
 
-    cnn_encoder = Model(inp, outp)
+    cnn_encoder = Model(inp, outp, name='CNN_pyramidal_encoder')
 
     return cnn_encoder
 
@@ -186,22 +186,27 @@ def CNN_decoder(latent_features=16, i=0):
 
 def ANN_decoder(latent_features=16, i=0):
     """1D CNN decoder with a committee of n_members."""
-    ann_decoder = keras.models.Sequential([
-        keras.layers.InputLayer(input_shape=(None, latent_features)),
-        keras.layers.Dense(64, activation='relu'),
-        keras.layers.Dropout(0.1),
-        keras.layers.Dense(32, activation='relu'),
-        keras.layers.Dense(16, activation='relu'),
-        keras.layers.Dense(3)
-    ], name='ann_decoder_{}'.format(i))
+    
+    inp = keras.layers.Input(shape=(None, latent_features))
+    x = keras.layers.Dense(64, activation='relu')(inp)
+    x = keras.layers.Dropout(0.1)(x)
+    x = keras.layers.Dense(32, activation='relu')(x)
+    x = keras.layers.Dense(16, activation='relu')(x)
+    out = keras.layers.Dense(3)(x)
+
+    ann_decoder = keras.models.Model(inputs=inp, outputs=out, name='ANN_decoder')
 
     return ann_decoder
 
 
 def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning_rate=0.001, enc='cnn', dec='cnn', reconstruct = False):
     # 
+    image_shape = (image_width, None, 1)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    inp = keras.layers.Input(shape=image_shape, name='input')
+
     if enc == 'cnn':
-        encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)
+        encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)(inp)
         # encoder = pyramidal_residual_encoder(latent_features=latent_features, image_width=image_width)
     elif enc == 'lstm':
         encoder = LSTM_encoder(latent_features=latent_features, image_width=image_width)
@@ -212,25 +217,24 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
     for i in range(n_members):
         if dec == 'cnn':
             # decoders.append(CNN_decoder(latent_features=latent_features, i=i)(encoder.output))
-            decoders = CNN_decoder(latent_features=latent_features, i=i)(encoder.output)
+            decoders = CNN_decoder(latent_features=latent_features, i=i)(encoder)
         elif dec == 'lstm':
-            decoders = LSTM_decoder(latent_features=latent_features, i=i)(encoder.output)
+            decoders = LSTM_decoder(latent_features=latent_features, i=i)(encoder)
         elif dec == 'ann':
-            decoders = ANN_decoder(latent_features=latent_features, i=i)(encoder.output)
-    
+            decoders = ANN_decoder(latent_features=latent_features, i=i)(encoder)
+
     if reconstruct:
-        rec = CNN_pyramidal_decoder(latent_features=latent_features, image_width=image_width)(encoder.output)
+        rec = CNN_pyramidal_decoder(latent_features=latent_features, image_width=image_width)(encoder)
         decoders = [decoders, rec]
 
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
-    model = Model(encoder.input, decoders)
+    model = Model(inp, decoders)
     model.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
 
 
     # Have predictions just from the first decoder
-    model_mean = Model(encoder.input, decoders[0])
+    model_mean = Model(inp, decoders[0])
 
 
     # if len(decoders)>1:
@@ -250,3 +254,5 @@ def predict_encoded_tree(encoder, tree, X): #, mask=None):
     encoded = encoded.reshape(-1, encoded.shape[-1])
     pred = tree.predict(encoded).reshape(X.shape[0], -1, 3)
     return pred
+
+
