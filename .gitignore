@@ -11,6 +11,7 @@ Data/dupelicates
 start_model_run.bat
 *.png
 *.svg
+Assignment Figures/
 /QGIS
 .vscode/
 Data/closest_traces.json
