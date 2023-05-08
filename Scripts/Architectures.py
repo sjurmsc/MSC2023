@@ -20,11 +20,12 @@ def CNN_pyramidal_encoder(latent_features, image_width):
 
     # First convolutional block
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (2, 2)))(x)
-    b1 = keras.layers.Conv2D(16, (5, 5), activation='relu')(x) # Reduce horizontal dimension by 2
+    b1 = keras.layers.Conv2D(16, (5, 5), activation='relu')(x) # Reduce horizontal dimension by 4
     x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(b1)
     x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
     x = keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(x)
     b1 = keras.layers.Add()([b1, x])
+    # output dim is reduced by 4
 
     # Second convolutional block
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (2, 2)))(b1) # 1, 1 padding because kernel is 3x3
@@ -45,7 +46,7 @@ def CNN_pyramidal_encoder(latent_features, image_width):
     # Add more layers for shape reduction
     x = keras.layers.ZeroPadding2D(padding=((0, 0), (1, 1)))(b2) # 1, 1 padding because kernel is 3x3
     # x = keras.layers.Conv2D(32, (3, 3), activation='relu')(x) # Reduce horizontal dimension by 2
-    x = keras.layers.Conv2D(latent_features, (3, 3), activation='relu', padding='same')(x)
+    x = keras.layers.Conv2D(latent_features, (3, 3), activation='relu')(x)
     outp = keras.layers.Reshape((-1, latent_features))(x) # Reshape to get features in the second dimension
 
     cnn_encoder = Model(inp, outp, name='CNN_pyramidal_encoder')
