@@ -212,7 +212,7 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
 
     if enc == 'cnn':
         encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)(inp)
-        encoder = pyramidal_residual_encoder(latent_features=latent_features, image_width=image_width)
+        # encoder = pyramidal_residual_encoder(latent_features=latent_features, image_width=image_width)
     elif enc == 'lstm':
         encoder = LSTM_encoder(latent_features=latent_features, image_width=image_width)
     elif enc == 'depth':
