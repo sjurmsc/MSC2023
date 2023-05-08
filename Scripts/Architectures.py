@@ -212,7 +212,7 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
 
     if enc == 'cnn':
         encoder = CNN_pyramidal_encoder(latent_features=latent_features, image_width=image_width)(inp)
-        # encoder = pyramidal_residual_encoder(latent_features=latent_features, image_width=image_width)
+        encoder = pyramidal_residual_encoder(latent_features=latent_features, image_width=image_width)
     elif enc == 'lstm':
         encoder = LSTM_encoder(latent_features=latent_features, image_width=image_width)
     elif enc == 'depth':
@@ -241,14 +241,15 @@ def ensemble_CNN_model(n_members=5, latent_features=16, image_width=11, learning
     # Have predictions just from the first decoder
     model_mean = Model(inp, decoders[0])
 
-
+    enc = Model(inp, encoder.output)
+    enc.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
     # if len(decoders)>1:
     #     model_mean = Model(encoder.input, keras.layers.Average()(decoders))
     #     model_mean.compile(loss='mae', optimizer=optimizer, metrics=['mse', 'mae'])
     # else:
     # model_mean = model
 
-    return model, encoder, model_mean
+    return model, enc, model_mean
 
 
 def predict_encoded_tree(encoder, tree, X): #, mask=None):
