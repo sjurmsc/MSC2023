@@ -14,6 +14,11 @@ start_model_run.bat
 /QGIS
 .vscode/
 Data/closest_traces.json
+!Models/AVW/*
+!Models/AVX/*
+!Models/AVY/*
+!Models/AVZ/*
+!Models/AWA/*
 !TEMP/AAO/1_combined_pred.jpg
 !TEMP/ABW/0_combined_pred.jpg
 !TEMP/ACC/9_combined_pred.jpg

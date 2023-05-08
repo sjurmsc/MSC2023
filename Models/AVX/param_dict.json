@@ -1,0 +1,39 @@
+{
+    "dataset": {
+        "n_neighboring_traces": 5,
+        "zrange": [
+            35,
+            60
+        ],
+        "n_bootstraps": 5,
+        "add_noise": false,
+        "max_distance_to_cdp": 1,
+        "cumulative_seismic": false,
+        "random_flip": true,
+        "random_state": 1,
+        "groupby": "cpt_loc",
+        "y_scaler": "minmax",
+        "exclude_BH": true,
+        "sequence_length": 100,
+        "stride": 1
+    },
+    "RF": {
+        "max_depth": 20,
+        "n_estimators": 20,
+        "min_samples_leaf": 1,
+        "min_samples_split": 4,
+        "bootstrap": true,
+        "criterion": "mse",
+        "n_jobs": -1
+    },
+    "LGBM": {
+        "num_leaves": 31,
+        "max_depth": 20,
+        "n_estimators": 60,
+        "n_jobs": -1
+    },
+    "NN": {
+        "epochs": 100,
+        "batch_size": 30
+    }
+}
