@@ -23,8 +23,10 @@ import segyio
 from NGI.GM_Toolbox import evaluate_modeldist
 
 msc_color = '#6bb4edff'
+transparent_msc_color = '#6bb4ed99'
 dark_msc_color = '#1466a6ff'
 coral = '#f87954ff'
+transparent_coral = '#f8795499'
 dark_coral = '#c93408ff'
 
 def gname(old_name):
@@ -191,10 +193,10 @@ def plot_dontfit(filename='', zrange = (35, 60)):
     locations = [3, 6, 7, 33, 71, 72]
 
     params = ['q_c', 'f_s', 'u_2']
+    description = ['Measured tip resistance [MPa]', 'Sleeve friction [MPa]', 'Pore pressure [MPa]']
     colors = ['g', 'orange', 'b']
 
-    fig, ax = plt.subplots(4, 8, figsize=(20, 30))
-    fig.subplots_adjust(left = 0.076, bottom=0.05, right=0.92, top=0.93, wspace=0.32, hspace=0.3)
+    
 
     lens = np.array([len(y[np.where(groups==cpt_loc)]) for cpt_loc in locations])[:-1]-1
     i_list = np.arange(0, len(locations))
@@ -205,47 +207,43 @@ def plot_dontfit(filename='', zrange = (35, 60)):
         y_loc = y[np.where(groups == cpt_loc)]
         mins, maxs = (minmax[0][np.where(groups == cpt_loc)], minmax[1][np.where(groups == cpt_loc)])
         g = ggm[np.where(groups == cpt_loc)]
-
-        for ii in range(i, y_loc.shape[0]+i):
-            for j in range(3):
-                if j == 0: ax[ii%4, j+4*(ii//4)].set_ylabel(cptname)
-                if j == 2: ax[ii%4, j+4*(ii//4)].set_ylabel('Depth (m)'); ax[ii%4, j+4*(ii//4)].yaxis.set_label_position("right"); ax[ii%4, j+4*(ii//4)].yaxis.tick_right()
-                else: ax[ii%4, j+4*(ii//4)].set_yticks([])
-                ax[ii%4, j+4*(ii//4)].plot(y_loc[(ii-i)%4, :, j], z, color=colors[j], label=params[j])
-                ax[ii%4, j+4*(ii//4)].fill_betweenx(z, mins[(ii-i)%4, :, j], maxs[(ii-i)%4, :, j], alpha=0.5, color=colors[j])
-                ax[ii%4, j+4*(ii//4)].invert_yaxis()
-                if ii%4 == 3: ax[ii%4, j+4*(ii//4)].set_xlabel(f'${params[j]}$')
-            #    get the limits of the plots in row i
-
-            # set the first three plots in the row to the same y axis limits
-            ylims = [ax[ii%4, j+4*(ii//4)].get_ylim() for j in range(3)]
-            ylims = np.max(ylims, axis=0)
-
-            # set the limit of the plots in row i to the max of the limits in row i
-            gm = g[int(ii-i)][np.where((z>=ylims[1])&(z<=ylims[0]))]
-            gm_z = z[np.where((z>=ylims[1])&(z<=ylims[0]))]
-            
-            ax[ii%4, 3 + 4*(ii//4)].imshow(gm.reshape(-1, 1), cmap=cmap, norm=norm, extent=[gm_z[0], gm_z[-1], gm_z[-1], gm_z[0]], aspect=8)
-            ylims = ax[ii%4, 3 + 4*(ii//4)].get_ylim()
-            [ax[ii%4, j+4*(ii//4)].set_ylim(ylims) for j in range(3)]
-            changes = np.diff(gm)
-            depth_changes = gm_z[np.where(changes != 0)]
-            depth_changes = np.insert(depth_changes, 0, gm_z[0]); depth_changes = np.append(depth_changes, ylims[0])
-            depth_changes = np.sort(depth_changes)
-            diff_changes = np.diff(depth_changes)
-            y_ticks = depth_changes[:-1] + diff_changes/2
-            
-            yticklabels = [umap(x) for x in np.unique(gm.flatten())]
-            ax[ii%4, 3 + 4*(ii//4)].yaxis.tick_right()
-            ax[ii%4, 3 + 4*(ii//4)].set_yticks(y_ticks)
-            ax[ii%4, 3 + 4*(ii//4)].set_yticklabels(yticklabels, rotation=20, ha='left', va='bottom', fontsize=6)
-            ax[ii%4, 3 + 4*(ii//4)].set_xticks([])
+        for ii in range(len(y_loc)):
         
+            fig, ax = plt.subplots(1, 4, figsize=(6, 10))
+            for j, param in enumerate(params):
+
+                ax[j].plot(y_loc[ii, :, j], z, label='True', color=colors[j], linewidth=2)
+                ax[j].fill_betweenx(z, mins[ii, :, j], maxs[ii, :, j], alpha=0.5, color=colors[j])
+                ax[j].set_title(param, fontsize=20)
+                ax[j].set_ylabel('Depth [mLAT]', fontsize=15)
+                ax[j].set_xlabel(description[j], fontsize=15)
+                ax[j].set_ylim(zrange[0], zrange[1])
+
+            
+            ax[3].imshow(g[ii].T.reshape(1, -1), cmap=cmap, norm=norm, aspect='auto')
+            ax[3].set_title('GGM', fontsize=13)
+            ax[3].set_xticks([])
+            ax[3].set_yticks(g[ii])
+            ax[3].set_ylabel([umap(x) for x in g[ii]], fontsize=8)
+            ax[3].set_xlabel('Unit', fontsize=8)
+            ax[3].set_ylabel('Depth [mLAT]', fontsize=8)
+            ylims = ax[3].get_ylim()
+            # [ax[j].set_ylim(ylims) for j in range(3)]
+            # [ax[j].invert_yaxis() for j in range(3)]
+            
+            fig.suptitle('CPT location {}'.format(cptname), fontsize=13)
+            fig.tight_layout()
+            if filename:
+                plt.savefig(filename + '_{}_{}.png'.format(cptname, ii))
+            else:
+                plt.show()
+            plt.close()
+
 
     # plt.legend()
     fig.suptitle('Discarded CPT measurements', fontsize=16)
     if filename:
-        plt.savefig(filename, dpi=500)
+        plt.savefig(filename, dpi=400)
     else:
         plt.show()
 
@@ -941,19 +939,20 @@ def count_characters_in_files():
     thesis_count, thesis_ncount = count_char(files, not_used, typ='thesis')
 
     # Create a pie chart with the number of characters in the files
+    counts = [thesis_count, thesis_ncount, code_count, code_ncount]
+    s = sum(counts)
+    labels = [f'{c}\n'+str(round(c/s*100, 1))+'%' for c in counts]
+
     fig, ax = plt.subplots(figsize=(6, 5))
-    im = ax.pie([thesis_count, thesis_ncount, code_count, code_ncount], labels=['Thesis used', 'Thesis not used', 'Code used', 'Code not used'], startangle=90, counterclock=False, colors=[msc_color, dark_msc_color, coral, dark_coral], wedgeprops={'linewidth': 1, 'edgecolor': 'black'})
+    im = ax.pie([thesis_count, thesis_ncount, code_count, code_ncount], labels=labels, startangle=90, counterclock=False, colors=[msc_color, transparent_msc_color, coral, transparent_coral], wedgeprops={'linewidth': 1, 'edgecolor': 'black'})
     ax.set_title('Number of characters in thesis and code', fontsize=20)
     # Add the counts to the pie chart
     for i in range(len(im[0])):
-        im[0][i].set_label('{:} characters'.format([thesis_count, thesis_ncount, code_count, code_ncount][i]))
-    ax.legend(fontsize=12)
+        im[0][i].set_label(['Thesis used', 'Thesis not used', 'Code used', 'Code not used'][i])
+    ax.legend(fontsize=8, framealpha=1)
     fig.subplots_adjust(bottom=0.05)
     fig.savefig('Assignment figures/Number_of_characters_thesis_and_code.png', dpi=400)
     plt.close(fig)
-
-
-
 
 def renew_figs(mgroups, file_destination=r'./Assignment figures/Renewed_figures/', plot=True):
     """Based on the models in the argument, this function creates updated figures for the assignment"""
@@ -1181,7 +1180,7 @@ if __name__ == '__main__':
 
     count_characters_in_files()
 
-    # renew_figs(['AVW', 'AVX', 'AVY', 'AWD'], plot=False)
+    renew_figs(['AVW'], plot=True)
     # loss_statistics(['AVW', 'AVX', 'AVY', 'AWD'], [0.4, 1, 5, 10])
 
     # m = ['AVW', 'AVX', 'AVY', 'AWD']

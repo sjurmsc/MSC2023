@@ -872,8 +872,6 @@ def plot_latent_space(latent_model, latent_features, X, valid_indices, outside_i
     for i, label in enumerate(cbar.ax.get_yticklabels()):
         if label.get_text() in GGM_names:
             label.set_weight('bold')
-    
-
 
 
     cbar.ax.tick_params(labelsize=10)
