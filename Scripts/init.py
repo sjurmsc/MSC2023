@@ -306,31 +306,31 @@ if __name__ == '__main__':
             with open(f'./Models/{gname}/Fold{i+1}/tree_scores.json', 'w') as f:
                 json.dump(tree_scores, f, indent=4)
 
-            # Plotting the predictions
-            for m, title in zip([model_mean, [encoder, rf_decoder], [encoder, lgbm_decoder]], [decoder_type.upper(), 'RF', 'LGBM']):
-                create_loo_trace_prediction(m, 
-                                            X_test_full, 
-                                            y_test_full, 
-                                            zrange=dataset_params['zrange'],
-                                            filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_{i}.png',
-                                            title=title,
-                                            minmax=minmax_test_full,
-                                            scale=True)
-                prediction_scatter_plot(m,
-                                        X_test_full,
-                                        y_test_full,
-                                        filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_scatter_{i}.png',
-                                        title=title,
-                                        scale=True)
+            # # Plotting the predictions
+            # for m, title in zip([model_mean, [encoder, rf_decoder], [encoder, lgbm_decoder]], [decoder_type.upper(), 'RF', 'LGBM']):
+            #     create_loo_trace_prediction(m, 
+            #                                 X_test_full, 
+            #                                 y_test_full, 
+            #                                 zrange=dataset_params['zrange'],
+            #                                 filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_{i}.png',
+            #                                 title=title,
+            #                                 minmax=minmax_test_full,
+            #                                 scale=True)
+            #     prediction_scatter_plot(m,
+            #                             X_test_full,
+            #                             y_test_full,
+            #                             filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_{title}_scatter_{i}.png',
+            #                             title=title,
+            #                             scale=True)
             
-            # Plotting the latent space
-            plot_latent_space(encoder,
-                            latent_features, 
-                            X_test_full, 
-                            full_no_nan_idx_test, 
-                            full_nan_idx_test, 
-                            GGM_test_full,
-                            filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_latent_space_{i}.png')
+            # # Plotting the latent space
+            # plot_latent_space(encoder,
+            #                 latent_features, 
+            #                 X_test_full, 
+            #                 full_no_nan_idx_test, 
+            #                 full_nan_idx_test, 
+            #                 GGM_test_full,
+            #                 filename=f'./Models/{gname}/Fold{i+1}/Ensemble_CNN_latent_space_{i}.png')
         
         # Inverse scaling
         for ii in range(trues.shape[0]):
